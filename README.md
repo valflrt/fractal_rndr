@@ -2,7 +2,9 @@
 
 This is a very simple program used to render fractals using a parameter json file.
 
-It includes different fractal kinds among which Mandelbrot and a (new ?) kind of fractal I came up with by using second/third degree recursive sequence instead of the classic first degree Mandelbrot.
+It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree Mandelbrot iteration. I'm not sure if something similar has already been explored by others.
+
+It uses cumulative histogram coloring, but I would like to combine it with another technique to improve its appearance in areas with fewer details. In such cases, the current method tends to produce awkwardly flat patterns.
 
 # How to use
 
@@ -16,99 +18,38 @@ Create a json file that must have the following structure:
   "center_x": 0.0, // change this...
   "center_y": 0.0, // ... and this to change the render position
   "max_iter": 3000, // change max iteration count
-  "fractal_kind": "ThirdOrderGrowingExponent" // this is the fractal kind
+  "fractal_kind": ... // this is the fractal kind (see examples)
 }
 ```
 
-Currently available fractal kinds are:
+Next, in order to render your fractal, run the following command:
 
-- `Mandelbrot`
-- `SecondOrderGrowingExponent`
-- `ThirdOrderGrowingExponent`
-
-Next, to render your fractal, use: `cargo run -r -- <your param file path>.json <your output image path>.png`
+```
+cargo run -r -- <your param file path>.json <your output image path>.png
+```
 
 # Examples
 
-![gmawxkdrwbkd](./fractals/gmawxkdrwbkd.png)
+#### [`gmawxkdrwbkd.json`](fractals/gmawxkdrwbkd.json)
 
-```jsonc
-// fractals/gmawxkdrwbkd.json
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 0.00026,
-  "center_x": -0.11591,
-  "center_y": 0.0,
-  "max_iter": 3000,
-  "fractal_kind": "ThirdOrderGrowingExponent"
-}
-```
+![gmawxkdrwbkd.png](./fractals/gmawxkdrwbkd.png)
 
-#
+#### [`yjtzeggtvbcf.json`](fractals/yjtzeggtvbcf.json)
 
-![yjtzeggtvbcf](./fractals/yjtzeggtvbcf.png)
+![yjtzeggtvbcf.png](./fractals/yjtzeggtvbcf.png)
 
-```jsonc
-// fractals/yjtzeggtvbcf.json
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 0.001,
-  "center_x": 0.0097,
-  "center_y": 0.01,
-  "max_iter": 3000,
-  "fractal_kind": "SecondOrderGrowingExponent"
-}
-```
+#### [`mzfyjeidkzrg.json`](fractals/mzfyjeidkzrg.json)
 
-#
+![mzfyjeidkzrg.png](./fractals/mzfyjeidkzrg.png)
 
-![qnkwncnmyftc](./fractals/qnkwncnmyftc.png)
+#### [`qnkwncnmyftc.json`](fractals/qnkwncnmyftc.json)
 
-```jsonc
-// fractals/qnkwncnmyftc.json
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 0.0025,
-  "center_x": -0.07238,
-  "center_y": -0.0159,
-  "max_iter": 3000,
-  "fractal_kind": "ThirdOrderGrowingExponent"
-}
-```
+![qnkwncnmyftc.png](./fractals/qnkwncnmyftc.png)
 
-#
+#### [`pafneiqccmnv.json`](fractals/pafneiqccmnv.json)
 
-![pafneiqccmnv](./fractals/pafneiqccmnv.png)
+![pafneiqccmnv.png](./fractals/pafneiqccmnv.png)
 
-```jsonc
-// fractals/pafneiqccmnv.json
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 0.1,
-  "center_x": 0.0,
-  "center_y": 0.0,
-  "max_iter": 3000,
-  "fractal_kind": "SecondOrderGrowingExponent"
-}
-```
+#### [`ftxuudxauwum.json`](fractals/ftxuudxauwum.json)
 
-#
-
-![ftxuudxauwum](./fractals/ftxuudxauwum.png)
-
-```jsonc
-// fractals/ftxuudxauwum.json
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 1e-11,
-  "center_x": -1.99988849682082,
-  "center_y": 1e-16,
-  "max_iter": 3000,
-  "fractal_kind": "Mandelbrot"
-}
-```
+![ftxuudxauwum.png](./fractals/ftxuudxauwum.png)

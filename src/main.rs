@@ -20,7 +20,9 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => println!("This is a fractal renderer.\nUsage: fractal_renderer <param file path>.json <output image path>.png"),
+        1 => {
+            println!("This is a fractal renderer.\nUsage: fractal_renderer <param file path>.json <output image path>.png")
+        }
         3 => {
             match serde_json::from_reader::<_, FractalParams>(
                 File::open(&args[1]).expect("failed to read input param file"),
@@ -61,14 +63,15 @@ fn main() {
                         img.put_pixel(
                             x,
                             y,
+                            // TODO combine cumulative histogram with another technique
                             color_mapping(cumulative_histogram[iterations as usize].powi(12)),
                         );
                     }
 
                     println!("{:?} elapsed", start.elapsed());
 
-                    img.save(&args[2])
-                        .expect("failed to save fractal image");
+                    img.save(&args[2]).expect("failed to save fractal image");
+                    // fs::write("out.json", serde_json::to_string_pretty(&params).unwrap()).unwrap();
                 }
                 Err(err) => {
                     println!("error reading parameter file: {}", err);
@@ -84,6 +87,7 @@ enum FractalKind {
     Mandelbrot,
     SecondOrderGrowingExponent,
     ThirdOrderGrowingExponent,
+    NthOrderGrowingExponent(usize),
 }
 
 impl FractalKind {
@@ -127,6 +131,25 @@ impl FractalKind {
                     z0 = z1;
                     z1 = z2;
                     z2 = new_z2;
+                }
+                max_iter
+            }
+            FractalKind::NthOrderGrowingExponent(n) => {
+                let n = *n;
+                let mut z = vec![Complex::new(0., 0.); n];
+
+                for i in 0..max_iter {
+                    if z[n - 1].norm_sqr() > 4. {
+                        return i;
+                    }
+                    let mut new_z = c;
+                    for k in 0..n {
+                        new_z += z[k].powi(k as i32 + 1);
+                    }
+                    for k in 0..n - 1 {
+                        z[k] = z[k + 1];
+                    }
+                    z[n - 1] = new_z;
                 }
                 max_iter
             }
