@@ -10,7 +10,7 @@ Create a json file called `fractal.json` at the root of the directory (next to C
 
 The file must have the following json structure:
 
-```json
+```jsonc
 {
   "img_width": ..., // make the image as big as you want (not too big tho)
   "img_height": ...,
@@ -31,7 +31,7 @@ Currently available fractal kinds are:
 
 ![gmawxkdrwbkd](./fractals/gmawxkdrwbkd.png)
 
-```json
+```jsonc
 // fractals/gmawxkdrwbkd.json
 {
   "img_width": 3840,
@@ -47,7 +47,7 @@ Currently available fractal kinds are:
 
 ![yjtzeggtvbcf](./fractals/yjtzeggtvbcf.png)
 
-```json
+```jsonc
 // fractals/yjtzeggtvbcf.json
 {
   "img_width": 3840,
@@ -63,7 +63,7 @@ Currently available fractal kinds are:
 
 ![pafneiqccmnv](./fractals/pafneiqccmnv.png)
 
-```json
+```jsonc
 // fractals/pafneiqccmnv.json
 {
   "img_width": 3840,
@@ -79,7 +79,7 @@ Currently available fractal kinds are:
 
 ![ftxuudxauwum](./fractals/ftxuudxauwum.png)
 
-```json
+```jsonc
 // fractals/ftxuudxauwum.json
 {
   "img_width": 3840,
