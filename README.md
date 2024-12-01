@@ -6,7 +6,7 @@ It includes different fractal kinds among which Mandelbrot and a (new ?) kind of
 
 # How to use
 
-Create a json file called `fractal.json` at the root of the directory (next to Cargo.toml).
+Create a json file at the root of the directory (next to Cargo.toml).
 
 The file must have the following json structure:
 
@@ -17,6 +17,7 @@ The file must have the following json structure:
   "zoom": 1., // zoom into the fractal by decreasing this
   "center_x": 0.0, // change this...
   "center_y": 0.0, // ... and this to change the render position
+  "max_iter": 3000, // change max iteration count
   "fractal_kind": "ThirdOrderGrowingExponent" // this is the fractal kind
 }
 ```
@@ -26,6 +27,8 @@ Currently available fractal kinds are:
 - `Mandelbrot`
 - `SecondOrderGrowingExponent`
 - `ThirdOrderGrowingExponent`
+
+To render your fractal, use: `cargo run -r -- <your param file path>.json <your image path>.png`
 
 # Examples
 
@@ -39,6 +42,7 @@ Currently available fractal kinds are:
   "zoom": 0.00026,
   "center_x": -0.11591,
   "center_y": 0.0,
+  "max_iter": 3000,
   "fractal_kind": "ThirdOrderGrowingExponent"
 }
 ```
@@ -55,6 +59,7 @@ Currently available fractal kinds are:
   "zoom": 0.001,
   "center_x": 0.0097,
   "center_y": 0.01,
+  "max_iter": 3000,
   "fractal_kind": "SecondOrderGrowingExponent"
 }
 ```
@@ -71,6 +76,7 @@ Currently available fractal kinds are:
   "zoom": 0.1,
   "center_x": 0.0,
   "center_y": 0.0,
+  "max_iter": 3000,
   "fractal_kind": "SecondOrderGrowingExponent"
 }
 ```
@@ -87,6 +93,7 @@ Currently available fractal kinds are:
   "zoom": 1e-11,
   "center_x": -1.99988849682082,
   "center_y": 1e-16,
+  "max_iter": 3000,
   "fractal_kind": "Mandelbrot"
 }
 ```

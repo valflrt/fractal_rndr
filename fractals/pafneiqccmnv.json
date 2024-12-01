@@ -4,5 +4,6 @@
   "zoom": 0.1,
   "center_x": 0.0,
   "center_y": 0.0,
+  "max_iter": 3000,
   "fractal_kind": "SecondOrderGrowingExponent"
 }
