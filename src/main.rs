@@ -18,51 +18,56 @@ struct FractalParams {
 }
 
 fn main() {
-    let params = serde_json::from_reader::<_, FractalParams>(
+    match serde_json::from_reader::<_, FractalParams>(
         File::open("fractal.json").expect("failed to read input param file"),
-    )
-    .expect("failed to decode input param file");
+    ) {
+        Ok(params) => {
+            let aspect_ratio = params.img_width as f64 / params.img_height as f64;
 
-    let aspect_ratio = params.img_width as f64 / params.img_height as f64;
+            let width = params.zoom;
+            let height = width / aspect_ratio;
+            let x_min = params.center_x - width / 2.;
+            let x_max = params.center_x + width / 2.;
+            let y_min = params.center_y - height / 2.;
+            let y_max = params.center_y + height / 2.;
 
-    let width = params.zoom;
-    let height = width / aspect_ratio;
-    let x_min = params.center_x - width / 2.;
-    let x_max = params.center_x + width / 2.;
-    let y_min = params.center_y - height / 2.;
-    let y_max = params.center_y + height / 2.;
+            let mut img = ImageBuffer::new(params.img_width, params.img_height);
 
-    let mut img = ImageBuffer::new(params.img_width, params.img_height);
+            let start = Instant::now();
 
-    let start = Instant::now();
+            let pixel_values = (0..params.img_height)
+                .flat_map(|y| (0..params.img_width).map(move |x| (x, y)))
+                .par_bridge()
+                .map(|(x, y)| {
+                    let real = x_min + (x as f64 / params.img_width as f64) * (x_max - x_min);
+                    let imag = y_min + (y as f64 / params.img_height as f64) * (y_max - y_min);
+                    let c = Complex::new(real, imag);
 
-    let pixel_values = (0..params.img_height)
-        .flat_map(|y| (0..params.img_width).map(move |x| (x, y)))
-        .par_bridge()
-        .map(|(x, y)| {
-            let real = x_min + (x as f64 / params.img_width as f64) * (x_max - x_min);
-            let imag = y_min + (y as f64 / params.img_height as f64) * (y_max - y_min);
-            let c = Complex::new(real, imag);
+                    let iterations = params.fractal_kind.get_pixel(c);
 
-            let iterations = params.fractal_kind.get_pixel(c);
+                    (x, y, iterations)
+                })
+                .collect::<Vec<_>>();
 
-            (x, y, iterations)
-        })
-        .collect::<Vec<_>>();
+            let cumulative_histogram = compute_histogram(&pixel_values);
 
-    let cumulative_histogram = compute_histogram(&pixel_values);
+            for (x, y, iterations) in pixel_values {
+                img.put_pixel(
+                    x,
+                    y,
+                    color_mapping(cumulative_histogram[iterations as usize].powi(12)),
+                );
+            }
 
-    for (x, y, iterations) in pixel_values {
-        img.put_pixel(
-            x,
-            y,
-            color_mapping(cumulative_histogram[iterations as usize].powi(12)),
-        );
+            println!("{:?} elapsed", start.elapsed());
+
+            img.save("fractal.png")
+                .expect("failed to save fractal image");
+        }
+        Err(err) => {
+            println!("error reading parameter file: {}", err);
+        }
     }
-
-    println!("{:?} elapsed", start.elapsed());
-
-    img.save("fractal.png").expect("failed to save image");
 }
 
 #[derive(Debug, Serialize, Deserialize)]
