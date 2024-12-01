@@ -20,7 +20,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => println!("This is a fractal renderer.\nUsage: fractal_renderer <your param file path>.json <your image path>.png"),
+        1 => println!("This is a fractal renderer.\nUsage: fractal_renderer <param file path>.json <output image path>.png"),
         3 => {
             match serde_json::from_reader::<_, FractalParams>(
                 File::open(&args[1]).expect("failed to read input param file"),

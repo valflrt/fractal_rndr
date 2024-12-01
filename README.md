@@ -6,9 +6,7 @@ It includes different fractal kinds among which Mandelbrot and a (new ?) kind of
 
 # How to use
 
-Create a json file at the root of the directory (next to Cargo.toml).
-
-The file must have the following json structure:
+Create a json file that must have the following structure:
 
 ```jsonc
 {
@@ -28,7 +26,7 @@ Currently available fractal kinds are:
 - `SecondOrderGrowingExponent`
 - `ThirdOrderGrowingExponent`
 
-To render your fractal, use: `cargo run -r -- <your param file path>.json <your image path>.png`
+Next, to render your fractal, use: `cargo run -r -- <your param file path>.json <your output image path>.png`
 
 # Examples
 
@@ -61,6 +59,23 @@ To render your fractal, use: `cargo run -r -- <your param file path>.json <your 
   "center_y": 0.01,
   "max_iter": 3000,
   "fractal_kind": "SecondOrderGrowingExponent"
+}
+```
+
+#
+
+![qnkwncnmyftc](./fractals/qnkwncnmyftc.png)
+
+```jsonc
+// fractals/qnkwncnmyftc.json
+{
+  "img_width": 3840,
+  "img_height": 2160,
+  "zoom": 0.0025,
+  "center_x": -0.07238,
+  "center_y": -0.0159,
+  "max_iter": 3000,
+  "fractal_kind": "ThirdOrderGrowingExponent"
 }
 ```
 
