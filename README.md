@@ -38,6 +38,10 @@ cargo run -r -- <your param file path>.json <your output image path>.png
 
 ![yjtzeggtvbcf.png](./fractals/yjtzeggtvbcf.png)
 
+#### [`qrbcwfunjryj.json`](fractals/qrbcwfunjryj.json)
+
+![qrbcwfunjryj.png](./fractals/qrbcwfunjryj.png)
+
 #### [`mzfyjeidkzrg.json`](fractals/mzfyjeidkzrg.json)
 
 ![mzfyjeidkzrg.png](./fractals/mzfyjeidkzrg.png)
