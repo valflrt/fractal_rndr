@@ -18,7 +18,7 @@ Create a json file that must have the following structure:
   "center_x": 0.0, // change this...
   "center_y": 0.0, // ... and this to change the render position
   "max_iter": 3000, // change max iteration count
-  "fractal_kind": ... // this is the fractal kind (see examples)
+  "fractal_kind": ... // this is the fractal kind (see presets)
 }
 ```
 
@@ -28,32 +28,32 @@ Next, in order to render your fractal, run the following command:
 cargo run -r -- <your param file path>.json <your output image path>.png
 ```
 
-# Examples
+# Presets
 
-#### [`gmawxkdrwbkd.json`](fractals/gmawxkdrwbkd.json)
+### [gmawxkdrwbkd.json](presets/gmawxkdrwbkd.json)
 
-![gmawxkdrwbkd.png](./fractals/gmawxkdrwbkd.png)
+![gmawxkdrwbkd.png](./presets/gmawxkdrwbkd.png)
 
-#### [`yjtzeggtvbcf.json`](fractals/yjtzeggtvbcf.json)
+### [yjtzeggtvbcf.json](presets/yjtzeggtvbcf.json)
 
-![yjtzeggtvbcf.png](./fractals/yjtzeggtvbcf.png)
+![yjtzeggtvbcf.png](./presets/yjtzeggtvbcf.png)
 
-#### [`qrbcwfunjryj.json`](fractals/qrbcwfunjryj.json)
+### [qrbcwfunjryj.json](presets/qrbcwfunjryj.json)
 
-![qrbcwfunjryj.png](./fractals/qrbcwfunjryj.png)
+![qrbcwfunjryj.png](./presets/qrbcwfunjryj.png)
 
-#### [`mzfyjeidkzrg.json`](fractals/mzfyjeidkzrg.json)
+### [mzfyjeidkzrg.json](presets/mzfyjeidkzrg.json)
 
-![mzfyjeidkzrg.png](./fractals/mzfyjeidkzrg.png)
+![mzfyjeidkzrg.png](./presets/mzfyjeidkzrg.png)
 
-#### [`qnkwncnmyftc.json`](fractals/qnkwncnmyftc.json)
+### [qnkwncnmyftc.json](presets/qnkwncnmyftc.json)
 
-![qnkwncnmyftc.png](./fractals/qnkwncnmyftc.png)
+![qnkwncnmyftc.png](./presets/qnkwncnmyftc.png)
 
-#### [`pafneiqccmnv.json`](fractals/pafneiqccmnv.json)
+### [pafneiqccmnv.json](presets/pafneiqccmnv.json)
 
-![pafneiqccmnv.png](./fractals/pafneiqccmnv.png)
+![pafneiqccmnv.png](./presets/pafneiqccmnv.png)
 
-#### [`ftxuudxauwum.json`](fractals/ftxuudxauwum.json)
+### [ftxuudxauwum.json](presets/ftxuudxauwum.json)
 
-![ftxuudxauwum.png](./fractals/ftxuudxauwum.png)
+![ftxuudxauwum.png](./presets/ftxuudxauwum.png)
