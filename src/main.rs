@@ -15,6 +15,7 @@ struct FractalParams {
     max_iter: u32,
     oversampling: Option<bool>,
     fractal_kind: FractalKind,
+    coloring_mode: ColoringMode,
 }
 
 fn main() {
@@ -34,6 +35,7 @@ fn main() {
                     max_iter,
                     oversampling,
                     fractal_kind,
+                    coloring_mode,
                 }) => {
                     let aspect_ratio = img_width as f64 / img_height as f64;
 
@@ -85,16 +87,38 @@ fn main() {
                         })
                         .collect::<Vec<_>>();
 
-                    let cumulative_histogram = compute_histogram(&pixel_values, max_iter);
-
-                    for (x, y, iterations) in pixel_values {
-                        img.put_pixel(
-                            x,
-                            y,
-                            // TODO combine cumulative histogram with another technique
-                            color_mapping(cumulative_histogram[iterations as usize].powi(12)),
-                        );
-                    }
+                    match coloring_mode {
+                        ColoringMode::Linear => {
+                            for (x, y, iterations) in pixel_values {
+                                img.put_pixel(
+                                    x,
+                                    y,
+                                    color_mapping(iterations as f64 / max_iter as f64),
+                                );
+                            }
+                        }
+                        ColoringMode::Squared => {
+                            for (x, y, iterations) in pixel_values {
+                                img.put_pixel(
+                                    x,
+                                    y,
+                                    color_mapping((iterations as f64 / max_iter as f64).powi(2)),
+                                );
+                            }
+                        }
+                        ColoringMode::CumulativeHistogram => {
+                            let cumulative_histogram = compute_histogram(&pixel_values, max_iter);
+                            for (x, y, iterations) in pixel_values {
+                                img.put_pixel(
+                                    x,
+                                    y,
+                                    color_mapping(
+                                        cumulative_histogram[iterations as usize].powi(12),
+                                    ),
+                                );
+                            }
+                        }
+                    };
 
                     println!("{:?} elapsed", start.elapsed());
 
@@ -186,6 +210,13 @@ impl FractalKind {
             }
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+enum ColoringMode {
+    Linear,
+    Squared,
+    CumulativeHistogram,
 }
 
 fn compute_histogram(pixel_values: &[(u32, u32, u32)], max_iter: u32) -> Vec<f64> {

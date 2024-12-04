@@ -18,7 +18,9 @@ Create a json file that must have the following structure:
   "center_x": 0.0, // change this...
   "center_y": 0.0, // ... and this to change the render position
   "max_iter": 3000, // change max iteration count
-  "fractal_kind": ... // this is the fractal kind (see presets)
+  "oversampling": true, // reduces the amount of "random" pixels from being colored
+  "fractal_kind": ..., // this is the fractal kind (see presets)
+  "coloring_mode": "CumulativeHistogram" // cumulative histogram recommended
 }
 ```
 
@@ -30,30 +32,26 @@ cargo run -r -- <your param file path>.json <your output image path>.png
 
 # Presets
 
-### [qrbcwfunjryj.json](presets/qrbcwfunjryj.json)
+### [ukhbrp.json](./presets/ukhbrp.json)
 
-![qrbcwfunjryj.png](./presets/qrbcwfunjryj.png)
+![ukhbrp.png](./presets/ukhbrp.png)
 
-### [gmawxkdrwbkd.json](presets/gmawxkdrwbkd.json)
+### [ebidxr.json](./presets/ebidxr.json)
 
-![gmawxkdrwbkd.png](./presets/gmawxkdrwbkd.png)
+![ebidxr.png](./presets/ebidxr.png)
 
-### [yjtzeggtvbcf.json](presets/yjtzeggtvbcf.json)
+### [mzfyje.json](./presets/mzfyje.json)
 
-![yjtzeggtvbcf.png](./presets/yjtzeggtvbcf.png)
+![mzfyje.png](./presets/mzfyje.png)
 
-### [mzfyjeidkzrg.json](presets/mzfyjeidkzrg.json)
+### [ztkhky.json](./presets/ztkhky.json)
 
-![mzfyjeidkzrg.png](./presets/mzfyjeidkzrg.png)
+![ztkhky.png](./presets/ztkhky.png)
 
-### [qnkwncnmyftc.json](presets/qnkwncnmyftc.json)
+### [hdihec.json](./presets/hdihec.json)
 
-![qnkwncnmyftc.png](./presets/qnkwncnmyftc.png)
+![hdihec.png](./presets/hdihec.png)
 
-### [pafneiqccmnv.json](presets/pafneiqccmnv.json)
+### [datgdv.json](./presets/datgdv.json)
 
-![pafneiqccmnv.png](./presets/pafneiqccmnv.png)
-
-### [ftxuudxauwum.json](presets/ftxuudxauwum.json)
-
-![ftxuudxauwum.png](./presets/ftxuudxauwum.png)
+![datgdv.png](./presets/datgdv.png)

@@ -1,9 +1,0 @@
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 1e-11,
-  "center_x": -1.99988849682082,
-  "center_y": 1e-16,
-  "max_iter": 3000,
-  "fractal_kind": "Mandelbrot"
-}

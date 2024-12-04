@@ -1,9 +1,0 @@
-{
-  "img_width": 3840,
-  "img_height": 2160,
-  "zoom": 0.05,
-  "center_x": -0.416,
-  "center_y": -0.02,
-  "max_iter": 3000,
-  "fractal_kind": { "NthOrderGrowingExponent": 16 }
-}
