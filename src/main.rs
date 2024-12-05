@@ -88,6 +88,19 @@ fn main() {
                         .collect::<Vec<_>>();
 
                     match coloring_mode {
+                        ColoringMode::BlackAndWhite => {
+                            for (x, y, iterations) in pixel_values {
+                                img.put_pixel(
+                                    x,
+                                    y,
+                                    if iterations == max_iter {
+                                        Rgb([0, 0, 0])
+                                    } else {
+                                        Rgb([255, 255, 255])
+                                    },
+                                );
+                            }
+                        }
                         ColoringMode::Linear => {
                             for (x, y, iterations) in pixel_values {
                                 img.put_pixel(
@@ -214,6 +227,7 @@ impl FractalKind {
 
 #[derive(Debug, Serialize, Deserialize)]
 enum ColoringMode {
+    BlackAndWhite,
     Linear,
     Squared,
     CumulativeHistogram,
