@@ -6,6 +6,6 @@
   "center_y": 0.0,
   "max_iter": 3000,
   "oversampling": true,
-  "fractal_kind": "ThirdOrderGrowingExponent",
+  "fractal_kind": "ThirdDegreeWithGrowingExponent",
   "coloring_mode": "CumulativeHistogram"
 }
