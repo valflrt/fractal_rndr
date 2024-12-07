@@ -35,7 +35,7 @@ Create a json file that with the following structure:
 ```
 
 > [!WARNING]
-> I added comments to explain each parameter, but they shouldn't appear in the parameter file because json doesn't support comments by default.
+> I added comments to explain each parameter, but they shouldn't appear in the file because json doesn't support comments by default.
 
 Next, you need to download the executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
