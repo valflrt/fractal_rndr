@@ -10,11 +10,12 @@ It also features oversampling to reduce artifact pixels.
 
 # How to use
 
-Create a json file that must have the following structure:
+Create a json file that with the following structure:
 
 ```jsonc
 {
-  "img_width": ..., // make the image as big as you want (not too big tho)
+  // make the image as big as you want (not too big tho)
+  "img_width": ...,
   "img_height": ...,
   // zoom into the fractal by decreasing this
   "zoom": 1.,
@@ -32,6 +33,9 @@ Create a json file that must have the following structure:
   "coloring_mode": "CumulativeHistogram"
 }
 ```
+
+> [!WARNING]
+> I added comments to explain each parameter, but they shouldn't appear in the parameter file because json doesn't support comments by default.
 
 Next, you need to download the executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
