@@ -33,11 +33,20 @@ Create a json file that must have the following structure:
 }
 ```
 
-Next, in order to render your fractal, run the following command:
+Next, you need to download the program from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+
+Then, in order to render your fractal, run the following command:
+
+```
+fractal_renderer fractal.json fractal.png
+```
+
+alternatively, if you have rust installed and downloaded this repository:
 
 ```
 cargo run -r -- fractal.json fractal.png
 ```
+
 
 > [!NOTE]
 >
