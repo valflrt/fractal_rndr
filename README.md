@@ -1,10 +1,10 @@
 # Fractal Renderer
 
-This is a very simple program used to render fractals using a parameter json file.
+This is a very simple program used to render fractals to images using a parameter json file.
 
 It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree recursive pattern used to draw the Mandelbrot set..
 
-It uses cumulative histogram coloring, but I would like to combine it with another technique to improve its appearance in areas with fewer details. In such cases, the current method tends to produce awkwardly flat patterns.
+One of the available coloring modes is cumulative histogram coloring (which was used to render the [presets](#preset-renders)). In the future I would like to add more modes and improve the current ones.
 
 # How to use
 
@@ -14,23 +14,35 @@ Create a json file that must have the following structure:
 {
   "img_width": ..., // make the image as big as you want (not too big tho)
   "img_height": ...,
-  "zoom": 1., // zoom into the fractal by decreasing this
-  "center_x": 0.0, // change this...
-  "center_y": 0.0, // ... and this to change the render position
-  "max_iter": 3000, // change max iteration count
-  "oversampling": true, // reduces the amount of "random" pixels from being colored
-  "fractal_kind": ..., // this is the fractal kind (see presets)
-  "coloring_mode": "CumulativeHistogram" // cumulative histogram recommended
+  // zoom into the fractal by decreasing this
+  "zoom": 1.,
+  // change this...
+  "center_x": 0.0,
+  // ... and this to change the render position
+  "center_y": 0.0,
+  // change max iteration count
+  "max_iter": 80000,
+  // (optional) takes multiple samples per pixel to improve image quality
+  "supersampling": 4,
+  // this is the fractal kind (see presets)
+  "fractal_kind": ...,
+  // cumulative histogram recommended
+  "coloring_mode": "CumulativeHistogram"
 }
 ```
 
 Next, in order to render your fractal, run the following command:
 
 ```
-cargo run -r -- <your param file path>.json <your output image path>.png
+cargo run -r -- fractal.json fractal.png
 ```
 
-# Presets
+> [!NOTE]
+> You can change the file names and the extension to other image formats (jpg, ...)
+
+# Preset renders
+
+These are preset renders I find pretty, you can get their json parameters files by clicking on the title. There are some more in [`presets/`](./presets/).
 
 ### [ukhbrp.json](./presets/ukhbrp.json)
 
@@ -48,9 +60,9 @@ cargo run -r -- <your param file path>.json <your output image path>.png
 
 ![ztkhky.png](./presets/ztkhky.png)
 
-### [hdihec.json](./presets/hdihec.json)
+### [idkzrg.json](./presets/idkzrg.json)
 
-![hdihec.png](./presets/hdihec.png)
+![idkzrg.png](./presets/idkzrg.png)
 
 ### [datgdv.json](./presets/datgdv.json)
 

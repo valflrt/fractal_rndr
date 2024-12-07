@@ -1,9 +1,22 @@
-use std::{env, fs::File, time::Instant};
+mod coloring;
+mod fractal_kind;
+
+use std::{
+    env,
+    fs::{self, File},
+    io::Write,
+    path::PathBuf,
+    sync::atomic,
+    time::Instant,
+};
 
 use image::{ImageBuffer, Rgb};
 use num::complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
+
+use coloring::{color_mapping, compute_histogram, cumulate_histogram, ColoringMode};
+use fractal_kind::FractalKind;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct FractalParams {
@@ -13,7 +26,7 @@ struct FractalParams {
     center_x: f64,
     center_y: f64,
     max_iter: u32,
-    oversampling: Option<bool>,
+    supersampling: Option<u32>,
     fractal_kind: FractalKind,
     coloring_mode: ColoringMode,
 }
@@ -33,10 +46,14 @@ fn main() {
                     center_x,
                     center_y,
                     max_iter,
-                    oversampling,
+                    supersampling,
                     fractal_kind,
                     coloring_mode,
                 }) => {
+                    if supersampling.is_some_and(|s| s == 0 || s > 256) {
+                        panic!("supersampling should be between 1 and 256");
+                    };
+
                     let aspect_ratio = img_width as f64 / img_height as f64;
 
                     let width = zoom;
@@ -50,42 +67,65 @@ fn main() {
 
                     let start = Instant::now();
 
+                    let progress = atomic::AtomicU32::new(0);
+                    let total = img_height * img_width;
+
+                    let stdout = std::io::stdout();
+
                     let pixel_values = (0..img_height)
                         .flat_map(|y| (0..img_width).map(move |x| (x, y)))
                         .par_bridge()
                         .map(|(x, y)| {
-                            if let Some(true) = oversampling {
-                                let real1 = x_min + (x as f64 / img_width as f64) * (x_max - x_min);
-                                let imag1 =
-                                    y_min + (y as f64 / img_height as f64) * (y_max - y_min);
-                                let c1 = Complex::new(real1, imag1);
+                            let real = x_min + (x as f64 / img_width as f64) * (x_max - x_min);
+                            let imag = y_min + (y as f64 / img_height as f64) * (y_max - y_min);
+                            let c = Complex::new(real, imag);
 
-                                let real2 =
-                                    x_min + ((x as f64 - 0.5) / img_width as f64) * (x_max - x_min);
-                                let imag2 = y_min
-                                    + ((y as f64 + 0.866025) / img_height as f64) * (y_max - y_min);
-                                let c2 = Complex::new(real2, imag2);
+                            let (mut iterations, _) = fractal_kind.get_pixel(c, max_iter);
 
-                                let imag3 = y_min
-                                    + ((y as f64 - 0.866025) / img_height as f64) * (y_max - y_min);
-                                let c3 = Complex::new(real2, imag3);
+                            if let Some(s) = supersampling {
+                                if s > 0 {
+                                    iterations += (0..s).fold(0, |acc, _| {
+                                        let dx = fastrand::f64() - 0.5;
+                                        let dy = fastrand::f64() - 0.5;
 
-                                let (iter1, _) = fractal_kind.get_pixel(c1, max_iter);
-                                let (iter2, _) = fractal_kind.get_pixel(c2, max_iter);
-                                let (iter3, _) = fractal_kind.get_pixel(c3, max_iter);
+                                        let real = x_min
+                                            + ((x as f64 + dx) / img_width as f64)
+                                                * (x_max - x_min);
+                                        let imag = y_min
+                                            + ((y as f64 + dy) / img_height as f64)
+                                                * (y_max - y_min);
+                                        let c = Complex::new(real, imag);
 
-                                (x, y, ((iter1 + iter2 + iter3) as f64 / 3.) as u32)
-                            } else {
-                                let real = x_min + (x as f64 / img_width as f64) * (x_max - x_min);
-                                let imag = y_min + (y as f64 / img_height as f64) * (y_max - y_min);
-                                let c = Complex::new(real, imag);
+                                        let (iter, _) = fractal_kind.get_pixel(c, max_iter);
 
-                                let (iterations, _) = fractal_kind.get_pixel(c, max_iter);
+                                        acc + iter
+                                    });
+                                    iterations /= s + 1;
+                                }
+                            };
 
-                                (x, y, iterations)
+                            // using atomic::Ordering::Relaxed
+                            progress.fetch_add(1, atomic::Ordering::Relaxed);
+                            let progress = progress.load(atomic::Ordering::Relaxed);
+                            if progress % (total / 100000 + 1) == 0 {
+                                stdout
+                                    .lock()
+                                    .write_all(
+                                        format!(
+                                            "\r {:.1}% - {:3.1}s elapsed ",
+                                            100. * progress as f32 / total as f32,
+                                            start.elapsed().as_secs_f32()
+                                        )
+                                        .as_bytes(),
+                                    )
+                                    .unwrap();
                             }
+
+                            (x, y, iterations)
                         })
                         .collect::<Vec<_>>();
+
+                    println!();
 
                     match coloring_mode {
                         ColoringMode::BlackAndWhite => {
@@ -119,8 +159,27 @@ fn main() {
                                 );
                             }
                         }
+                        ColoringMode::LinearMinMax => {
+                            let (min, max) = pixel_values.iter().fold(
+                                (max_iter, 0),
+                                |(acc_min, acc_max), &(_, _, v)| {
+                                    (
+                                        if acc_min > v { v } else { acc_min },
+                                        if acc_max < v { v } else { acc_max },
+                                    )
+                                },
+                            );
+
+                            for (x, y, iterations) in pixel_values {
+                                let t = (iterations - min) as f64 / (max - min) as f64;
+                                img.put_pixel(x, y, color_mapping(t));
+                            }
+                        }
                         ColoringMode::CumulativeHistogram => {
-                            let cumulative_histogram = compute_histogram(&pixel_values, max_iter);
+                            let cumulative_histogram = cumulate_histogram(
+                                compute_histogram(&pixel_values, max_iter),
+                                max_iter,
+                            );
                             for (x, y, iterations) in pixel_values {
                                 img.put_pixel(
                                     x,
@@ -133,9 +192,26 @@ fn main() {
                         }
                     };
 
-                    println!("{:?} elapsed", start.elapsed());
-
-                    img.save(&args[2]).expect("failed to save fractal image");
+                    let path = PathBuf::from(&args[2]);
+                    img.save(&path).expect("failed to save fractal image");
+                    let image_size = fs::metadata(&path).unwrap().len();
+                    println!(
+                        " output image: {}x{} - {} {}",
+                        img_width,
+                        img_height,
+                        if image_size / 1_000_000 != 0 {
+                            format!("{:.1}mb", image_size as f32 / 1_000_000.)
+                        } else if image_size / 1_000 != 0 {
+                            format!("{:.1}kb", image_size as f32 / 1_000.)
+                        } else {
+                            format!("{}b", image_size)
+                        },
+                        if let Some(ext) = path.extension() {
+                            format!("- {} ", ext.to_str().unwrap())
+                        } else {
+                            "".to_string()
+                        }
+                    );
                     // fs::write("out.json", serde_json::to_string_pretty(&params).unwrap()).unwrap();
                 }
                 Err(err) => {
@@ -146,150 +222,5 @@ fn main() {
         _ => {
             println!("This is a fractal renderer.\nUsage: fractal_renderer <param file path>.json <output image path>.png")
         }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-enum FractalKind {
-    Mandelbrot,
-    SecondDegreeWithGrowingExponent,
-    ThirdDegreeWithGrowingExponent,
-    NthDegreeWithGrowingExponent(usize),
-}
-
-impl FractalKind {
-    /// Outputs (iteration_count, escape_z)
-    fn get_pixel(&self, c: Complex<f64>, max_iter: u32) -> (u32, Complex<f64>) {
-        match self {
-            FractalKind::Mandelbrot => {
-                let mut z = Complex::new(0., 0.);
-
-                let mut i = 0;
-                while i < max_iter && z.norm_sqr() < 4. {
-                    z = z * z + c;
-                    i += 1;
-                }
-
-                (i, z)
-            }
-            FractalKind::SecondDegreeWithGrowingExponent => {
-                let mut z0 = Complex::new(0., 0.);
-                let mut z1 = Complex::new(0., 0.);
-
-                let mut i = 0;
-                while i < max_iter && z1.norm_sqr() < 4. {
-                    let new_z1 = z1 * z1 + z0 + c;
-                    z0 = z1;
-                    z1 = new_z1;
-
-                    i += 1;
-                }
-
-                (i, z1)
-            }
-            FractalKind::ThirdDegreeWithGrowingExponent => {
-                let mut z0 = Complex::new(0., 0.);
-                let mut z1 = Complex::new(0., 0.);
-                let mut z2 = Complex::new(0., 0.);
-
-                let mut i = 0;
-                while i < max_iter && z2.norm_sqr() < 4. {
-                    let new_z2 = z2 * z2 * z2 + z1 * z1 + z0 + c;
-                    z0 = z1;
-                    z1 = z2;
-                    z2 = new_z2;
-
-                    i += 1;
-                }
-
-                (i, z2)
-            }
-            FractalKind::NthDegreeWithGrowingExponent(n) => {
-                let n = *n;
-                let mut z = vec![Complex::new(0., 0.); n];
-
-                let mut i = 0;
-                while i < max_iter && z[n - 1].norm_sqr() < 4. {
-                    let mut new_z = c;
-                    for k in 0..n {
-                        new_z += z[k].powi(k as i32 + 1);
-                    }
-                    for k in 0..n - 1 {
-                        z[k] = z[k + 1];
-                    }
-                    z[n - 1] = new_z;
-
-                    i += 1;
-                }
-
-                (i, z[n - 1])
-            }
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-enum ColoringMode {
-    BlackAndWhite,
-    Linear,
-    Squared,
-    CumulativeHistogram,
-}
-
-fn compute_histogram(pixel_values: &[(u32, u32, u32)], max_iter: u32) -> Vec<f64> {
-    let mut histogram = vec![0; max_iter as usize + 1];
-
-    for &(_, _, iteration_count) in pixel_values.iter() {
-        histogram[iteration_count as usize] += 1;
-    }
-
-    let total = histogram.iter().sum::<u32>();
-    let mut cumulative = vec![0.; max_iter as usize + 1];
-    let mut cumulative_sum = 0.;
-    for (i, &count) in histogram.iter().enumerate() {
-        cumulative_sum += count as f64 / total as f64;
-        cumulative[i] = cumulative_sum;
-    }
-
-    cumulative
-}
-const GRADIENT_LENGTH: usize = 8;
-const GRADIENT_VALUES: [f64; GRADIENT_LENGTH] = [0., 0.10, 0.25, 0.4, 0.55, 0.7, 0.85, 0.95];
-const GRADIENT_COLORS: [Rgb<u8>; GRADIENT_LENGTH] = [
-    Rgb([10, 2, 20]),
-    Rgb([200, 40, 230]),
-    Rgb([20, 160, 230]),
-    Rgb([60, 230, 80]),
-    Rgb([255, 230, 20]),
-    Rgb([255, 120, 20]),
-    Rgb([255, 40, 60]),
-    Rgb([2, 0, 4]),
-];
-
-fn color_mapping(t: f64) -> Rgb<u8> {
-    if t <= GRADIENT_VALUES[0] {
-        GRADIENT_COLORS[0]
-    } else if t >= GRADIENT_VALUES[GRADIENT_LENGTH - 1] {
-        GRADIENT_COLORS[GRADIENT_LENGTH - 1]
-    } else {
-        for i in 0..GRADIENT_LENGTH {
-            if GRADIENT_VALUES[i] <= t && t <= GRADIENT_VALUES[i + 1] {
-                let ratio =
-                    (t - GRADIENT_VALUES[i]) / (GRADIENT_VALUES[i + 1] - GRADIENT_VALUES[i]);
-                let Rgb([r1, g1, b1]) = GRADIENT_COLORS[i];
-                let Rgb([r2, g2, b2]) = GRADIENT_COLORS[i + 1];
-                let r = (r1 as f64 * (1. - ratio) + r2 as f64 * ratio)
-                    .min(255.)
-                    .max(0.) as u8;
-                let g = (g1 as f64 * (1. - ratio) + g2 as f64 * ratio)
-                    .min(255.)
-                    .max(0.) as u8;
-                let b = (b1 as f64 * (1. - ratio) + b2 as f64 * ratio)
-                    .min(255.)
-                    .max(0.) as u8;
-                return Rgb([r, g, b]);
-            }
-        }
-        GRADIENT_COLORS[GRADIENT_LENGTH - 1]
     }
 }
