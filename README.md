@@ -33,7 +33,7 @@ Create a json file that must have the following structure:
 }
 ```
 
-Next, you need to download the program from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+Next, you need to download the executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
 Then, in order to render your fractal, run the following command (from the directory in which the executable is):
 
