@@ -40,7 +40,9 @@ cargo run -r -- fractal.json fractal.png
 ```
 
 > [!NOTE]
-> You can change the file names and the extension to other image formats (jpg, ...)
+>
+> - You can change the file names
+> - Supported image formats are png and jpg (extension used to guess image format)
 
 # Preset renders
 
