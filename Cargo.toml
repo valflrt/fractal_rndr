@@ -4,9 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-astro-float = "0.9.4"
 image = "0.25.5"
-num = "0.4.3"
 rayon = "1.10.0"
+rug = { version = "1.26.1", features = ["serde"] }
 serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
