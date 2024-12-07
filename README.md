@@ -6,6 +6,8 @@ It includes different fractal kinds among which the Mandelbrot set and a (potent
 
 One of the available coloring modes is cumulative histogram coloring (which was used to render the [presets](#preset-renders)). In the future I would like to add more modes and improve the current ones.
 
+It also features oversampling to reduce artifact pixels.
+
 # How to use
 
 Create a json file that must have the following structure:
