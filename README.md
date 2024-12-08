@@ -26,7 +26,7 @@ Create a json file that with the following structure:
   // change max iteration count
   "max_iter": 80000,
   // (optional) takes multiple samples per pixel to improve image quality
-  "supersampling": 16,
+  "supersampling": 4,
   // this is the fractal kind (see presets)
   "fractal_kind": ...,
   // cumulative histogram recommended
