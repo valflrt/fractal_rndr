@@ -1,5 +1,6 @@
 mod coloring;
 mod fractal_kind;
+mod sampling;
 
 use std::{
     env,
@@ -10,9 +11,10 @@ use std::{
     time::Instant,
 };
 
-use image::{ImageBuffer, Rgb};
+use image::{Rgb, RgbImage};
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use sampling::get_sampling_points_spiral;
 use serde::{Deserialize, Serialize};
 
 use coloring::{color_mapping, compute_histogram, cumulate_histogram, ColoringMode};
@@ -50,10 +52,6 @@ fn main() {
                     fractal_kind,
                     coloring_mode,
                 }) => {
-                    if supersampling.is_some_and(|s| s < 2 || s > 16 || s % 2 == 1) {
-                        panic!("supersampling should be an even integer in range (2, 16)");
-                    };
-
                     let aspect_ratio = img_width as f64 / img_height as f64;
 
                     let width = zoom;
@@ -63,7 +61,31 @@ fn main() {
                     // axis flipped)
                     let y_min = -center_y - height / 2.;
 
-                    let mut img = ImageBuffer::new(img_width, img_height);
+                    // init image
+
+                    let mut img = RgbImage::new(img_width, img_height);
+
+                    // sampling
+
+                    let sampling_points = supersampling.map(|s| get_sampling_points_spiral(s));
+
+                    // // preview sampling points
+                    // if let Some(points) = &sampling_points {
+                    //     let size = 400;
+                    //     let mut sampling_points = RgbImage::new(size, size);
+
+                    //     for &(x, y) in points {
+                    //         sampling_points.put_pixel(
+                    //             (size as f64 / 2. + 50. * x) as u32,
+                    //             (size as f64 / 2. + 50. * y) as u32,
+                    //             Rgb([255, 255, 255]),
+                    //         );
+                    //     }
+
+                    //     sampling_points.save("pattern.png").unwrap();
+                    // };
+
+                    // progress
 
                     let start = Instant::now();
 
@@ -76,19 +98,15 @@ fn main() {
                         .flat_map(|y| (0..img_width).map(move |x| (x, y)))
                         .par_bridge()
                         .map(|(x, y)| {
-                            let real = x_min + (x as f64 / img_width as f64) * width;
-                            let imag = y_min + (y as f64 / img_height as f64) * height;
-                            let c = Complex::new(real, imag);
+                            let re = x_min + (x as f64 / img_width as f64) * width;
+                            let im = y_min + (y as f64 / img_height as f64) * height;
+                            let c = Complex::new(re, im);
 
                             let (mut iterations, _) = fractal_kind.get_pixel(c, max_iter);
 
-                            if let Some(s) = supersampling {
-                                let (weighted_iteration_sum, weights_sum) = (0..=s)
-                                    .flat_map(|j| (0..=s).map(move |i| (i, j)))
-                                    .fold((0., 0.), |acc, (i, j)| {
-                                        let dx = 2. * i as f64 / s as f64;
-                                        let dy = 2. * j as f64 / s as f64;
-
+                            if let Some(points) = &sampling_points {
+                                let (weighted_iteration_sum, weights_sum) =
+                                    points.iter().fold((0., 0.), |acc, &(dx, dy)| {
                                         let re =
                                             x_min + ((x as f64 + dx) / img_width as f64) * width;
                                         let im =
@@ -97,9 +115,8 @@ fn main() {
                                         let (iter, _) =
                                             fractal_kind.get_pixel(Complex::new(re, im), max_iter);
 
-                                        // change this assign points a weight
                                         let weight = 1.;
-                                        (acc.0 + iter as f64 * weight, acc.1 + weight)
+                                        (acc.0 + iter as f64, acc.1 + weight)
                                     });
 
                                 iterations += (weighted_iteration_sum / weights_sum) as u32;
