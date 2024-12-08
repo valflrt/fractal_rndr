@@ -26,7 +26,7 @@ Create a json file that with the following structure:
   // change max iteration count
   "max_iter": 80000,
   // (optional) takes multiple samples per pixel to improve image quality
-  "supersampling": 4,
+  "supersampling": 32,
   // this is the fractal kind (see presets)
   "fractal_kind": ...,
   // cumulative histogram recommended
@@ -50,7 +50,6 @@ alternatively, if you have rust installed and downloaded this repository:
 ```
 cargo run -r -- fractal.json fractal.png
 ```
-
 
 > [!NOTE]
 >
