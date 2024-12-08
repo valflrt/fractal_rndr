@@ -1,7 +1,7 @@
-use num::Complex;
+use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum FractalKind {
     Mandelbrot,
     SecondDegreeWithGrowingExponent,

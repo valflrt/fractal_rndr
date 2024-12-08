@@ -11,7 +11,7 @@ use std::{
 };
 
 use image::{ImageBuffer, Rgb};
-use num::complex::Complex;
+use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
@@ -50,8 +50,8 @@ fn main() {
                     fractal_kind,
                     coloring_mode,
                 }) => {
-                    if supersampling.is_some_and(|s| s == 0 || s > 256) {
-                        panic!("supersampling should be between 1 and 256");
+                    if supersampling.is_some_and(|s| s < 2 || s > 16 || s % 2 == 1) {
+                        panic!("supersampling should be an even integer in range (2, 16)");
                     };
 
                     let aspect_ratio = img_width as f64 / img_height as f64;
@@ -59,9 +59,9 @@ fn main() {
                     let width = zoom;
                     let height = width / aspect_ratio;
                     let x_min = center_x - width / 2.;
-                    let x_max = center_x + width / 2.;
-                    let y_min = center_y - height / 2.;
-                    let y_max = center_y + height / 2.;
+                    // -center_y to match complex number representation (vertical
+                    // axis flipped)
+                    let y_min = -center_y - height / 2.;
 
                     let mut img = ImageBuffer::new(img_width, img_height);
 
@@ -76,32 +76,30 @@ fn main() {
                         .flat_map(|y| (0..img_width).map(move |x| (x, y)))
                         .par_bridge()
                         .map(|(x, y)| {
-                            let real = x_min + (x as f64 / img_width as f64) * (x_max - x_min);
-                            let imag = y_min + (y as f64 / img_height as f64) * (y_max - y_min);
+                            let real = x_min + (x as f64 / img_width as f64) * width;
+                            let imag = y_min + (y as f64 / img_height as f64) * height;
                             let c = Complex::new(real, imag);
 
                             let (mut iterations, _) = fractal_kind.get_pixel(c, max_iter);
 
                             if let Some(s) = supersampling {
-                                if s > 0 {
-                                    iterations += (0..s).fold(0, |acc, _| {
-                                        let dx = fastrand::f64() - 0.5;
-                                        let dy = fastrand::f64() - 0.5;
+                                iterations += (0..=s)
+                                    .flat_map(|j| (0..=s).map(move |i| (i, j)))
+                                    .fold(0, |acc, (i, j)| {
+                                        let dx = 2. * i as f64 / s as f64;
+                                        let dy = 2. * j as f64 / s as f64;
 
-                                        let real = x_min
-                                            + ((x as f64 + dx) / img_width as f64)
-                                                * (x_max - x_min);
-                                        let imag = y_min
-                                            + ((y as f64 + dy) / img_height as f64)
-                                                * (y_max - y_min);
+                                        let real =
+                                            x_min + ((x as f64 + dx) / img_width as f64) * width;
+                                        let imag =
+                                            y_min + ((y as f64 + dy) / img_height as f64) * height;
                                         let c = Complex::new(real, imag);
 
                                         let (iter, _) = fractal_kind.get_pixel(c, max_iter);
 
                                         acc + iter
                                     });
-                                    iterations /= s + 1;
-                                }
+                                iterations /= s * s + 1;
                             };
 
                             // using atomic::Ordering::Relaxed
