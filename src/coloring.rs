@@ -32,37 +32,44 @@ pub fn cumulate_histogram(histogram: Vec<u32>, max_iter: u32) -> Vec<f64> {
     cumulative
 }
 
-const GRADIENT_LENGTH: usize = 8;
-const GRADIENT_VALUES: [f64; GRADIENT_LENGTH] = [0., 0.10, 0.25, 0.4, 0.55, 0.7, 0.85, 0.95];
-const GRADIENT_COLORS: [Rgb<u8>; GRADIENT_LENGTH] = [
-    Rgb([10, 2, 20]),
-    Rgb([200, 40, 230]),
-    Rgb([20, 160, 230]),
-    Rgb([60, 230, 80]),
-    Rgb([255, 230, 20]),
-    Rgb([255, 120, 20]),
-    Rgb([255, 40, 60]),
-    Rgb([2, 0, 4]),
+const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
+    (0., [10, 2, 20]),
+    (0.1, [200, 40, 230]),
+    (0.25, [20, 160, 230]),
+    (0.4, [60, 230, 80]),
+    (0.55, [255, 230, 20]),
+    (0.7, [255, 120, 20]),
+    (0.85, [255, 40, 60]),
+    (0.95, [2, 0, 4]),
 ];
 
-pub fn color_mapping(t: f64) -> Rgb<u8> {
-    if t <= GRADIENT_VALUES[0] {
-        GRADIENT_COLORS[0]
-    } else if t >= GRADIENT_VALUES[GRADIENT_LENGTH - 1] {
-        GRADIENT_COLORS[GRADIENT_LENGTH - 1]
-    } else {
-        for i in 0..GRADIENT_LENGTH {
-            if GRADIENT_VALUES[i] <= t && t <= GRADIENT_VALUES[i + 1] {
-                let ratio =
-                    (t - GRADIENT_VALUES[i]) / (GRADIENT_VALUES[i + 1] - GRADIENT_VALUES[i]);
-                let Rgb([r1, g1, b1]) = GRADIENT_COLORS[i];
-                let Rgb([r2, g2, b2]) = GRADIENT_COLORS[i + 1];
-                let r = (r1 as f64 * (1. - ratio) + r2 as f64 * ratio).clamp(0., 255.) as u8;
-                let g = (g1 as f64 * (1. - ratio) + g2 as f64 * ratio).clamp(0., 255.) as u8;
-                let b = (b1 as f64 * (1. - ratio) + b2 as f64 * ratio).clamp(0., 255.) as u8;
-                return Rgb([r, g, b]);
+pub fn color_mapping(t: f64, custom_gradient: &Option<Vec<(f64, [u8; 3])>>) -> Rgb<u8> {
+    fn map(t: f64, gradient: &Vec<(f64, [u8; 3])>) -> Rgb<u8> {
+        let first = gradient[0];
+        let last = gradient.last().unwrap();
+        if t <= first.0 {
+            Rgb(first.1)
+        } else if t >= last.0 {
+            Rgb(last.1)
+        } else {
+            for i in 0..gradient.len() {
+                if gradient[i].0 <= t && t <= gradient[i + 1].0 {
+                    let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
+                    let [r1, g1, b1] = gradient[i].1;
+                    let [r2, g2, b2] = gradient[i + 1].1;
+                    let r = (r1 as f64 * (1. - ratio) + r2 as f64 * ratio).clamp(0., 255.) as u8;
+                    let g = (g1 as f64 * (1. - ratio) + g2 as f64 * ratio).clamp(0., 255.) as u8;
+                    let b = (b1 as f64 * (1. - ratio) + b2 as f64 * ratio).clamp(0., 255.) as u8;
+                    return Rgb([r, g, b]);
+                }
             }
+            Rgb(last.1)
         }
-        GRADIENT_COLORS[GRADIENT_LENGTH - 1]
+    }
+
+    if let Some(g) = custom_gradient {
+        map(t, g)
+    } else {
+        map(t, &DEFAULT_GRADIENT.to_vec())
     }
 }

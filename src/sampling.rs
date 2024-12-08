@@ -1,6 +1,6 @@
 use std::f64::consts::TAU;
 
-pub fn get_sampling_points_spiral(s: u32) -> Vec<(f64, f64)> {
+pub fn spiral_sampling_points(s: u32) -> Vec<(f64, f64)> {
     const R: f64 = 1.5;
     const MEMBERS: u32 = 8;
     const BASE_ANGLE: f64 = TAU / MEMBERS as f64;

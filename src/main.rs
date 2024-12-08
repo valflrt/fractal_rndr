@@ -14,7 +14,7 @@ use std::{
 use image::{Rgb, RgbImage};
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use sampling::get_sampling_points_spiral;
+use sampling::spiral_sampling_points;
 use serde::{Deserialize, Serialize};
 
 use coloring::{color_mapping, compute_histogram, cumulate_histogram, ColoringMode};
@@ -31,6 +31,8 @@ struct FractalParams {
     supersampling: Option<u32>,
     fractal_kind: FractalKind,
     coloring_mode: ColoringMode,
+    custom_gradient: Option<Vec<(f64, [u8; 3])>>,
+    display_gradient: Option<bool>,
 }
 
 fn main() {
@@ -51,6 +53,8 @@ fn main() {
                     supersampling,
                     fractal_kind,
                     coloring_mode,
+                    custom_gradient,
+                    display_gradient,
                 }) => {
                     let aspect_ratio = img_width as f64 / img_height as f64;
 
@@ -67,7 +71,7 @@ fn main() {
 
                     // sampling
 
-                    let sampling_points = supersampling.map(|s| get_sampling_points_spiral(s));
+                    let sampling_points = supersampling.map(|s| spiral_sampling_points(s));
 
                     // // preview sampling points
                     // if let Some(points) = &sampling_points {
@@ -164,7 +168,10 @@ fn main() {
                                 img.put_pixel(
                                     x,
                                     y,
-                                    color_mapping(iterations as f64 / max_iter as f64),
+                                    color_mapping(
+                                        iterations as f64 / max_iter as f64,
+                                        &custom_gradient,
+                                    ),
                                 );
                             }
                         }
@@ -173,7 +180,10 @@ fn main() {
                                 img.put_pixel(
                                     x,
                                     y,
-                                    color_mapping((iterations as f64 / max_iter as f64).powi(2)),
+                                    color_mapping(
+                                        (iterations as f64 / max_iter as f64).powi(2),
+                                        &custom_gradient,
+                                    ),
                                 );
                             }
                         }
@@ -190,7 +200,7 @@ fn main() {
 
                             for (x, y, iterations) in pixel_values {
                                 let t = (iterations - min) as f64 / (max - min) as f64;
-                                img.put_pixel(x, y, color_mapping(t));
+                                img.put_pixel(x, y, color_mapping(t, &custom_gradient));
                             }
                         }
                         ColoringMode::CumulativeHistogram => {
@@ -204,11 +214,31 @@ fn main() {
                                     y,
                                     color_mapping(
                                         cumulative_histogram[iterations as usize].powi(12),
+                                        &custom_gradient,
                                     ),
                                 );
                             }
                         }
                     };
+
+                    if let Some(true) = display_gradient {
+                        const GRADIENT_HEIGHT: u32 = 8;
+                        const GRADIENT_WIDTH: u32 = 64;
+                        const OFFSET: u32 = 8;
+
+                        for j in 0..GRADIENT_HEIGHT {
+                            for i in 0..GRADIENT_WIDTH {
+                                img.put_pixel(
+                                    img_width - GRADIENT_WIDTH - OFFSET + i,
+                                    img_height - GRADIENT_HEIGHT - OFFSET + j,
+                                    color_mapping(
+                                        i as f64 / GRADIENT_WIDTH as f64,
+                                        &custom_gradient,
+                                    ),
+                                );
+                            }
+                        }
+                    }
 
                     let path = PathBuf::from(&args[2]);
                     img.save(&path).expect("failed to save fractal image");
