@@ -83,23 +83,26 @@ fn main() {
                             let (mut iterations, _) = fractal_kind.get_pixel(c, max_iter);
 
                             if let Some(s) = supersampling {
-                                iterations += (0..=s)
+                                let (weighted_iteration_sum, weights_sum) = (0..=s)
                                     .flat_map(|j| (0..=s).map(move |i| (i, j)))
-                                    .fold(0, |acc, (i, j)| {
+                                    .fold((0., 0.), |acc, (i, j)| {
                                         let dx = 2. * i as f64 / s as f64;
                                         let dy = 2. * j as f64 / s as f64;
 
-                                        let real =
+                                        let re =
                                             x_min + ((x as f64 + dx) / img_width as f64) * width;
-                                        let imag =
+                                        let im =
                                             y_min + ((y as f64 + dy) / img_height as f64) * height;
-                                        let c = Complex::new(real, imag);
 
-                                        let (iter, _) = fractal_kind.get_pixel(c, max_iter);
+                                        let (iter, _) =
+                                            fractal_kind.get_pixel(Complex::new(re, im), max_iter);
 
-                                        acc + iter
+                                        // change this assign points a weight
+                                        let weight = 1.;
+                                        (acc.0 + iter as f64 * weight, acc.1 + weight)
                                     });
-                                iterations /= s * s + 1;
+
+                                iterations += (weighted_iteration_sum / weights_sum) as u32;
                             };
 
                             // using atomic::Ordering::Relaxed
