@@ -1,11 +1,11 @@
 {
-  "img_width": 4320,
-  "img_height": 4320,
+  "img_width": 2160,
+  "img_height": 2160,
   "zoom": 0.00000055,
   "center_x": 0.00009023,
   "center_y": -0.000001995,
   "max_iter": 80000,
-  "supersampling": 4,
   "fractal_kind": "ThirdDegreeWithGrowingExponent",
-  "coloring_mode": "CumulativeHistogram"
+  "coloring_mode": "CumulativeHistogram",
+  "sampling": "Ultra"
 }

@@ -4,32 +4,22 @@ This is a very simple program used to render fractals to images using a paramete
 
 It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree recursive pattern used to draw the Mandelbrot set..
 
-One of the available coloring modes is cumulative histogram coloring (which was used to render the [presets](#preset-renders)). In the future I would like to add more modes and improve the current ones.
-
-It also features oversampling to reduce artifact pixels.
-
 # How to use
 
-Create a json file that with the following structure:
+First, download the executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+
+Next, create a json file that with the following structure (see [parameter file reference](#parameter-file-reference)):
 
 ```jsonc
 {
-  // make the image as big as you want (not too big tho)
   "img_width": ...,
   "img_height": ...,
-  // zoom into the fractal by decreasing this
-  "zoom": 1.,
-  // change this...
+  "zoom": 1.0,
   "center_x": 0.0,
-  // ... and this to change the render position
   "center_y": 0.0,
-  // change max iteration count
   "max_iter": 80000,
-  // (optional) takes multiple samples per pixel to improve image quality
-  "supersampling": 4,
-  // this is the fractal kind (see presets)
+  "sampling": "Medium",
   "fractal_kind": ...,
-  // cumulative histogram recommended
   "coloring_mode": "CumulativeHistogram"
 }
 ```
@@ -37,12 +27,10 @@ Create a json file that with the following structure:
 > [!WARNING]
 > I added comments to explain each parameter, but they shouldn't appear in the file because json doesn't support comments by default.
 
-Next, you need to download the executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
-
-Then, in order to render your fractal, run the following command (from the directory in which the executable is):
+Then, in order to render your fractal, run the following command:
 
 ```
-./fractal_renderer fractal.json fractal.png
+./fractal_renderer path/to/param_file.json path/to/output_image.png
 ```
 
 alternatively, if you have rust installed and downloaded this repository:
@@ -52,9 +40,7 @@ cargo run -r -- fractal.json fractal.png
 ```
 
 > [!NOTE]
->
-> - You can change the file names
-> - Supported image formats are png and jpg (extension used to guess image format)
+> Supported image formats are png and jpg (extension used to guess image format)
 
 # Preset renders
 
@@ -83,3 +69,65 @@ These are preset renders I find pretty, you can get their json parameters files 
 ### [datgdv.json](./presets/datgdv.json)
 
 ![datgdv.png](./presets/datgdv.png)
+
+# Parameter file reference
+
+- `img_width` and `img_height`: Set image width and height (integers, in pixel).
+
+- `zoom`: Set zoom (float).
+
+- `center_x` and `center_y`: Set the position of the center of the render area (floats).
+
+  > [!NOTE]
+  > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
+
+- `max_iter`: Set the maximum iteration count (around 80000 recommended).
+
+- `fractal_kind`: Set the fractal you want to draw. Available options are:
+
+  - `"Mandelbrot"`
+  - `"SecondDegreeWithGrowingExponent"`
+  - `"ThirdDegreeWithGrowingExponent"`
+  - `{ "NthDegreeWithGrowingExponent": n }`
+
+- `coloring_mode`: _(optional)_ Set the way pixels are colored. Available options are:
+
+  - `"BlackAndWhite"`: Draws pixels black if the maximum iteration count has been reached, otherwise white.
+  - `"Linear"`: Maps the iteration count for a pixel to a value between 0 and 1 by dividing it by the maximum iteration count and uses this value to pick a color from the gradient.
+  - `"Squared"`: Similar to `"Linear"`, but the value between 0 and 1 is squared before picking a color from the gradient.
+  - `"LinearMinMax"`: Maps the iteration count for a pixel to a value between 0 and 1, where 0 corresponds to the minimum iteration count and 1 corresponds to the maximum iteration count in the entire image.
+  - `"CumulativeHistogram"` _(default)_ More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
+
+- `sampling`: _(optional)_ Set sampling level: higher values take more samples and (hopefully) give a smoother result. This is not currently working very well. Available options are:
+
+  - `"Single"`: Takes only one sample per pixel.
+  - `"Low"`: _(default)_
+  - `"Medium"`
+  - `"High"`
+  - `"Ultra"`
+  - `"Extreme"`
+
+- `custom_gradient`: _(optional)_ Set a custom gradient. This is an array of array of the form `[t, [r, g, b]]` where `t` is a float between 0 and 1 and `r`, `g`, `b` the color at that point in the gradient. Colors in between are interpolated.
+
+  Example:
+
+  ```
+  {
+    ...
+    "custom_gradient": [
+      [0., [10, 2, 20]],
+      [0.1, [200, 40, 230]],
+      [0.25, [20, 160, 230]],
+      [0.4, [60, 230, 80]],
+      [0.55, [255, 230, 20]],
+      [0.7, [255, 120, 20]],
+      [0.85, [255, 40, 60]],
+      [0.95, [2, 0, 4]]
+    ]
+    ...
+  }
+  ```
+
+- `dev_options`: _(optional)_ For development purposes.
+  - `save_sampling_pattern`: _(optional)_ Save the sampling pattern as an image.
+  - `display_gradient`: _(optional)_ Draw the gradient used for coloring in the bottom right corner of the image.

@@ -1,16 +1,17 @@
 use image::Rgb;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub enum ColoringMode {
     BlackAndWhite,
     Linear,
     Squared,
     LinearMinMax,
+    #[default]
     CumulativeHistogram,
 }
 
-pub fn compute_histogram(pixel_values: &[(u32, u32, u32)], max_iter: u32) -> Vec<u32> {
+pub fn compute_histogram(pixel_values: &[(u32, u32, f64)], max_iter: u32) -> Vec<u32> {
     let mut histogram = vec![0; max_iter as usize + 1];
 
     for &(_, _, iteration_count) in pixel_values.iter() {
@@ -43,8 +44,8 @@ const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
     (0.95, [2, 0, 4]),
 ];
 
-pub fn color_mapping(t: f64, custom_gradient: &Option<Vec<(f64, [u8; 3])>>) -> Rgb<u8> {
-    fn map(t: f64, gradient: &Vec<(f64, [u8; 3])>) -> Rgb<u8> {
+pub fn color_mapping(t: f64, custom_gradient: Option<&Vec<(f64, [u8; 3])>>) -> Rgb<u8> {
+    fn map(t: f64, gradient: &[(f64, [u8; 3])]) -> Rgb<u8> {
         let first = gradient[0];
         let last = gradient.last().unwrap();
         if t <= first.0 {
@@ -70,6 +71,6 @@ pub fn color_mapping(t: f64, custom_gradient: &Option<Vec<(f64, [u8; 3])>>) -> R
     if let Some(g) = custom_gradient {
         map(t, g)
     } else {
-        map(t, &DEFAULT_GRADIENT.to_vec())
+        map(t, DEFAULT_GRADIENT.as_ref())
     }
 }
