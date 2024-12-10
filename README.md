@@ -6,7 +6,7 @@ It includes different fractal kinds among which the Mandelbrot set and a (potent
 
 # How to use
 
-First, download the executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+First, download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
 Next, create a json file that with the following structure (see [parameter file reference](#parameter-file-reference)):
 
@@ -33,14 +33,14 @@ Then, in order to render your fractal, run the following command:
 ./fractal_renderer path/to/param_file.json path/to/output_image.png
 ```
 
-alternatively, if you have rust installed and downloaded this repository:
+> [!NOTE]
+> Supported image formats are png and jpg (extension used to guess image format)
+
+Alternatively, if you have rust installed and downloaded this repository:
 
 ```
 cargo run -r -- fractal.json fractal.png
 ```
-
-> [!NOTE]
-> Supported image formats are png and jpg (extension used to guess image format)
 
 # Preset renders
 
