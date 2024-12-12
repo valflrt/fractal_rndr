@@ -11,10 +11,10 @@ pub enum ColoringMode {
     CumulativeHistogram,
 }
 
-pub fn compute_histogram(pixel_values: &[(u32, u32, f64)], max_iter: u32) -> Vec<u32> {
+pub fn compute_histogram(iter_values: &[f64], max_iter: u32) -> Vec<u32> {
     let mut histogram = vec![0; max_iter as usize + 1];
 
-    for &(_, _, iteration_count) in pixel_values.iter() {
+    for &iteration_count in iter_values.iter() {
         histogram[iteration_count as usize] += 1;
     }
 

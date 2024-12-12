@@ -33,7 +33,7 @@ pub fn spiral_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<((f6
     };
 
     let mut weight_sum = 0.;
-    let mut points = (0..n)
+    let mut points = (1..n)
         .map(|i| (i as f64 / PHI % 1., i as f64 / (n - 1) as f64))
         .map(|(x, y)| {
             let r = y;
