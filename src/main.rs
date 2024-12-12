@@ -1,6 +1,6 @@
 mod coloring;
 mod error;
-mod fractal_kind;
+mod fractal;
 mod sampling;
 
 use std::{
@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 
 use coloring::{color_mapping, compute_histogram, cumulate_histogram, ColoringMode};
 use error::{ErrorKind, Result};
-use fractal_kind::FractalKind;
+use fractal::Fractal;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct FractalParams {
@@ -33,7 +33,7 @@ struct FractalParams {
 
     max_iter: u32,
 
-    fractal_kind: FractalKind,
+    fractal: Fractal,
 
     coloring_mode: Option<ColoringMode>,
     sampling: Option<SamplingLevel>,
@@ -66,7 +66,7 @@ fn main() -> Result<()> {
                 center_y,
                 max_iter,
                 sampling: sampling_mode,
-                fractal_kind,
+                fractal,
                 coloring_mode,
                 custom_gradient,
                 dev_options,
@@ -118,11 +118,14 @@ fn main() -> Result<()> {
                         let re = x_min + width * (x + dx) / img_width as f64;
                         let im = y_min + height * (y + dy) / img_height as f64;
 
-                        let (iter, _) = fractal_kind.get_pixel(Complex::new(re, im), max_iter);
+                        let (iter, _) = fractal.get_pixel(Complex::new(re, im), max_iter);
 
                         acc + iter as f64 * weight
                     });
 
+                    (i, j, iterations)
+                })
+                .map(|v| {
                     // Using atomic::Ordering::Relaxed because we don't really
                     // care about the order `progress` is updated. As long as it
                     // is updated it should be fine :)
@@ -143,7 +146,7 @@ fn main() -> Result<()> {
                             .unwrap();
                     }
 
-                    (i, j, iterations)
+                    v
                 })
                 .collect::<Vec<_>>();
 
@@ -153,10 +156,10 @@ fn main() -> Result<()> {
 
             match coloring_mode.unwrap_or_default() {
                 ColoringMode::BlackAndWhite => {
-                    for (x, y, iterations) in pixel_values {
+                    for (i, j, iterations) in pixel_values {
                         output_image.put_pixel(
-                            x,
-                            y,
+                            i as u32,
+                            j as u32,
                             if iterations as u32 == max_iter {
                                 Rgb([0, 0, 0])
                             } else {
@@ -166,10 +169,10 @@ fn main() -> Result<()> {
                     }
                 }
                 ColoringMode::Linear => {
-                    for (x, y, iterations) in pixel_values {
+                    for (i, j, iterations) in pixel_values {
                         output_image.put_pixel(
-                            x,
-                            y,
+                            i as u32,
+                            j as u32,
                             color_mapping(
                                 iterations as f64 / max_iter as f64,
                                 custom_gradient.as_ref(),
@@ -178,10 +181,10 @@ fn main() -> Result<()> {
                     }
                 }
                 ColoringMode::Squared => {
-                    for (x, y, iterations) in pixel_values {
+                    for (i, j, iterations) in pixel_values {
                         output_image.put_pixel(
-                            x,
-                            y,
+                            i as u32,
+                            j as u32,
                             color_mapping(
                                 (iterations as f64 / max_iter as f64).powi(2),
                                 custom_gradient.as_ref(),
@@ -208,18 +211,22 @@ fn main() -> Result<()> {
                         },
                     );
 
-                    for (x, y, iterations) in pixel_values {
+                    for (i, j, iterations) in pixel_values {
                         let t = (iterations - min) as f64 / (max - min) as f64;
-                        output_image.put_pixel(x, y, color_mapping(t, custom_gradient.as_ref()));
+                        output_image.put_pixel(
+                            i as u32,
+                            j as u32,
+                            color_mapping(t, custom_gradient.as_ref()),
+                        );
                     }
                 }
                 ColoringMode::CumulativeHistogram => {
                     let cumulative_histogram =
                         cumulate_histogram(compute_histogram(&pixel_values, max_iter), max_iter);
-                    for (x, y, iterations) in pixel_values {
+                    for (i, j, iterations) in pixel_values {
                         output_image.put_pixel(
-                            x,
-                            y,
+                            i as u32,
+                            j as u32,
                             color_mapping(
                                 cumulative_histogram[iterations as usize].powi(12),
                                 custom_gradient.as_ref(),

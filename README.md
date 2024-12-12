@@ -19,7 +19,7 @@ Next, create a json file that with the following structure (see [parameter file 
   "center_y": 0.0,
   "max_iter": 80000,
   "sampling": "Medium",
-  "fractal_kind": ...,
+  "fractal": ...,
   "coloring_mode": "CumulativeHistogram"
 }
 ```

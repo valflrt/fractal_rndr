@@ -2,18 +2,18 @@ use num_complex::Complex;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum FractalKind {
+pub enum Fractal {
     Mandelbrot,
     SecondDegreeWithGrowingExponent,
     ThirdDegreeWithGrowingExponent,
     NthDegreeWithGrowingExponent(usize),
 }
 
-impl FractalKind {
+impl Fractal {
     /// Outputs (iteration_count, escape_z)
     pub fn get_pixel(&self, c: Complex<f64>, max_iter: u32) -> (u32, Complex<f64>) {
         match self {
-            FractalKind::Mandelbrot => {
+            Fractal::Mandelbrot => {
                 let mut z = Complex::new(0., 0.);
 
                 let mut i = 0;
@@ -24,7 +24,7 @@ impl FractalKind {
 
                 (i, z)
             }
-            FractalKind::SecondDegreeWithGrowingExponent => {
+            Fractal::SecondDegreeWithGrowingExponent => {
                 let mut z0 = Complex::new(0., 0.);
                 let mut z1 = Complex::new(0., 0.);
 
@@ -39,7 +39,7 @@ impl FractalKind {
 
                 (i, z1)
             }
-            FractalKind::ThirdDegreeWithGrowingExponent => {
+            Fractal::ThirdDegreeWithGrowingExponent => {
                 let mut z0 = Complex::new(0., 0.);
                 let mut z1 = Complex::new(0., 0.);
                 let mut z2 = Complex::new(0., 0.);
@@ -56,7 +56,7 @@ impl FractalKind {
 
                 (i, z2)
             }
-            FractalKind::NthDegreeWithGrowingExponent(n) => {
+            Fractal::NthDegreeWithGrowingExponent(n) => {
                 let n = *n;
                 let mut z = vec![Complex::new(0., 0.); n];
 
