@@ -130,7 +130,7 @@ fn main() -> Result<()> {
 
                             let (iter, _) = fractal.get_pixel(Complex::new(re, im), max_iter);
 
-                            iter
+                            ((dx, dy), iter)
                         })
                         .collect::<Vec<_>>();
 
@@ -176,7 +176,7 @@ fn main() -> Result<()> {
             let mut max_iter = 0;
             // let mut min_iter = 0;
             for (_, pixel_samples) in &samples {
-                for &sample in pixel_samples {
+                for &(_, sample) in pixel_samples {
                     max_iter = sample.max(max_iter);
                     // min_iter = sample.min(max_iter);
                 }
@@ -185,10 +185,14 @@ fn main() -> Result<()> {
             // Fill `samples_image`
 
             for ((i, j), pixel_samples) in &samples {
+                let _min_iter = 0;
                 let filtered_samples = pixel_samples
                     .iter()
                     .copied()
-                    .filter(|&v| v < 99 * max_iter / 100)
+                    .filter_map(|(d, v)| {
+                        (v < 99 * max_iter / 100)
+                            .then_some((d, (v - _min_iter) as f64 / (max_iter - _min_iter) as f64))
+                    })
                     .collect::<Vec<_>>();
 
                 samples_image
@@ -201,50 +205,48 @@ fn main() -> Result<()> {
             let mut processed_image = Mat::filled_with(0., img_width as usize, img_height as usize);
 
             // How far the filter "reaches" in terms of spatial extent.
-            const SPATIAL_SIGMA: f64 = 1.;
+            const SPATIAL_SIGMA: f64 = 1.05;
+            const SPATIAL_SIGMA_SQR: f64 = SPATIAL_SIGMA * SPATIAL_SIGMA;
             // How tolerant the filter is to differences in values.
-            const RANGE_SIGMA: f64 = 100.;
+            const RANGE_SIGMA: f64 = 0.5;
+            const RANGE_SIGMA_SQR: f64 = RANGE_SIGMA * RANGE_SIGMA;
 
             // Normalize iteration count from range (min_iter, max_iter)
             // to (0, 1).
-            #[inline]
-            fn normalize_sample(iter: u32, max_iter: u32) -> f64 {
-                let _min_iter = 0;
-                (iter - _min_iter) as f64 / (max_iter - _min_iter) as f64
-            }
 
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     // Note: the way sample vectors are constructed makes the
                     // first element always the one in the center of the pixel.
-                    let center_sample =
-                        normalize_sample(samples_image.get((i, j)).unwrap()[0], max_iter);
+                    let center_samples = samples_image.get((i, j)).unwrap();
+                    let center_value = center_samples.iter().map(|&(_, v)| v).sum::<f64>()
+                        / center_samples.len() as f64;
 
                     // see https://en.wikipedia.org/wiki/Bilateral_filter#Definition
                     let mut numerator = 0.;
                     let mut denominator = 0.;
 
-                    // The kernel has to be only a 3 by 3 grid because otherwise,
-                    // it picks samples from too far away in the picture. The
-                    // samples from neighboring pixels are enough.
-                    for dj in -1..1 {
-                        for di in -1..1 {
+                    const KERNEL_SIDE: isize = 2;
+                    for dj in -KERNEL_SIDE..KERNEL_SIDE {
+                        for di in -KERNEL_SIDE..KERNEL_SIDE {
                             let ii = i.wrapping_add_signed(di).min(img_width as usize - 1);
                             let jj = j.wrapping_add_signed(dj).min(img_height as usize - 1);
 
                             let other_samples = samples_image.get((ii, jj)).unwrap();
 
-                            for (k, &other_sample) in other_samples.iter().enumerate() {
-                                let other_sample = normalize_sample(other_sample, max_iter);
+                            for (k, &((dx, dy), other_value)) in other_samples.iter().enumerate() {
+                                let dx = di as f64 + dx;
+                                let dy = dj as f64 + dy;
 
                                 // Skip center_sample
                                 if di != 0 && dj != 0 && k != 0 {
                                     let w = gaussian(
-                                        (center_sample - other_sample).abs() / RANGE_SIGMA
-                                            + ((di * di + dj * dj) as f64).sqrt() / SPATIAL_SIGMA,
+                                        (center_value - other_value).abs() / RANGE_SIGMA_SQR
+                                            + ((dx * dx + dy * dy) as f64).sqrt()
+                                                / SPATIAL_SIGMA_SQR,
                                     );
 
-                                    numerator += w * other_sample;
+                                    numerator += w * other_value;
                                     denominator += w;
                                 }
                             }

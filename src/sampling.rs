@@ -1,5 +1,3 @@
-use std::f64::consts::TAU;
-
 use image::{Rgb, RgbImage};
 use serde::{Deserialize, Serialize};
 
@@ -33,11 +31,12 @@ pub fn spiral_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f64
 
     (0..n)
         .map(|i| (i as f64 / PHI % 1., i as f64 / (n - 1) as f64))
-        .map(|(x, y)| {
-            let r = y;
-            let theta = TAU * x;
-            (r * R * theta.cos(), r * R * theta.sin())
-        })
+        .map(|(x, y)| (R * (2. * x - 1.), R * (2. * y - 1.)))
+        // .map(|(x, y)| {
+        //     let r = y;
+        //     let theta = TAU * x;
+        //     (r * R * theta.cos(), r * R * theta.sin())
+        // })
         .collect::<Vec<_>>()
 }
 
