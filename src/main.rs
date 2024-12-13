@@ -21,8 +21,7 @@ use sampling::{preview_sampling_points, spiral_sampling_points, SamplingLevel};
 use serde::{Deserialize, Serialize};
 
 use coloring::{
-    color_mapping, compute_histogram, cumulate_histogram, get_cumulative_histogram_value,
-    ColoringMode,
+    color_mapping, compute_histogram, cumulate_histogram, get_histogram_value, ColoringMode,
 };
 use error::{ErrorKind, Result};
 use fractal::Fractal;
@@ -55,8 +54,8 @@ struct DevOptions {
 }
 
 #[inline]
-fn gaussian(x: f64, sigma: f64) -> f64 {
-    (-x * x / (2. * sigma * sigma)).exp()
+fn gaussian(x: f64) -> f64 {
+    (-x * x).exp()
 }
 
 fn main() -> Result<()> {
@@ -116,7 +115,7 @@ fn main() -> Result<()> {
 
             // Compute escape time (number of iterations) for each pixel
 
-            let pixel_samples = (0..img_height)
+            let samples = (0..img_height)
                 .flat_map(|j| (0..img_width).map(move |i| (i, j)))
                 .par_bridge()
                 .map(|(i, j)| {
@@ -164,41 +163,62 @@ fn main() -> Result<()> {
 
             println!();
 
+            // Create samples image
+
             let mut samples_image =
                 Mat::filled_with(vec![], img_width as usize, img_height as usize);
 
+            // Get max/min iteration counts
+
+            // const KEPT_PERCENTILE: usize = 98;
+            // sorted_samples.truncate(KEPT_PERCENTILE * sorted_samples.len() / 100);
+
             let mut max_iter = 0;
-            let mut min_iter = 0;
-            for ((i, j), samples) in pixel_samples {
-                // TODO: add outliers normalization
-                for &sample in &samples {
+            // let mut min_iter = 0;
+            for (_, pixel_samples) in &samples {
+                for &sample in pixel_samples {
                     max_iter = sample.max(max_iter);
-                    min_iter = sample.min(max_iter);
+                    // min_iter = sample.min(max_iter);
                 }
+            }
+
+            // Fill `samples_image`
+
+            for ((i, j), pixel_samples) in &samples {
+                let filtered_samples = pixel_samples
+                    .iter()
+                    .copied()
+                    .filter(|&v| v < 99 * max_iter / 100)
+                    .collect::<Vec<_>>();
+
                 samples_image
-                    .set((i as usize, j as usize), samples)
+                    .set((*i as usize, *j as usize), filtered_samples)
                     .unwrap();
             }
 
+            // -> Render image from samples and using bilateral filtering.
+
             let mut processed_image = Mat::filled_with(0., img_width as usize, img_height as usize);
 
-            // Here, we apply bilateral filtering:
-
             // How far the filter "reaches" in terms of spatial extent.
-            let spatial_sigma = 5.;
+            const SPATIAL_SIGMA: f64 = 1.;
             // How tolerant the filter is to differences in values.
-            let range_sigma = 0.1;
+            const RANGE_SIGMA: f64 = 100.;
 
             // Normalize iteration count from range (min_iter, max_iter)
             // to (0, 1).
-            let normalize_sample =
-                |iter: u32| -> f64 { (iter - min_iter) as f64 / (max_iter - min_iter) as f64 };
+            #[inline]
+            fn normalize_sample(iter: u32, max_iter: u32) -> f64 {
+                let _min_iter = 0;
+                (iter - _min_iter) as f64 / (max_iter - _min_iter) as f64
+            }
 
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     // Note: the way sample vectors are constructed makes the
                     // first element always the one in the center of the pixel.
-                    let center_sample = normalize_sample(samples_image.get((i, j)).unwrap()[0]);
+                    let center_sample =
+                        normalize_sample(samples_image.get((i, j)).unwrap()[0], max_iter);
 
                     // see https://en.wikipedia.org/wiki/Bilateral_filter#Definition
                     let mut numerator = 0.;
@@ -215,17 +235,14 @@ fn main() -> Result<()> {
                             let other_samples = samples_image.get((ii, jj)).unwrap();
 
                             for (k, &other_sample) in other_samples.iter().enumerate() {
-                                let other_sample = normalize_sample(other_sample);
+                                let other_sample = normalize_sample(other_sample, max_iter);
 
                                 // Skip center_sample
                                 if di != 0 && dj != 0 && k != 0 {
-                                    let gs = gaussian(
-                                        ((di * di + dj * dj) as f64).sqrt(),
-                                        spatial_sigma,
+                                    let w = gaussian(
+                                        (center_sample - other_sample).abs() / RANGE_SIGMA
+                                            + ((di * di + dj * dj) as f64).sqrt() / SPATIAL_SIGMA,
                                     );
-                                    let gr =
-                                        gaussian((center_sample - other_sample).abs(), range_sigma);
-                                    let w = gs * gr;
 
                                     numerator += w * other_sample;
                                     denominator += w;
@@ -293,8 +310,7 @@ fn main() -> Result<()> {
                                 i as u32,
                                 j as u32,
                                 color_mapping(
-                                    get_cumulative_histogram_value(value, &cumulative_histogram)
-                                        .powi(4),
+                                    get_histogram_value(value, &cumulative_histogram).powi(12),
                                     custom_gradient.as_ref(),
                                 ),
                             );

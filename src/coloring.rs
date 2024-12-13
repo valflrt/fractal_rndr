@@ -12,15 +12,17 @@ pub enum ColoringMode {
 
 const HISTOGRAM_SIZE: usize = 100000;
 
+fn map_f64_to_histogram_index(value: f64) -> usize {
+    ((value * (HISTOGRAM_SIZE - 1) as f64) as usize).min(HISTOGRAM_SIZE - 1)
+}
+
 /// Compute an histogram from normalized values in range
 /// (0, 1).
 pub fn compute_histogram(pixel_values: &[f64]) -> Vec<u32> {
     let mut histogram = vec![0; HISTOGRAM_SIZE];
 
     for &value in pixel_values.iter() {
-        let i = (value * (HISTOGRAM_SIZE - 1) as f64) as usize;
-
-        histogram[i.min(HISTOGRAM_SIZE - 1)] += 1;
+        histogram[map_f64_to_histogram_index(value)] += 1;
     }
 
     histogram
@@ -42,9 +44,8 @@ pub fn cumulate_histogram(histogram: Vec<u32>) -> Vec<f64> {
 
 /// Get the cumulative histogram value from a normalized value
 /// in range (0, 1).
-pub fn get_cumulative_histogram_value(value: f64, cumulative_histogram: &Vec<f64>) -> f64 {
-    let i = (value * (HISTOGRAM_SIZE - 1) as f64) as usize;
-    cumulative_histogram[i.min(HISTOGRAM_SIZE - 1)]
+pub fn get_histogram_value(value: f64, cumulative_histogram: &Vec<f64>) -> f64 {
+    cumulative_histogram[map_f64_to_histogram_index(value)]
 }
 
 const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
