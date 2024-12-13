@@ -208,7 +208,7 @@ fn main() -> Result<()> {
             const SPATIAL_SIGMA: f64 = 1.05;
             const SPATIAL_SIGMA_SQR: f64 = SPATIAL_SIGMA * SPATIAL_SIGMA;
             // How tolerant the filter is to differences in values.
-            const RANGE_SIGMA: f64 = 0.5;
+            const RANGE_SIGMA: f64 = 0.3;
             const RANGE_SIGMA_SQR: f64 = RANGE_SIGMA * RANGE_SIGMA;
 
             // Normalize iteration count from range (min_iter, max_iter)

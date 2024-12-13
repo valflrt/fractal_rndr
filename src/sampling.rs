@@ -15,7 +15,7 @@ pub enum SamplingLevel {
 }
 
 pub fn spiral_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f64, f64)> {
-    const R: f64 = 1.2;
+    const R: f64 = 1.;
 
     // Maybe too precise but yes.
     const PHI: f64 = 1.618033988749895;
