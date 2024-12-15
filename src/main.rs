@@ -14,10 +14,10 @@ use std::{
 };
 
 use image::{Rgb, RgbImage};
-use mat::Mat;
+use mat::Mat2D;
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use sampling::{preview_sampling_points, spiral_sampling_points, SamplingLevel};
+use sampling::{generate_sampling_points, preview_sampling_points, SamplingLevel};
 use serde::{Deserialize, Serialize};
 
 use coloring::{
@@ -51,11 +51,6 @@ struct FractalParams {
 struct DevOptions {
     save_sampling_pattern: Option<bool>,
     display_gradient: Option<bool>,
-}
-
-#[inline]
-fn gaussian(x: f64) -> f64 {
-    (-x * x).exp()
 }
 
 fn main() -> Result<()> {
@@ -95,7 +90,7 @@ fn main() -> Result<()> {
 
             // sampling
 
-            let sampling_points = spiral_sampling_points(sampling_mode);
+            let sampling_points = generate_sampling_points(sampling_mode);
             if let Some(DevOptions {
                 save_sampling_pattern: Some(true),
                 ..
@@ -166,12 +161,9 @@ fn main() -> Result<()> {
             // Create samples image
 
             let mut samples_image =
-                Mat::filled_with(vec![], img_width as usize, img_height as usize);
+                Mat2D::filled_with(vec![], img_width as usize, img_height as usize);
 
             // Get max/min iteration counts
-
-            // const KEPT_PERCENTILE: usize = 98;
-            // sorted_samples.truncate(KEPT_PERCENTILE * sorted_samples.len() / 100);
 
             let mut max_iter = 0;
             // let mut min_iter = 0;
@@ -182,7 +174,8 @@ fn main() -> Result<()> {
                 }
             }
 
-            // Fill `samples_image`
+            // Fill `samples_image` and normalize iteration count from
+            // range (0, max_iter) to (0, 1).
 
             for ((i, j), pixel_samples) in &samples {
                 let _min_iter = 0;
@@ -200,29 +193,16 @@ fn main() -> Result<()> {
                     .unwrap();
             }
 
-            // -> Render image from samples and using bilateral filtering.
+            // Render image from samples and using bilateral filtering.
 
-            let mut processed_image = Mat::filled_with(0., img_width as usize, img_height as usize);
+            let mut processed_image =
+                Mat2D::filled_with(0., img_width as usize, img_height as usize);
 
             // How far the filter "reaches" in terms of spatial extent.
-            const SPATIAL_SIGMA: f64 = 1.05;
-            const SPATIAL_SIGMA_SQR: f64 = SPATIAL_SIGMA * SPATIAL_SIGMA;
-            // How tolerant the filter is to differences in values.
-            const RANGE_SIGMA: f64 = 0.3;
-            const RANGE_SIGMA_SQR: f64 = RANGE_SIGMA * RANGE_SIGMA;
-
-            // Normalize iteration count from range (min_iter, max_iter)
-            // to (0, 1).
+            const SPATIAL_PARAM: f64 = 0.5;
 
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
-                    // Note: the way sample vectors are constructed makes the
-                    // first element always the one in the center of the pixel.
-                    let center_samples = samples_image.get((i, j)).unwrap();
-                    let center_value = center_samples.iter().map(|&(_, v)| v).sum::<f64>()
-                        / center_samples.len() as f64;
-
-                    // see https://en.wikipedia.org/wiki/Bilateral_filter#Definition
                     let mut numerator = 0.;
                     let mut denominator = 0.;
 
@@ -238,13 +218,15 @@ fn main() -> Result<()> {
                                 let dx = di as f64 + dx;
                                 let dy = dj as f64 + dy;
 
+                                #[inline]
+                                fn kernel(x: f64) -> f64 {
+                                    (-x.abs()).exp()
+                                }
+
                                 // Skip center_sample
                                 if di != 0 && dj != 0 && k != 0 {
-                                    let w = gaussian(
-                                        (center_value - other_value).abs() / RANGE_SIGMA_SQR
-                                            + ((dx * dx + dy * dy) as f64).sqrt()
-                                                / SPATIAL_SIGMA_SQR,
-                                    );
+                                    let w =
+                                        kernel(((dx * dx + dy * dy) as f64).sqrt() / SPATIAL_PARAM);
 
                                     numerator += w * other_value;
                                     denominator += w;
