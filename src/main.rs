@@ -1,6 +1,7 @@
 mod coloring;
 mod error;
 mod fractal;
+mod mat;
 mod sampling;
 
 use std::{
@@ -13,12 +14,15 @@ use std::{
 };
 
 use image::{Rgb, RgbImage};
+use mat::Mat2D;
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use sampling::{preview_sampling_points, spiral_sampling_points, SamplingLevel};
+use sampling::{generate_sampling_points, preview_sampling_points, SamplingLevel};
 use serde::{Deserialize, Serialize};
 
-use coloring::{color_mapping, compute_histogram, cumulate_histogram, ColoringMode};
+use coloring::{
+    color_mapping, compute_histogram, cumulate_histogram, get_histogram_value, ColoringMode,
+};
 use error::{ErrorKind, Result};
 use fractal::Fractal;
 
@@ -86,7 +90,7 @@ fn main() -> Result<()> {
 
             // sampling
 
-            let sampling_points = spiral_sampling_points(sampling_mode);
+            let sampling_points = generate_sampling_points(sampling_mode);
             if let Some(DevOptions {
                 save_sampling_pattern: Some(true),
                 ..
@@ -106,24 +110,26 @@ fn main() -> Result<()> {
 
             // Compute escape time (number of iterations) for each pixel
 
-            let pixel_values = (0..img_height)
+            let samples = (0..img_height)
                 .flat_map(|j| (0..img_width).map(move |i| (i, j)))
                 .par_bridge()
                 .map(|(i, j)| {
                     let x = i as f64 + 0.5;
                     let y = j as f64 + 0.5;
 
-                    // Performs a weighted average of the iterations
-                    let iterations = sampling_points.iter().fold(0., |acc, &((dx, dy), weight)| {
-                        let re = x_min + width * (x + dx) / img_width as f64;
-                        let im = y_min + height * (y + dy) / img_height as f64;
+                    let samples = sampling_points
+                        .iter()
+                        .map(|&(dx, dy)| {
+                            let re = x_min + width * (x + dx) / img_width as f64;
+                            let im = y_min + height * (y + dy) / img_height as f64;
 
-                        let (iter, _) = fractal.get_pixel(Complex::new(re, im), max_iter);
+                            let (iter, _) = fractal.get_pixel(Complex::new(re, im), max_iter);
 
-                        acc + iter as f64 * weight
-                    });
+                            ((dx, dy), iter)
+                        })
+                        .collect::<Vec<_>>();
 
-                    (i, j, iterations)
+                    ((i, j), samples)
                 })
                 .map(|v| {
                     // Using atomic::Ordering::Relaxed because we don't really
@@ -152,86 +158,147 @@ fn main() -> Result<()> {
 
             println!();
 
+            // Create samples image
+
+            let mut samples_image =
+                Mat2D::filled_with(vec![], img_width as usize, img_height as usize);
+
+            // Get max/min iteration counts
+
+            let mut max_iter = 0;
+            // let mut min_iter = 0;
+            for (_, pixel_samples) in &samples {
+                for &(_, sample) in pixel_samples {
+                    max_iter = sample.max(max_iter);
+                    // min_iter = sample.min(max_iter);
+                }
+            }
+
+            // Fill `samples_image` and normalize iteration count from
+            // range (0, max_iter) to (0, 1).
+
+            for ((i, j), pixel_samples) in &samples {
+                let _min_iter = 0;
+                let filtered_samples = pixel_samples
+                    .iter()
+                    .copied()
+                    .filter_map(|(d, v)| {
+                        (v < 99 * max_iter / 100)
+                            .then_some((d, (v - _min_iter) as f64 / (max_iter - _min_iter) as f64))
+                    })
+                    .collect::<Vec<_>>();
+
+                samples_image
+                    .set((*i as usize, *j as usize), filtered_samples)
+                    .unwrap();
+            }
+
+            // Render image from samples and using bilateral filtering.
+
+            let mut processed_image =
+                Mat2D::filled_with(0., img_width as usize, img_height as usize);
+
+            // How far the filter "reaches" in terms of spatial extent.
+            const SPATIAL_PARAM: f64 = 0.5;
+
+            for j in 0..img_height as usize {
+                for i in 0..img_width as usize {
+                    let mut numerator = 0.;
+                    let mut denominator = 0.;
+
+                    const KERNEL_SIDE: isize = 2;
+                    for dj in -KERNEL_SIDE..KERNEL_SIDE {
+                        for di in -KERNEL_SIDE..KERNEL_SIDE {
+                            let ii = i.wrapping_add_signed(di).min(img_width as usize - 1);
+                            let jj = j.wrapping_add_signed(dj).min(img_height as usize - 1);
+
+                            let other_samples = samples_image.get((ii, jj)).unwrap();
+
+                            for (k, &((dx, dy), other_value)) in other_samples.iter().enumerate() {
+                                let dx = di as f64 + dx;
+                                let dy = dj as f64 + dy;
+
+                                #[inline]
+                                fn kernel(x: f64) -> f64 {
+                                    (-x.abs()).exp()
+                                }
+
+                                // Skip center_sample
+                                if di != 0 && dj != 0 && k != 0 {
+                                    let w =
+                                        kernel(((dx * dx + dy * dy) as f64).sqrt() / SPATIAL_PARAM);
+
+                                    numerator += w * other_value;
+                                    denominator += w;
+                                }
+                            }
+                        }
+                    }
+
+                    processed_image
+                        .set((i, j), (numerator / denominator).min(1.))
+                        .unwrap();
+                }
+            }
+
             let mut output_image = RgbImage::new(img_width, img_height);
 
             match coloring_mode.unwrap_or_default() {
                 ColoringMode::BlackAndWhite => {
-                    for (i, j, iterations) in pixel_values {
-                        output_image.put_pixel(
-                            i as u32,
-                            j as u32,
-                            if iterations as u32 == max_iter {
-                                Rgb([0, 0, 0])
-                            } else {
-                                Rgb([255, 255, 255])
-                            },
-                        );
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = processed_image.get((i, j)).unwrap();
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                if value >= 0.95 {
+                                    Rgb([0, 0, 0])
+                                } else {
+                                    Rgb([255, 255, 255])
+                                },
+                            );
+                        }
                     }
                 }
                 ColoringMode::Linear => {
-                    for (i, j, iterations) in pixel_values {
-                        output_image.put_pixel(
-                            i as u32,
-                            j as u32,
-                            color_mapping(
-                                iterations as f64 / max_iter as f64,
-                                custom_gradient.as_ref(),
-                            ),
-                        );
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = processed_image.get((i, j)).unwrap();
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(value, custom_gradient.as_ref()),
+                            );
+                        }
                     }
                 }
                 ColoringMode::Squared => {
-                    for (i, j, iterations) in pixel_values {
-                        output_image.put_pixel(
-                            i as u32,
-                            j as u32,
-                            color_mapping(
-                                (iterations as f64 / max_iter as f64).powi(2),
-                                custom_gradient.as_ref(),
-                            ),
-                        );
-                    }
-                }
-                ColoringMode::LinearMinMax => {
-                    let (min, max) = pixel_values.iter().fold(
-                        (max_iter as f64, 0.),
-                        |(acc_min, acc_max), &(_, _, v)| {
-                            (
-                                if v < acc_min as f64 {
-                                    v
-                                } else {
-                                    acc_min as f64
-                                },
-                                if v > acc_max as f64 {
-                                    v
-                                } else {
-                                    acc_max as f64
-                                },
-                            )
-                        },
-                    );
-
-                    for (i, j, iterations) in pixel_values {
-                        let t = (iterations - min) as f64 / (max - min) as f64;
-                        output_image.put_pixel(
-                            i as u32,
-                            j as u32,
-                            color_mapping(t, custom_gradient.as_ref()),
-                        );
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = processed_image.get((i, j)).unwrap();
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(value.powi(2), custom_gradient.as_ref()),
+                            );
+                        }
                     }
                 }
                 ColoringMode::CumulativeHistogram => {
                     let cumulative_histogram =
-                        cumulate_histogram(compute_histogram(&pixel_values, max_iter), max_iter);
-                    for (i, j, iterations) in pixel_values {
-                        output_image.put_pixel(
-                            i as u32,
-                            j as u32,
-                            color_mapping(
-                                cumulative_histogram[iterations as usize].powi(12),
-                                custom_gradient.as_ref(),
-                            ),
-                        );
+                        cumulate_histogram(compute_histogram(&processed_image.vec));
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = processed_image.get((i, j)).unwrap();
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(
+                                    get_histogram_value(value, &cumulative_histogram).powi(12),
+                                    custom_gradient.as_ref(),
+                                ),
+                            );
+                        }
                     }
                 }
             };

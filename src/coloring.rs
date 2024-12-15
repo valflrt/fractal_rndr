@@ -6,24 +6,33 @@ pub enum ColoringMode {
     BlackAndWhite,
     Linear,
     Squared,
-    LinearMinMax,
     #[default]
     CumulativeHistogram,
 }
 
-pub fn compute_histogram(pixel_values: &[(u32, u32, f64)], max_iter: u32) -> Vec<u32> {
-    let mut histogram = vec![0; max_iter as usize + 1];
+const HISTOGRAM_SIZE: usize = 100000;
 
-    for &(_, _, iteration_count) in pixel_values.iter() {
-        histogram[iteration_count as usize] += 1;
+fn map_f64_to_histogram_index(value: f64) -> usize {
+    ((value * (HISTOGRAM_SIZE - 1) as f64) as usize).min(HISTOGRAM_SIZE - 1)
+}
+
+/// Compute an histogram from normalized values in range
+/// (0, 1).
+pub fn compute_histogram(pixel_values: &[f64]) -> Vec<u32> {
+    let mut histogram = vec![0; HISTOGRAM_SIZE];
+
+    for &value in pixel_values.iter() {
+        histogram[map_f64_to_histogram_index(value)] += 1;
     }
 
     histogram
 }
 
-pub fn cumulate_histogram(histogram: Vec<u32>, max_iter: u32) -> Vec<f64> {
+/// Computes the cumulative histogram associated with the
+/// histogram provided.
+pub fn cumulate_histogram(histogram: Vec<u32>) -> Vec<f64> {
     let total = histogram.iter().sum::<u32>();
-    let mut cumulative = vec![0.; max_iter as usize + 1];
+    let mut cumulative = vec![0.; HISTOGRAM_SIZE];
     let mut cumulative_sum = 0.;
     for (i, &count) in histogram.iter().enumerate() {
         cumulative_sum += count as f64 / total as f64;
@@ -31,6 +40,12 @@ pub fn cumulate_histogram(histogram: Vec<u32>, max_iter: u32) -> Vec<f64> {
     }
 
     cumulative
+}
+
+/// Get the cumulative histogram value from a normalized value
+/// in range (0, 1).
+pub fn get_histogram_value(value: f64, cumulative_histogram: &Vec<f64>) -> f64 {
+    cumulative_histogram[map_f64_to_histogram_index(value)]
 }
 
 const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
