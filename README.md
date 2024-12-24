@@ -112,7 +112,7 @@ These are preset renders I find pretty, you can get their json parameters files 
   {
     ...
     "custom_gradient": [
-      [0., [10, 2, 20]],
+      [0.0, [10, 2, 20]],
       [0.1, [200, 40, 230]],
       [0.25, [20, 160, 230]],
       [0.4, [60, 230, 80]],
