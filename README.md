@@ -24,9 +24,6 @@ Next, create a json file that with the following structure (see [parameter file 
 }
 ```
 
-> [!WARNING]
-> I added comments to explain each parameter, but they shouldn't appear in the file because json doesn't support comments by default.
-
 Then, in order to render your fractal, run the following command:
 
 ```
