@@ -16,6 +16,7 @@ use std::{
 use image::{Rgb, RgbImage};
 use mat::Mat;
 use num_complex::Complex;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use sampling::{generate_sampling_points, preview_sampling_points, SamplingLevel};
 use serde::{Deserialize, Serialize};
 
@@ -103,35 +104,66 @@ fn main() -> Result<()> {
                 preview_sampling_points(&sampling_points)?;
             }
 
+            // Get chunks
+
+            const CHUNK_SIZE: usize = 256;
+            const KERNEL_SIZE: isize = 1;
+
+            let mut processed_image = Mat::filled_with(
+                0.,
+                img_width as usize + 2 * KERNEL_SIZE as usize,
+                img_height as usize + 2 * KERNEL_SIZE as usize,
+            );
+
+            let (v_chunks, last_v_chunk) = (
+                img_height.div_euclid(CHUNK_SIZE as u32),
+                img_height.rem_euclid(CHUNK_SIZE as u32),
+            );
+            let (h_chunks, last_h_chunk) = (
+                img_width.div_euclid(CHUNK_SIZE as u32),
+                img_width.rem_euclid(CHUNK_SIZE as u32),
+            );
+
             // Progress related init
 
             let start = Instant::now();
 
             let progress = atomic::AtomicU32::new(0);
-            let total = img_height * img_width;
+            // FIXME progress going above 100%
+            let total = img_height * img_width
+                + 2 * v_chunks * CHUNK_SIZE as u32 * KERNEL_SIZE as u32
+                + 2 * h_chunks * CHUNK_SIZE as u32 * KERNEL_SIZE as u32;
 
             let stdout = std::io::stdout();
 
             // Compute escape time (number of iterations) for each pixel
 
-            const CHUNK_SIZE: usize = 1024;
+            for cj in 0..v_chunks + 1 {
+                for ci in 0..h_chunks + 1 {
+                    let chunk_width = if ci == h_chunks {
+                        last_h_chunk
+                    } else {
+                        CHUNK_SIZE as u32
+                    };
+                    let chunk_height = if cj == v_chunks {
+                        last_v_chunk
+                    } else {
+                        CHUNK_SIZE as u32
+                    };
 
-            (0..img_height / CHUNK_SIZE as u32)
-                .flat_map(|cj| (0..img_width / CHUNK_SIZE as u32).map(move |ci| (ci, cj)))
-                .for_each(|(ci, cj)| {
-                    // TODO find a way to normalize after processing the pixel
-                    // values
-                    // TODO find a way to exclude outliers when sampling
+                    // pi and pj are the coordinates of the first pixel of the
+                    // chunk (top-left corner pixel)
+                    let pi = ci * CHUNK_SIZE as u32;
+                    let pj = cj * CHUNK_SIZE as u32;
 
-                    let (samples_image, local_max) = (cj.saturating_sub(1)
-                        ..(cj + CHUNK_SIZE as u32 + 1).min(img_height))
+                    let raw_samples = (0..chunk_height + 2 * KERNEL_SIZE as u32)
                         .flat_map(|j| {
-                            (ci.saturating_sub(1)..(ci + CHUNK_SIZE as u32 + 1).min(img_width))
-                                .map(move |i| (i, j))
+                            (0..chunk_width + 2 * KERNEL_SIZE as u32).map(move |i| (i, j))
                         })
+                        .par_bridge()
                         .map(|(i, j)| {
-                            let x = i as f64 + 0.5;
-                            let y = j as f64 + 0.5;
+                            let x = (pi + i - KERNEL_SIZE as u32) as f64 + 0.5;
+                            let y = (pj + j - KERNEL_SIZE as u32) as f64 + 0.5;
 
                             let samples = sampling_points
                                 .iter()
@@ -142,16 +174,13 @@ fn main() -> Result<()> {
                                     let (iter, _) =
                                         fractal.get_pixel(Complex::new(re, im), max_iter);
 
-                                    ((dx, dy), iter)
+                                    ((dx, dy), iter as f64 / max_iter as f64)
                                 })
                                 .collect::<Vec<_>>();
 
-                            ((i, j), samples)
-                        })
-                        .map(|v| {
                             // Using atomic::Ordering::Relaxed because we don't really
                             // care about the order `progress` is updated. As long as it
-                            // is updated it should be fine :)
+                            // is updated it should be fine :>
                             progress.fetch_add(1, atomic::Ordering::Relaxed);
                             let progress = progress.load(atomic::Ordering::Relaxed);
 
@@ -169,167 +198,85 @@ fn main() -> Result<()> {
                                     .unwrap();
                             }
 
-                            v
-                        })
-                        .fold(
-                            (
-                                Mat::filled_with(
-                                    Vec::new(),
-                                    CHUNK_SIZE as usize + 2,
-                                    CHUNK_SIZE as usize + 2,
-                                ),
-                                0,
-                            ),
-                            |(mut m, max), ((i, j), samples)| {
-                                let mut local_max = 0;
-                                for &(_, sample) in &samples {
-                                    local_max = sample.max(local_max);
-                                }
-                                m.set((i as usize, j as usize), samples).unwrap();
-                                (m, local_max.max(max))
-                            },
-                        );
-                });
-
-            let samples = (0..img_height)
-                .flat_map(|j| (0..img_width).map(move |i| (i, j)))
-                .map(|(i, j)| {
-                    let x = i as f64 + 0.5;
-                    let y = j as f64 + 0.5;
-
-                    let samples = sampling_points
-                        .iter()
-                        .map(|&(dx, dy)| {
-                            let re = x_min + width * (x + dx) / img_width as f64;
-                            let im = y_min + height * (y + dy) / img_height as f64;
-
-                            let (iter, _) = fractal.get_pixel(Complex::new(re, im), max_iter);
-
-                            ((dx, dy), iter)
+                            ((i, j), samples)
                         })
                         .collect::<Vec<_>>();
 
-                    ((i, j), samples)
-                })
-                .map(|v| {
-                    // Using atomic::Ordering::Relaxed because we don't really
-                    // care about the order `progress` is updated. As long as it
-                    // is updated it should be fine :)
-                    progress.fetch_add(1, atomic::Ordering::Relaxed);
-                    let progress = progress.load(atomic::Ordering::Relaxed);
-
-                    if progress % (total / 100000 + 1) == 0 {
-                        stdout
-                            .lock()
-                            .write_all(
-                                format!(
-                                    "\r {:.1}% - {:.1}s elapsed",
-                                    100. * progress as f32 / total as f32,
-                                    start.elapsed().as_secs_f32(),
-                                )
-                                .as_bytes(),
-                            )
+                    let mut chunk_samples =
+                        Mat::filled_with(vec![], img_width as usize, img_height as usize);
+                    for ((i, j), pixel_samples) in &raw_samples {
+                        chunk_samples
+                            .set((*i as usize, *j as usize), pixel_samples.to_owned())
                             .unwrap();
                     }
 
-                    v
-                })
-                .collect::<Vec<_>>();
+                    for j in 0..chunk_height as usize {
+                        for i in 0..chunk_width as usize {
+                            let i = i + KERNEL_SIZE as usize;
+                            let j = j + KERNEL_SIZE as usize;
 
-            println!();
+                            // Note: the way sample vectors are constructed makes the
+                            // first element always the one in the center of the pixel.
+                            let center_samples = chunk_samples.get((i, j)).unwrap();
+                            let avg_center_value =
+                                center_samples.iter().map(|&(_, v)| v).sum::<f64>()
+                                    / center_samples.len() as f64;
 
-            // Create samples image
+                            let mut samples_with_weights = Vec::new();
 
-            let mut samples_image =
-                Mat::filled_with(vec![], img_width as usize, img_height as usize);
+                            for dj in -KERNEL_SIZE..KERNEL_SIZE {
+                                for di in -KERNEL_SIZE..KERNEL_SIZE {
+                                    let ii =
+                                        i.saturating_add_signed(di).min(img_width as usize - 1);
+                                    let jj =
+                                        j.saturating_add_signed(dj).min(img_height as usize - 1);
 
-            // Get max/min iteration counts
+                                    let other_samples = chunk_samples.get((ii, jj)).unwrap();
 
-            // const KEPT_PERCENTILE: usize = 98;
-            // sorted_samples.truncate(KEPT_PERCENTILE * sorted_samples.len() / 100);
+                                    for &((dx, dy), other_value) in other_samples.iter() {
+                                        let dx = di as f64 + dx;
+                                        let dy = dj as f64 + dy;
 
-            let mut max_iter = 0;
-            // let mut min_iter = 0;
-            for (_, pixel_samples) in &samples {
-                for &(_, sample) in pixel_samples {
-                    max_iter = sample.max(max_iter);
-                    // min_iter = sample.min(max_iter);
-                }
-            }
-
-            // Fill `samples_image`
-
-            for ((i, j), pixel_samples) in &samples {
-                let _min_iter = 0;
-                let filtered_samples = pixel_samples
-                    .iter()
-                    .copied()
-                    .filter_map(|(d, v)| {
-                        (v < 99 * max_iter / 100)
-                            .then_some((d, (v - _min_iter) as f64 / (max_iter - _min_iter) as f64))
-                    })
-                    .collect::<Vec<_>>();
-
-                samples_image
-                    .set((*i as usize, *j as usize), filtered_samples)
-                    .unwrap();
-            }
-
-            // -> Render image from samples and using bilateral filtering.
-
-            let mut processed_image = Mat::filled_with(0., img_width as usize, img_height as usize);
-
-            // How far the filter "reaches" in terms of spatial extent.
-            const SPATIAL_SIGMA: f64 = 4.;
-            // How tolerant the filter is to differences in values.
-            const RANGE_SIGMA: f64 = 0.5;
-
-            // Normalize iteration count from range (min_iter, max_iter)
-            // to (0, 1).
-
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    // Note: the way sample vectors are constructed makes the
-                    // first element always the one in the center of the pixel.
-                    let center_samples = samples_image.get((i, j)).unwrap();
-                    let avg_center_value = center_samples.iter().map(|&(_, v)| v).sum::<f64>()
-                        / center_samples.len() as f64;
-
-                    // see https://en.wikipedia.org/wiki/Bilateral_filter#Definition
-                    let mut numerator = 0.;
-                    let mut denominator = 0.;
-
-                    const KERNEL_SIDE: isize = 1;
-                    for dj in -KERNEL_SIDE..KERNEL_SIDE {
-                        for di in -KERNEL_SIDE..KERNEL_SIDE {
-                            let ii = i.saturating_add_signed(di).min(img_width as usize - 1);
-                            let jj = j.saturating_add_signed(dj).min(img_height as usize - 1);
-
-                            let other_samples = samples_image.get((ii, jj)).unwrap();
-
-                            for (k, &((dx, dy), other_value)) in other_samples.iter().enumerate() {
-                                let dx = di as f64 + dx;
-                                let dy = dj as f64 + dy;
-
-                                // Skip center_sample
-                                if di != 0 && dj != 0 && k != 0 {
-                                    let w = gaussian(
-                                        ((dx * dx + dy * dy) as f64).sqrt() / SPATIAL_SIGMA
-                                            + (avg_center_value - other_value).abs() / RANGE_SIGMA,
-                                    );
-
-                                    numerator += w * other_value;
-                                    denominator += w;
+                                        samples_with_weights.push((
+                                            other_value,
+                                            (dx * dx + dy * dy) as f64,
+                                            (avg_center_value - other_value),
+                                        ));
+                                    }
                                 }
                             }
+
+                            // IDEA use laplace edge detection
+
+                            // see https://en.wikipedia.org/wiki/Bilateral_filter#Definition
+                            let mut numerator = 0.;
+                            let mut denominator = 0.;
+
+                            for &(v, sw, rw) in &samples_with_weights {
+                                // How far the filter "reaches" in terms of spatial extent.
+                                const SPATIAL_SIGMA: f64 = 4.;
+                                // How tolerant the filter is to differences in values.
+                                const RANGE_SIGMA: f64 = 10.;
+
+                                let w =
+                                    gaussian(sw.sqrt() / SPATIAL_SIGMA + rw.abs() / RANGE_SIGMA);
+
+                                numerator += w * v;
+                                denominator += w;
+                            }
+
+                            processed_image
+                                .set(
+                                    (pi as usize + i, pj as usize + j),
+                                    (numerator / denominator).min(1.),
+                                )
+                                .unwrap();
                         }
                     }
-
-                    processed_image
-                        .set((i, j), (numerator / denominator).min(1.))
-                        .unwrap();
                 }
             }
+
+            println!();
 
             let mut output_image = RgbImage::new(img_width, img_height);
 
