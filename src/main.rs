@@ -9,7 +9,7 @@ use std::{
     fs::{self, File},
     io::Write,
     path::PathBuf,
-    sync::atomic,
+    sync::{atomic, mpsc},
     time::Instant,
 };
 
@@ -129,10 +129,25 @@ fn main() -> Result<()> {
             let start = Instant::now();
 
             let progress = atomic::AtomicU32::new(0);
-            // FIXME progress going above 100%
-            let total = img_height * img_width
-                + 2 * v_chunks * CHUNK_SIZE as u32 * KERNEL_SIZE as u32
-                + 2 * h_chunks * CHUNK_SIZE as u32 * KERNEL_SIZE as u32;
+            let total = (0..v_chunks + 1)
+                .flat_map(|cj| {
+                    (0..h_chunks + 1).map(move |ci| {
+                        let chunk_width = if ci == h_chunks {
+                            last_h_chunk
+                        } else {
+                            CHUNK_SIZE as u32
+                        };
+                        let chunk_height = if cj == v_chunks {
+                            last_v_chunk
+                        } else {
+                            CHUNK_SIZE as u32
+                        };
+
+                        (chunk_width + 2 * KERNEL_SIZE as u32)
+                            * (chunk_height + 2 * KERNEL_SIZE as u32)
+                    })
+                })
+                .sum::<u32>();
 
             let stdout = std::io::stdout();
 
@@ -156,12 +171,14 @@ fn main() -> Result<()> {
                     let pi = ci * CHUNK_SIZE as u32;
                     let pj = cj * CHUNK_SIZE as u32;
 
-                    let raw_samples = (0..chunk_height + 2 * KERNEL_SIZE as u32)
+                    let (tx, rx) = mpsc::channel();
+
+                    (0..chunk_height + 2 * KERNEL_SIZE as u32)
                         .flat_map(|j| {
                             (0..chunk_width + 2 * KERNEL_SIZE as u32).map(move |i| (i, j))
                         })
                         .par_bridge()
-                        .map(|(i, j)| {
+                        .for_each_with(tx, |s, (i, j)| {
                             let x = (pi + i - KERNEL_SIZE as u32) as f64 + 0.5;
                             let y = (pj + j - KERNEL_SIZE as u32) as f64 + 0.5;
 
@@ -198,15 +215,14 @@ fn main() -> Result<()> {
                                     .unwrap();
                             }
 
-                            ((i, j), samples)
-                        })
-                        .collect::<Vec<_>>();
+                            s.send(((i, j), samples)).unwrap();
+                        });
 
                     let mut chunk_samples =
                         Mat::filled_with(vec![], img_width as usize, img_height as usize);
-                    for ((i, j), pixel_samples) in &raw_samples {
+                    for ((i, j), pixel_samples) in rx {
                         chunk_samples
-                            .set((*i as usize, *j as usize), pixel_samples.to_owned())
+                            .set((i as usize, j as usize), pixel_samples.to_owned())
                             .unwrap();
                     }
 
