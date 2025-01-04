@@ -53,11 +53,6 @@ struct DevOptions {
     display_gradient: Option<bool>,
 }
 
-#[inline]
-fn gaussian(x: f64) -> f64 {
-    (-x * x).exp()
-}
-
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
 
@@ -231,60 +226,35 @@ fn main() -> Result<()> {
                             let i = i + KERNEL_SIZE as usize;
                             let j = j + KERNEL_SIZE as usize;
 
-                            // Note: the way sample vectors are constructed makes the
-                            // first element always the one in the center of the pixel.
-                            let center_samples = chunk_samples.get((i, j)).unwrap();
-                            let avg_center_value =
-                                center_samples.iter().map(|&(_, v)| v).sum::<f64>()
-                                    / center_samples.len() as f64;
+                            let mut weighted_sum = 0.;
+                            let mut weight_total = 0.;
 
-                            let mut samples_with_weights = Vec::new();
-
-                            for dj in -KERNEL_SIZE..KERNEL_SIZE {
-                                for di in -KERNEL_SIZE..KERNEL_SIZE {
+                            for dj in -KERNEL_SIZE..=KERNEL_SIZE {
+                                for di in -KERNEL_SIZE..=KERNEL_SIZE {
                                     let ii =
                                         i.saturating_add_signed(di).min(img_width as usize - 1);
                                     let jj =
                                         j.saturating_add_signed(dj).min(img_height as usize - 1);
 
-                                    let other_samples = chunk_samples.get((ii, jj)).unwrap();
-
-                                    for &((dx, dy), other_value) in other_samples.iter() {
+                                    for &((dx, dy), v) in chunk_samples.get((ii, jj)).unwrap() {
                                         let dx = di as f64 + dx;
                                         let dy = dj as f64 + dy;
 
-                                        samples_with_weights.push((
-                                            other_value,
-                                            (dx * dx + dy * dy) as f64,
-                                            (avg_center_value - other_value),
-                                        ));
+                                        const R: f64 = 1.5;
+                                        let d = dx * dx + dy * dy;
+                                        if d < R {
+                                            let w = 1. / (1. + d / R);
+                                            weighted_sum += w * v;
+                                            weight_total += w;
+                                        }
                                     }
                                 }
-                            }
-
-                            // IDEA use laplace edge detection
-
-                            // see https://en.wikipedia.org/wiki/Bilateral_filter#Definition
-                            let mut numerator = 0.;
-                            let mut denominator = 0.;
-
-                            for &(v, sw, rw) in &samples_with_weights {
-                                // How far the filter "reaches" in terms of spatial extent.
-                                const SPATIAL_SIGMA: f64 = 4.;
-                                // How tolerant the filter is to differences in values.
-                                const RANGE_SIGMA: f64 = 10.;
-
-                                let w =
-                                    gaussian(sw.sqrt() / SPATIAL_SIGMA + rw.abs() / RANGE_SIGMA);
-
-                                numerator += w * v;
-                                denominator += w;
                             }
 
                             processed_image
                                 .set(
                                     (pi as usize + i, pj as usize + j),
-                                    (numerator / denominator).min(1.),
+                                    weighted_sum / weight_total,
                                 )
                                 .unwrap();
                         }

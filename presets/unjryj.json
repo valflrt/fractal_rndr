@@ -6,6 +6,6 @@
   "center_y": -0.00026,
   "max_iter": 80000,
   "fractal": "SecondDegreeWithGrowingExponent",
-  "coloring_mode": "LinearMinMax",
-  "sampling": "Ultra"
+  "coloring_mode": "Linear",
+  "sampling": "High"
 }

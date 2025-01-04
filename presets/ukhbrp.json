@@ -3,9 +3,9 @@
   "img_height": 2160,
   "zoom": 0.00000055,
   "center_x": 0.00009023,
-  "center_y": -0.000001995,
+  "center_y": -0.000001996,
   "max_iter": 80000,
   "fractal": "ThirdDegreeWithGrowingExponent",
   "coloring_mode": "CumulativeHistogram",
-  "sampling": "Ultra"
+  "sampling": "High"
 }

@@ -105,7 +105,6 @@ These are preset renders I find pretty, you can get their json parameters files 
   - `"Medium"`
   - `"High"`
   - `"Ultra"`
-  - `"Extreme"`
 
 - `custom_gradient`: _(optional)_ Set a custom gradient. This is an array of array of the form `[t, [r, g, b]]` where `t` is a float between 0 and 1 and `r`, `g`, `b` the color at that point in the gradient. Colors in between are interpolated.
 

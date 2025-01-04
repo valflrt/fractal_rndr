@@ -56,7 +56,7 @@ const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
     (0.55, [255, 230, 20]),
     (0.7, [255, 120, 20]),
     (0.85, [255, 40, 60]),
-    (0.95, [2, 0, 4]),
+    (0.95, [20, 2, 10]),
 ];
 
 pub fn color_mapping(t: f64, custom_gradient: Option<&Vec<(f64, [u8; 3])>>) -> Rgb<u8> {
