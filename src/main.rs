@@ -14,7 +14,7 @@ use std::{
 };
 
 use image::{Rgb, RgbImage};
-use mat::Mat;
+use mat::Mat2D;
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use sampling::{generate_sampling_points, preview_sampling_points, SamplingLevel};
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
             const CHUNK_SIZE: usize = 256;
             const KERNEL_SIZE: isize = 1;
 
-            let mut processed_image = Mat::filled_with(
+            let mut processed_image = Mat2D::filled_with(
                 0.,
                 img_width as usize + 2 * KERNEL_SIZE as usize,
                 img_height as usize + 2 * KERNEL_SIZE as usize,
@@ -214,7 +214,7 @@ fn main() -> Result<()> {
                         });
 
                     let mut chunk_samples =
-                        Mat::filled_with(vec![], img_width as usize, img_height as usize);
+                        Mat2D::filled_with(vec![], img_width as usize, img_height as usize);
                     for ((i, j), pixel_samples) in rx {
                         chunk_samples
                             .set((i as usize, j as usize), pixel_samples.to_owned())
