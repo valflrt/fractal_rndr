@@ -41,7 +41,7 @@ cargo run -r -- fractal.json fractal.png
 
 # Preset renders
 
-These are preset renders I find pretty, you can get their json parameters files by clicking on the title. There are some more in [`presets/`](./presets/).
+These are preset renders I like, you can get their json parameters files by clicking on the title. There are some more in [`presets/`](./presets/).
 
 ### [ukhbrp.json](./presets/ukhbrp.json)
 
@@ -92,7 +92,6 @@ These are preset renders I find pretty, you can get their json parameters files 
   - `"BlackAndWhite"`: Draws pixels black if the maximum iteration count has been reached, otherwise white.
   - `"Linear"`: Maps the iteration count for a pixel to a value between 0 and 1 by dividing it by the maximum iteration count and uses this value to pick a color from the gradient.
   - `"Squared"`: Similar to `"Linear"`, but the value between 0 and 1 is squared before picking a color from the gradient.
-  - `"LinearMinMax"`: Maps the iteration count for a pixel to a value between 0 and 1, where 0 corresponds to the minimum iteration count and 1 corresponds to the maximum iteration count in the entire image.
   - `"CumulativeHistogram"` _(default)_ More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
 
 - `sampling`: _(optional)_ Set sampling level: higher values take more samples and (hopefully) give a smoother result. This is not currently working very well. Available options are:
@@ -102,6 +101,7 @@ These are preset renders I find pretty, you can get their json parameters files 
   - `"Medium"`
   - `"High"`
   - `"Ultra"`
+  - `"Extreme"`
 
 - `custom_gradient`: _(optional)_ Set a custom gradient. This is an array of array of the form `[t, [r, g, b]]` where `t` is a float between 0 and 1 and `r`, `g`, `b` the color at that point in the gradient. Colors in between are interpolated.
 
