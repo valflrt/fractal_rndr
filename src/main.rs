@@ -104,7 +104,7 @@ fn main() -> Result<()> {
             const CHUNK_SIZE: usize = 256;
             const KERNEL_SIZE: isize = 1;
 
-            let mut processed_image = Mat2D::filled_with(
+            let mut raw_image = Mat2D::filled_with(
                 0.,
                 img_width as usize + 2 * KERNEL_SIZE as usize,
                 img_height as usize + 2 * KERNEL_SIZE as usize,
@@ -251,7 +251,7 @@ fn main() -> Result<()> {
                                 }
                             }
 
-                            processed_image
+                            raw_image
                                 .set(
                                     (pi as usize + i, pj as usize + j),
                                     weighted_sum / weight_total,
@@ -270,7 +270,7 @@ fn main() -> Result<()> {
                 ColoringMode::BlackAndWhite => {
                     for j in 0..img_height as usize {
                         for i in 0..img_width as usize {
-                            let &value = processed_image.get((i, j)).unwrap();
+                            let &value = raw_image.get((i, j)).unwrap();
                             output_image.put_pixel(
                                 i as u32,
                                 j as u32,
@@ -286,7 +286,7 @@ fn main() -> Result<()> {
                 ColoringMode::Linear => {
                     for j in 0..img_height as usize {
                         for i in 0..img_width as usize {
-                            let &value = processed_image.get((i, j)).unwrap();
+                            let &value = raw_image.get((i, j)).unwrap();
                             output_image.put_pixel(
                                 i as u32,
                                 j as u32,
@@ -298,7 +298,7 @@ fn main() -> Result<()> {
                 ColoringMode::Squared => {
                     for j in 0..img_height as usize {
                         for i in 0..img_width as usize {
-                            let &value = processed_image.get((i, j)).unwrap();
+                            let &value = raw_image.get((i, j)).unwrap();
                             output_image.put_pixel(
                                 i as u32,
                                 j as u32,
@@ -309,10 +309,10 @@ fn main() -> Result<()> {
                 }
                 ColoringMode::CumulativeHistogram => {
                     let cumulative_histogram =
-                        cumulate_histogram(compute_histogram(&processed_image.vec));
+                        cumulate_histogram(compute_histogram(&raw_image.vec));
                     for j in 0..img_height as usize {
                         for i in 0..img_width as usize {
-                            let &value = processed_image.get((i, j)).unwrap();
+                            let &value = raw_image.get((i, j)).unwrap();
                             output_image.put_pixel(
                                 i as u32,
                                 j as u32,
