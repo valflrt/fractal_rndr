@@ -5,9 +5,8 @@ use crate::error::{ErrorKind, Result};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SamplingLevel {
-    Single,
-    #[default]
     Low,
+    #[default]
     Medium,
     High,
     Ultra,
@@ -19,7 +18,6 @@ pub fn generate_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f
     // const PHI: f64 = 1.618033988749895;
 
     let n: i32 = match sampling_level.unwrap_or_default() {
-        SamplingLevel::Single => 0,
         SamplingLevel::Low => 1,
         SamplingLevel::Medium => 2,
         SamplingLevel::High => 3,
