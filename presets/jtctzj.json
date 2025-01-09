@@ -1,0 +1,11 @@
+{
+  "img_width": 2160,
+  "img_height": 2160,
+  "zoom": 0.000025,
+  "center_x": -0.009978,
+  "center_y": -0.000252,
+  "max_iter": 80000,
+  "fractal": "SecondDegreeRecWithGrowingExponent",
+  "coloring_mode": "Linear",
+  "sampling": "Extreme"
+}

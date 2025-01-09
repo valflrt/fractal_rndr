@@ -10,15 +10,6 @@ It includes different fractal kinds among which the Mandelbrot set and a (potent
 - [Table of contents](#table-of-contents)
 - [How to use](#how-to-use)
 - [Preset renders](#preset-renders)
-  - [ukhbrp.json](#ukhbrpjson)
-  - [ebidxr.json](#ebidxrjson)
-  - [mzfyje.json](#mzfyjejson)
-  - [ztkhky.json](#ztkhkyjson)
-  - [idkzrg.json](#idkzrgjson)
-  - [dmgtyz.json](#dmgtyzjson)
-  - [datgdv.json](#datgdvjson)
-  - [dqqbrm.json](#dqqbrmjson)
-  - [efhhgk.json](#efhhgkjson)
 - [Parameter file reference](#parameter-file-reference)
 
 # How to use
@@ -77,6 +68,12 @@ These are preset renders I like, you can get their json parameters files by clic
 > Fractal: `SecondDegreeRecWithGrowingExponent`
 
 ![mzfyje.png](./presets/mzfyje.png)
+
+### [xvebhd.json](./presets/xvebhd.json)
+
+> Fractal: `SecondDegreeRecWithGrowingExponent`
+
+![xvebhd.png](./presets/xvebhd.png)
 
 ### [ztkhky.json](./presets/ztkhky.json)
 
