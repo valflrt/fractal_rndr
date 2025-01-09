@@ -2,12 +2,11 @@
 
 This is a very simple program used to render fractals to images using a parameter json file.
 
-It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree recursive pattern used to draw the Mandelbrot set..
+It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree recursive pattern used to draw the Mandelbrot set...
 
-# Table of contents
+### Table of contents
 
 - [Fractal Renderer](#fractal-renderer)
-- [Table of contents](#table-of-contents)
 - [How to use](#how-to-use)
 - [Preset renders](#preset-renders)
 - [Parameter file reference](#parameter-file-reference)
