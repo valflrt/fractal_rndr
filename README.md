@@ -129,8 +129,10 @@ I think this one looks a bit like Mandelbrot ?
 
   - `"Mandelbrot"`
   - `"SecondDegreeRecWithGrowingExponent"`
+  - `"SecondDegreeRecAlternating1WithGrowingExponent"`
   - `"ThirdDegreeRecWithGrowingExponent"`
   - `{ "NthDegreeRecWithGrowingExponent": n }`
+  - `"ThirdDegreeRecPairs"`
 
 - `coloring_mode`: _(optional)_ Set the way pixels are colored. Available options are:
 
