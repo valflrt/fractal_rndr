@@ -123,7 +123,7 @@ I think this one looks a bit like Mandelbrot ?
   > [!NOTE]
   > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
 
-- `max_iter`: Set the maximum iteration count (around 80000 recommended).
+- `max_iter`: Set the maximum iteration count (around 80000 recommended except for mandelbrot-like fractals that look better with ~1000 iterations).
 
 - `fractal_kind`: Set the fractal you want to draw. Available options are:
 
@@ -139,7 +139,7 @@ I think this one looks a bit like Mandelbrot ?
   - `"Squared"`: Similar to `"Linear"`, but the value between 0 and 1 is squared before picking a color from the gradient.
   - `"CumulativeHistogram"` _(default)_ More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
 
-- `sampling`: _(optional)_ Set sampling level: higher values take more samples and (hopefully) give a smoother result. This is not currently working very well. Available options are:
+- `sampling`: _(optional)_ Set sampling level: higher values take more samples and (hopefully) give a smoother result. Available options are:
 
   - `"Single"`: Takes only one sample per pixel.
   - `"Low"`: _(default)_
