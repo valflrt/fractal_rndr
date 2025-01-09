@@ -213,8 +213,11 @@ fn main() -> Result<()> {
                             s.send(((i, j), samples)).unwrap();
                         });
 
-                    let mut chunk_samples =
-                        Mat2D::filled_with(vec![], img_width as usize, img_height as usize);
+                    let mut chunk_samples = Mat2D::filled_with(
+                        vec![],
+                        chunk_width as usize + 2 * CHUNK_SIZE,
+                        chunk_height as usize + 2 * CHUNK_SIZE,
+                    );
                     for ((i, j), pixel_samples) in rx {
                         chunk_samples
                             .set((i as usize, j as usize), pixel_samples.to_owned())
@@ -266,6 +269,9 @@ fn main() -> Result<()> {
 
             let mut output_image = RgbImage::new(img_width, img_height);
 
+            let max = raw_image.vec.iter().copied().fold(0., f64::max);
+            // let min = raw_image.vec.iter().copied().fold(max, f64::min);
+
             match coloring_mode.unwrap_or_default() {
                 ColoringMode::BlackAndWhite => {
                     for j in 0..img_height as usize {
@@ -290,7 +296,7 @@ fn main() -> Result<()> {
                             output_image.put_pixel(
                                 i as u32,
                                 j as u32,
-                                color_mapping(value, custom_gradient.as_ref()),
+                                color_mapping(value / max, custom_gradient.as_ref()),
                             );
                         }
                     }
