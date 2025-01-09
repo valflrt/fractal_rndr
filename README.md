@@ -4,6 +4,23 @@ This is a very simple program used to render fractals to images using a paramete
 
 It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree recursive pattern used to draw the Mandelbrot set..
 
+# Table of contents
+
+- [Fractal Renderer](#fractal-renderer)
+- [Table of contents](#table-of-contents)
+- [How to use](#how-to-use)
+- [Preset renders](#preset-renders)
+  - [ukhbrp.json](#ukhbrpjson)
+  - [ebidxr.json](#ebidxrjson)
+  - [mzfyje.json](#mzfyjejson)
+  - [ztkhky.json](#ztkhkyjson)
+  - [idkzrg.json](#idkzrgjson)
+  - [dmgtyz.json](#dmgtyzjson)
+  - [datgdv.json](#datgdvjson)
+  - [dqqbrm.json](#dqqbrmjson)
+  - [efhhgk.json](#efhhgkjson)
+- [Parameter file reference](#parameter-file-reference)
+
 # How to use
 
 First, download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
@@ -45,27 +62,59 @@ These are preset renders I like, you can get their json parameters files by clic
 
 ### [ukhbrp.json](./presets/ukhbrp.json)
 
+> Fractal: `ThirdDegreeRecWithGrowingExponent`
+
 ![ukhbrp.png](./presets/ukhbrp.png)
 
 ### [ebidxr.json](./presets/ebidxr.json)
+
+> Fractal: `ThirdDegreeRecWithGrowingExponent`
 
 ![ebidxr.png](./presets/ebidxr.png)
 
 ### [mzfyje.json](./presets/mzfyje.json)
 
+> Fractal: `SecondDegreeRecWithGrowingExponent`
+
 ![mzfyje.png](./presets/mzfyje.png)
 
 ### [ztkhky.json](./presets/ztkhky.json)
+
+> Fractal: `ThirdDegreeRecWithGrowingExponent`
 
 ![ztkhky.png](./presets/ztkhky.png)
 
 ### [idkzrg.json](./presets/idkzrg.json)
 
+> Fractal: `SecondDegreeRecWithGrowingExponent`
+
 ![idkzrg.png](./presets/idkzrg.png)
+
+### [dmgtyz.json](./presets/dmgtyz.json)
+
+> Fractal: `SecondDegreeRecAlternating1WithGrowingExponent`
+
+![dmgtyz.png](./presets/dmgtyz.png)
 
 ### [datgdv.json](./presets/datgdv.json)
 
+> Fractal: `SecondDegreeRecWithGrowingExponent`
+
 ![datgdv.png](./presets/datgdv.png)
+
+### [dqqbrm.json](./presets/dqqbrm.json)
+
+> Fractal: `ThirdDegreeRecPairs`
+
+I think this one looks a bit like Mandelbrot ?
+
+![dqqbrm.png](./presets/dqqbrm.png)
+
+### [efhhgk.json](./presets/efhhgk.json)
+
+> Fractal: `ThirdDegreeRecPairs`
+
+![efhhgk.png](./presets/efhhgk.png)
 
 # Parameter file reference
 
@@ -83,9 +132,9 @@ These are preset renders I like, you can get their json parameters files by clic
 - `fractal_kind`: Set the fractal you want to draw. Available options are:
 
   - `"Mandelbrot"`
-  - `"SecondDegreeWithGrowingExponent"`
-  - `"ThirdDegreeWithGrowingExponent"`
-  - `{ "NthDegreeWithGrowingExponent": n }`
+  - `"SecondDegreeRecWithGrowingExponent"`
+  - `"ThirdDegreeRecWithGrowingExponent"`
+  - `{ "NthDegreeRecWithGrowingExponent": n }`
 
 - `coloring_mode`: _(optional)_ Set the way pixels are colored. Available options are:
 

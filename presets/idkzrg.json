@@ -5,7 +5,7 @@
   "center_x": -0.01,
   "center_y": 0.0,
   "max_iter": 150000,
-  "fractal": "SecondDegreeWithGrowingExponent",
+  "fractal": "SecondDegreeRecWithGrowingExponent",
   "coloring_mode": "Linear",
   "sampling": "High"
 }

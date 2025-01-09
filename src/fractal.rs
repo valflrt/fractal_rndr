@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Fractal {
     Mandelbrot,
-    SecondDegreeWithGrowingExponent,
-    ThirdDegreeWithGrowingExponent,
-    NthDegreeWithGrowingExponent(usize),
+    SecondDegreeRecWithGrowingExponent,
+    SecondDegreeRecAlternating1WithGrowingExponent,
+    ThirdDegreeRecWithGrowingExponent,
+    NthDegreeRecWithGrowingExponent(usize),
+    ThirdDegreeRecPairs,
 }
 
 impl Fractal {
@@ -24,7 +26,7 @@ impl Fractal {
 
                 (i, z)
             }
-            Fractal::SecondDegreeWithGrowingExponent => {
+            Fractal::SecondDegreeRecWithGrowingExponent => {
                 let mut z0 = Complex::new(0., 0.);
                 let mut z1 = Complex::new(0., 0.);
 
@@ -39,7 +41,22 @@ impl Fractal {
 
                 (i, z1)
             }
-            Fractal::ThirdDegreeWithGrowingExponent => {
+            Fractal::SecondDegreeRecAlternating1WithGrowingExponent => {
+                let mut z0 = Complex::new(0., 0.);
+                let mut z1 = Complex::new(0., 0.);
+
+                let mut i = 0;
+                while i < max_iter && z1.norm_sqr() < 4. {
+                    let new_z1 = z1 * z1 - z0 + c;
+                    z0 = z1;
+                    z1 = new_z1;
+
+                    i += 1;
+                }
+
+                (i, z1)
+            }
+            Fractal::ThirdDegreeRecWithGrowingExponent => {
                 let mut z0 = Complex::new(0., 0.);
                 let mut z1 = Complex::new(0., 0.);
                 let mut z2 = Complex::new(0., 0.);
@@ -56,7 +73,7 @@ impl Fractal {
 
                 (i, z2)
             }
-            Fractal::NthDegreeWithGrowingExponent(n) => {
+            Fractal::NthDegreeRecWithGrowingExponent(n) => {
                 let n = *n;
                 let mut z = vec![Complex::new(0., 0.); n];
 
@@ -75,6 +92,23 @@ impl Fractal {
                 }
 
                 (i, z[n - 1])
+            }
+            Fractal::ThirdDegreeRecPairs => {
+                let mut z0 = Complex::new(0., 0.);
+                let mut z1 = Complex::new(0., 0.);
+                let mut z2 = Complex::new(0., 0.);
+
+                let mut i = 0;
+                while i < max_iter && z2.norm_sqr() < 4. {
+                    let new_z2 = z0 * z1 + z0 * z2 + z1 * z2 + c;
+                    z0 = z1;
+                    z1 = z2;
+                    z2 = new_z2;
+
+                    i += 1;
+                }
+
+                (i, z2)
             }
         }
     }
