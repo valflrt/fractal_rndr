@@ -14,7 +14,7 @@ use std::{
 };
 
 use image::{Rgb, RgbImage};
-use mat::Mat2D;
+use mat::{Mat2D, Mat3D};
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use sampling::{generate_sampling_points, preview_sampling_points, SamplingLevel};
@@ -102,47 +102,47 @@ fn main() -> Result<()> {
             // Get chunks
 
             const CHUNK_SIZE: usize = 256;
-            const KERNEL_SIZE: isize = 1;
+            const KERNEL_SIZE: usize = 1;
+            const KERNEL_SIZE_I: isize = KERNEL_SIZE as isize;
 
             let mut raw_image = Mat2D::filled_with(
                 0.,
-                img_width as usize + 2 * KERNEL_SIZE as usize,
-                img_height as usize + 2 * KERNEL_SIZE as usize,
+                img_width as usize + 2 * KERNEL_SIZE,
+                img_height as usize + 2 * KERNEL_SIZE,
             );
 
             let (v_chunks, last_v_chunk) = (
-                img_height.div_euclid(CHUNK_SIZE as u32),
-                img_height.rem_euclid(CHUNK_SIZE as u32),
+                (img_height as usize).div_euclid(CHUNK_SIZE),
+                (img_height as usize).rem_euclid(CHUNK_SIZE),
             );
             let (h_chunks, last_h_chunk) = (
-                img_width.div_euclid(CHUNK_SIZE as u32),
-                img_width.rem_euclid(CHUNK_SIZE as u32),
+                (img_width as usize).div_euclid(CHUNK_SIZE),
+                (img_width as usize).rem_euclid(CHUNK_SIZE),
             );
 
             // Progress related init
 
             let start = Instant::now();
 
-            let progress = atomic::AtomicU32::new(0);
+            let progress = atomic::AtomicUsize::new(0);
             let total = (0..v_chunks + 1)
                 .flat_map(|cj| {
                     (0..h_chunks + 1).map(move |ci| {
                         let chunk_width = if ci == h_chunks {
                             last_h_chunk
                         } else {
-                            CHUNK_SIZE as u32
+                            CHUNK_SIZE
                         };
                         let chunk_height = if cj == v_chunks {
                             last_v_chunk
                         } else {
-                            CHUNK_SIZE as u32
+                            CHUNK_SIZE
                         };
 
-                        (chunk_width + 2 * KERNEL_SIZE as u32)
-                            * (chunk_height + 2 * KERNEL_SIZE as u32)
+                        (chunk_width + 2 * KERNEL_SIZE) * (chunk_height + 2 * KERNEL_SIZE)
                     })
                 })
-                .sum::<u32>();
+                .sum::<usize>();
 
             let stdout = std::io::stdout();
 
@@ -153,29 +153,27 @@ fn main() -> Result<()> {
                     let chunk_width = if ci == h_chunks {
                         last_h_chunk
                     } else {
-                        CHUNK_SIZE as u32
+                        CHUNK_SIZE
                     };
                     let chunk_height = if cj == v_chunks {
                         last_v_chunk
                     } else {
-                        CHUNK_SIZE as u32
+                        CHUNK_SIZE
                     };
 
                     // pi and pj are the coordinates of the first pixel of the
                     // chunk (top-left corner pixel)
-                    let pi = ci * CHUNK_SIZE as u32;
-                    let pj = cj * CHUNK_SIZE as u32;
+                    let pi = ci * CHUNK_SIZE;
+                    let pj = cj * CHUNK_SIZE;
 
                     let (tx, rx) = mpsc::channel();
 
-                    (0..chunk_height + 2 * KERNEL_SIZE as u32)
-                        .flat_map(|j| {
-                            (0..chunk_width + 2 * KERNEL_SIZE as u32).map(move |i| (i, j))
-                        })
+                    (0..chunk_height + 2 * KERNEL_SIZE)
+                        .flat_map(|j| (0..chunk_width + 2 * KERNEL_SIZE).map(move |i| (i, j)))
                         .par_bridge()
                         .for_each_with(tx, |s, (i, j)| {
-                            let x = (pi + i - KERNEL_SIZE as u32) as f64 + 0.5;
-                            let y = (pj + j - KERNEL_SIZE as u32) as f64 + 0.5;
+                            let x = (pi + i - KERNEL_SIZE) as f64 + 0.5;
+                            let y = (pj + j - KERNEL_SIZE) as f64 + 0.5;
 
                             let samples = sampling_points
                                 .iter()
@@ -213,37 +211,40 @@ fn main() -> Result<()> {
                             s.send(((i, j), samples)).unwrap();
                         });
 
-                    let mut chunk_samples = Mat2D::filled_with(
-                        vec![],
-                        chunk_width as usize + 2 * CHUNK_SIZE,
-                        chunk_height as usize + 2 * CHUNK_SIZE,
+                    let mut chunk_samples = Mat3D::filled_with(
+                        ((0., 0.), 0.),
+                        chunk_width as usize + 2 * KERNEL_SIZE,
+                        chunk_height as usize + 2 * KERNEL_SIZE,
+                        sampling_points.len(),
                     );
                     for ((i, j), pixel_samples) in rx {
-                        chunk_samples
-                            .set((i as usize, j as usize), pixel_samples.to_owned())
-                            .unwrap();
+                        for (k, &v) in pixel_samples.iter().enumerate() {
+                            chunk_samples.set((i as usize, j as usize, k), v).unwrap();
+                        }
                     }
 
                     for j in 0..chunk_height as usize {
                         for i in 0..chunk_width as usize {
-                            let i = i + KERNEL_SIZE as usize;
-                            let j = j + KERNEL_SIZE as usize;
+                            let i = i + KERNEL_SIZE;
+                            let j = j + KERNEL_SIZE;
 
                             let mut weighted_sum = 0.;
                             let mut weight_total = 0.;
 
-                            for dj in -KERNEL_SIZE..=KERNEL_SIZE {
-                                for di in -KERNEL_SIZE..=KERNEL_SIZE {
+                            for dj in -KERNEL_SIZE_I..=KERNEL_SIZE_I {
+                                for di in -KERNEL_SIZE_I..=KERNEL_SIZE_I {
                                     let ii =
                                         i.saturating_add_signed(di).min(img_width as usize - 1);
                                     let jj =
                                         j.saturating_add_signed(dj).min(img_height as usize - 1);
 
-                                    for &((dx, dy), v) in chunk_samples.get((ii, jj)).unwrap() {
+                                    for k in 0..sampling_points.len() {
+                                        let &((dx, dy), v) =
+                                            chunk_samples.get((ii, jj, k)).unwrap();
                                         let dx = di as f64 + dx;
                                         let dy = dj as f64 + dy;
 
-                                        const R: f64 = 1.5;
+                                        const R: f64 = 0.8;
                                         let d = dx * dx + dy * dy;
                                         if d < R {
                                             let w = 1. / (1. + d / R);
