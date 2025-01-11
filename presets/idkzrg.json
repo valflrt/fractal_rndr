@@ -7,5 +7,5 @@
   "max_iter": 150000,
   "fractal": "SecondDegreeRecWithGrowingExponent",
   "coloring_mode": "Linear",
-  "sampling": "High"
+  "sampling": { "level": "High", "random_offsets": false }
 }

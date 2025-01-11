@@ -18,7 +18,7 @@ use mat::{Mat2D, Mat3D};
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use sampling::{
-    generate_sampling_points, map_points_with_offsets, preview_sampling_points, SamplingLevel,
+    generate_sampling_points, map_points_with_offsets, preview_sampling_points, Sampling,
 };
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +42,7 @@ struct FractalParams {
     fractal: Fractal,
 
     coloring_mode: Option<ColoringMode>,
-    sampling: Option<SamplingLevel>,
+    sampling: Option<Sampling>,
 
     custom_gradient: Option<Vec<(f64, [u8; 3])>>,
 
@@ -71,7 +71,7 @@ fn main() -> Result<()> {
                 center_x,
                 center_y,
                 max_iter,
-                sampling: sampling_mode,
+                sampling,
                 fractal,
                 coloring_mode,
                 custom_gradient,
@@ -92,7 +92,8 @@ fn main() -> Result<()> {
 
             // sampling
 
-            let sampling_points = generate_sampling_points(sampling_mode);
+            let sampling_points =
+                generate_sampling_points(Some(sampling.unwrap_or_default().level));
             if let Some(DevOptions {
                 save_sampling_pattern: Some(true),
                 ..
@@ -176,8 +177,16 @@ fn main() -> Result<()> {
                             let x = (pi + i - KERNEL_SIZE) as f64;
                             let y = (pj + j - KERNEL_SIZE) as f64;
 
-                            let mut rng = fastrand::Rng::new();
-                            let (offset_x, offset_y) = (rng.f64(), rng.f64());
+                            let (offset_x, offset_y) = if let Some(Sampling {
+                                random_offsets: Some(true),
+                                ..
+                            }) = sampling
+                            {
+                                let mut rng = fastrand::Rng::new();
+                                (rng.f64(), rng.f64())
+                            } else {
+                                (0., 0.)
+                            };
                             let samples = sampling_points
                                 .iter()
                                 .filter_map(|&(dx, dy)| {

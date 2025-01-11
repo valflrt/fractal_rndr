@@ -4,6 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::error::{ErrorKind, Result};
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Sampling {
+    pub level: SamplingLevel,
+    pub random_offsets: Option<bool>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SamplingLevel {
     Low,
     #[default]
@@ -18,14 +24,14 @@ pub enum SamplingLevel {
 
 pub fn generate_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f64, f64)> {
     let n = match sampling_level.unwrap_or_default() {
-        SamplingLevel::Low => 13,
-        SamplingLevel::Medium => 21,
-        SamplingLevel::High => 34,
-        SamplingLevel::Ultra => 55,
-        SamplingLevel::Extreme => 89,
-        SamplingLevel::Extreme1 => 144,
-        SamplingLevel::Extreme2 => 233,
-        SamplingLevel::Extreme3 => 377,
+        SamplingLevel::Low => 21,
+        SamplingLevel::Medium => 34,
+        SamplingLevel::High => 55,
+        SamplingLevel::Ultra => 89,
+        SamplingLevel::Extreme => 144,
+        SamplingLevel::Extreme1 => 233,
+        SamplingLevel::Extreme2 => 377,
+        SamplingLevel::Extreme3 => 610,
     };
 
     const PHI: f64 = 1.618033988749895;

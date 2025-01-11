@@ -114,16 +114,16 @@ I think this one looks a bit like Mandelbrot ?
 
 # Parameter file reference
 
-- `img_width` and `img_height`: Set image width and height (integers, in pixel).
+- `img_width` _(int)_ and `img_height` _(int)_: Set image width and height.
 
-- `zoom`: Set zoom (float).
+- `zoom` _(float)_: Set zoom.
 
-- `center_x` and `center_y`: Set the position of the center of the render area (floats).
+- `center_x` _(float)_ and `center_y` _(float)_: Set the position of the center of the render area (floats).
 
   > [!NOTE]
   > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
 
-- `max_iter`: Set the maximum iteration count (around 80000 recommended except for mandelbrot-like fractals that look better with ~1000 iterations).
+- `max_iter` _(int)_: Set the maximum iteration count (around 80000 recommended except for mandelbrot-like fractals that look better with ~1000 iterations).
 
 - `fractal_kind`: Set the fractal you want to draw. Available options are:
 
@@ -134,23 +134,27 @@ I think this one looks a bit like Mandelbrot ?
   - `{ "NthDegreeRecWithGrowingExponent": n }`
   - `"ThirdDegreeRecPairs"`
 
-- `coloring_mode`: _(optional)_ Set the way pixels are colored. Available options are:
+- `coloring_mode` _(optional)_: Set the way pixels are colored. Available options are:
 
   - `"BlackAndWhite"`: Draws pixels black if the maximum iteration count has been reached, otherwise white.
   - `"Linear"`: Maps the iteration count for a pixel to a value between 0 and 1 by dividing it by the maximum iteration count and uses this value to pick a color from the gradient.
   - `"Squared"`: Similar to `"Linear"`, but the value between 0 and 1 is squared before picking a color from the gradient.
   - `"CumulativeHistogram"` _(default)_ More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
 
-- `sampling`: _(optional)_ Set sampling level: higher values take more samples and (hopefully) give a smoother result. Available options are:
+- `sampling` _(optional)_: Set sampling options.
 
-  - `"Single"`: Takes only one sample per pixel.
-  - `"Low"`: _(default)_
-  - `"Medium"`
-  - `"High"`
-  - `"Ultra"`
-  - `"Extreme"`
+  - `level` _(optional)_: Set sampling level: higher values take more samples and (hopefully) give a smoother result. Available options are:
+    - `"Low"`: _(default)_
+    - `"Medium"`
+    - `"High"`
+    - `"Ultra"`
+    - `"Extreme"`
+    - `"Extreme1"`
+    - `"Extreme2"`
+    - `"Extreme3"`
+  - `random_offsets` _(bool, optional)_: Enable or disable random offsets. They are used to get rid of moiré patterns but they make noise appear on some fractals so it might be useful to disable them.
 
-- `custom_gradient`: _(optional)_ Set a custom gradient. This is an array of array of the form `[t, [r, g, b]]` where `t` is a float between 0 and 1 and `r`, `g`, `b` the color at that point in the gradient. Colors in between are interpolated.
+- `custom_gradient` _(optional)_: Set a custom gradient. This is an array of array of the form `[t, [r, g, b]]` where `t` is a float between 0 and 1 and `r`, `g`, `b` the color at that point in the gradient. Colors in between are interpolated.
 
   Example:
 
@@ -171,6 +175,6 @@ I think this one looks a bit like Mandelbrot ?
   }
   ```
 
-- `dev_options`: _(optional)_ For development purposes.
-  - `save_sampling_pattern`: _(optional)_ Save the sampling pattern as an image.
-  - `display_gradient`: _(optional)_ Draw the gradient used for coloring in the bottom right corner of the image.
+- `dev_options` _(optional)_: For development purposes.
+  - `save_sampling_pattern` _(bool, optional)_: Save the sampling pattern as an image.
+  - `display_gradient` _(bool, optional)_: Draw the gradient used for coloring in the bottom right corner of the image.
