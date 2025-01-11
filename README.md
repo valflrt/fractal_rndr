@@ -116,7 +116,7 @@ I think this one looks a bit like Mandelbrot ?
 
 - `img_width` _(int)_ and `img_height` _(int)_: Set image width and height.
 
-- `zoom` _(float)_: Set zoom.
+- `zoom` _(float)_: Set zoom. A smaller number means a deeper zoom.
 
 - `center_x` _(float)_ and `center_y` _(float)_: Set the position of the center of the render area (floats).
 
@@ -139,12 +139,12 @@ I think this one looks a bit like Mandelbrot ?
   - `"BlackAndWhite"`: Draws pixels black if the maximum iteration count has been reached, otherwise white.
   - `"Linear"`: Maps the iteration count for a pixel to a value between 0 and 1 by dividing it by the maximum iteration count and uses this value to pick a color from the gradient.
   - `"Squared"`: Similar to `"Linear"`, but the value between 0 and 1 is squared before picking a color from the gradient.
-  - `"CumulativeHistogram"` _(default)_ More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
+  - `"CumulativeHistogram"` _(default)_: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
 
 - `sampling` _(optional)_: Set sampling options.
 
   - `level` _(optional)_: Set sampling level: higher values take more samples and (hopefully) give a smoother result. Available options are:
-    - `"Low"`: _(default)_
+    - `"Low"` _(default)_
     - `"Medium"`
     - `"High"`
     - `"Ultra"`
