@@ -7,5 +7,5 @@
   "max_iter": 2000,
   "fractal": "ThirdDegreeRecPairs",
   "coloring_mode": "Linear",
-  "sampling": { "level": "Ultra", "random_offsets": false }
+  "sampling": { "level": "Extreme" }
 }

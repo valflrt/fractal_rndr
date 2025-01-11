@@ -10,6 +10,7 @@ It includes different fractal kinds among which the Mandelbrot set and a (potent
 - [How to use](#how-to-use)
 - [Preset renders](#preset-renders)
 - [Parameter file reference](#parameter-file-reference)
+- [Ideas](#ideas)
 
 # How to use
 
@@ -112,6 +113,12 @@ I think this one looks a bit like Mandelbrot ?
 
 ![efhhgk.png](./presets/efhhgk.png)
 
+### [erbeap.json](./presets/erbeap.json)
+
+> Fractal: `ThirdDegreeRecPairs`
+
+![erbeap.png](./presets/erbeap.png)
+
 # Parameter file reference
 
 - `img_width` _(int)_ and `img_height` _(int)_: Set image width and height.
@@ -178,3 +185,7 @@ I think this one looks a bit like Mandelbrot ?
 - `dev_options` _(optional)_: For development purposes.
   - `save_sampling_pattern` _(bool, optional)_: Save the sampling pattern as an image.
   - `display_gradient` _(bool, optional)_: Draw the gradient used for coloring in the bottom right corner of the image.
+
+# Ideas
+
+- Add a way to set up a list of "non-render rectangles" in the param file: this would allow marking areas as highly divergent and prevent huge amounts of computation.

@@ -7,5 +7,5 @@
   "max_iter": 80000,
   "fractal": "ThirdDegreeRecWithGrowingExponent",
   "coloring_mode": "CumulativeHistogram",
-  "sampling": { "level": "High", "random_offsets": false }
+  "sampling": { "level": "Ultra" }
 }

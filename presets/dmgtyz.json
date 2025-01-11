@@ -4,8 +4,8 @@
   "zoom": 0.046,
   "center_x": -0.9858,
   "center_y": 0.05195,
-  "max_iter": 80000,
+  "max_iter": 100000,
   "fractal": "SecondDegreeRecAlternating1WithGrowingExponent",
   "coloring_mode": "CumulativeHistogram",
-  "sampling": { "level": "High", "random_offsets": false }
+  "sampling": { "level": "Ultra" }
 }

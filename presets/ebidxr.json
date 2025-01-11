@@ -1,11 +1,11 @@
 {
   "img_width": 3840,
   "img_height": 2160,
-  "zoom": 0.00026,
-  "center_x": -0.11591,
+  "zoom": 0.000265,
+  "center_x": -0.115909,
   "center_y": 0.0,
   "max_iter": 120000,
   "fractal": "ThirdDegreeRecWithGrowingExponent",
   "coloring_mode": "CumulativeHistogram",
-  "sampling": { "level": "High", "random_offsets": false }
+  "sampling": { "level": "Ultra" }
 }

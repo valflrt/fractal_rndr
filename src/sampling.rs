@@ -11,6 +11,7 @@ pub struct Sampling {
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SamplingLevel {
+    Exploration,
     Low,
     #[default]
     Medium,
@@ -24,6 +25,7 @@ pub enum SamplingLevel {
 
 pub fn generate_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f64, f64)> {
     let n = match sampling_level.unwrap_or_default() {
+        SamplingLevel::Exploration => 5,
         SamplingLevel::Low => 21,
         SamplingLevel::Medium => 34,
         SamplingLevel::High => 55,
