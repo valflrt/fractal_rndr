@@ -10,7 +10,7 @@ pub enum ColoringMode {
     CumulativeHistogram,
 }
 
-const HISTOGRAM_SIZE: usize = 100000;
+const HISTOGRAM_SIZE: usize = 1000000;
 
 fn map_f64_to_histogram_index(value: f64) -> usize {
     ((value * (HISTOGRAM_SIZE - 1) as f64) as usize).min(HISTOGRAM_SIZE - 1)

@@ -17,7 +17,9 @@ use image::{Rgb, RgbImage};
 use mat::{Mat2D, Mat3D};
 use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use sampling::{generate_sampling_points, preview_sampling_points, SamplingLevel};
+use sampling::{
+    generate_sampling_points, map_points_with_offsets, preview_sampling_points, SamplingLevel,
+};
 use serde::{Deserialize, Serialize};
 
 use coloring::{
@@ -101,7 +103,7 @@ fn main() -> Result<()> {
 
             // Get chunks
 
-            const CHUNK_SIZE: usize = 256;
+            const CHUNK_SIZE: usize = 128;
             const KERNEL_SIZE: usize = 1;
             const KERNEL_SIZE_I: isize = KERNEL_SIZE as isize;
 
@@ -167,19 +169,23 @@ fn main() -> Result<()> {
                     let pj = cj * CHUNK_SIZE;
 
                     let (tx, rx) = mpsc::channel();
-
                     (0..chunk_height + 2 * KERNEL_SIZE)
                         .flat_map(|j| (0..chunk_width + 2 * KERNEL_SIZE).map(move |i| (i, j)))
                         .par_bridge()
                         .for_each_with(tx, |s, (i, j)| {
-                            let x = (pi + i - KERNEL_SIZE) as f64 + 0.5;
-                            let y = (pj + j - KERNEL_SIZE) as f64 + 0.5;
+                            let x = (pi + i - KERNEL_SIZE) as f64;
+                            let y = (pj + j - KERNEL_SIZE) as f64;
 
+                            let mut rng = fastrand::Rng::new();
+                            let (offset_x, offset_y) = (rng.f64(), rng.f64());
                             let samples = sampling_points
                                 .iter()
-                                .map(|&(dx, dy)| {
-                                    let re = x_min + width * (x + dx) / img_width as f64;
-                                    let im = y_min + height * (y + dy) / img_height as f64;
+                                .filter_map(|&(dx, dy)| {
+                                    map_points_with_offsets(dx, dy, offset_x, offset_y)
+                                })
+                                .map(|(dx, dy)| {
+                                    let re = x_min + width * (x + 0.5 + dx) / img_width as f64;
+                                    let im = y_min + height * (y + 0.5 + dy) / img_height as f64;
 
                                     let (iter, _) =
                                         fractal.get_pixel(Complex::new(re, im), max_iter);
@@ -244,12 +250,22 @@ fn main() -> Result<()> {
                                         let dx = di as f64 + dx;
                                         let dy = dj as f64 + dy;
 
-                                        const R: f64 = 0.8;
-                                        let d = dx * dx + dy * dy;
-                                        if d < R {
-                                            let w = 1. / (1. + d / R);
+                                        // This only includes samples from a round-cornered square
+                                        // (it works kind of like a distance function)
+                                        if f64::max(dx.abs(), dy.abs()) < 0.5 {
+                                            let w = 1.;
                                             weighted_sum += w * v;
                                             weight_total += w;
+                                        } else {
+                                            const R: f64 = 0.4;
+                                            const R_SQR: f64 = R * R;
+                                            let distance_sqr = (dx.abs() - 0.5).max(0.).powi(2)
+                                                + (dy.abs() - 0.5).max(0.).powi(2);
+                                            if distance_sqr < R_SQR {
+                                                let w = 1. - 0.25 * distance_sqr / R_SQR;
+                                                weighted_sum += w * v;
+                                                weight_total += w;
+                                            }
                                         }
                                     }
                                 }

@@ -11,45 +11,54 @@ pub enum SamplingLevel {
     High,
     Ultra,
     Extreme,
+    Extreme1,
+    Extreme2,
+    Extreme3,
 }
 
 pub fn generate_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f64, f64)> {
-    // Maybe too precise but yes.
-    // const PHI: f64 = 1.618033988749895;
-
-    let n: i32 = match sampling_level.unwrap_or_default() {
-        SamplingLevel::Low => 1,
-        SamplingLevel::Medium => 2,
-        SamplingLevel::High => 3,
-        SamplingLevel::Ultra => 4,
-        SamplingLevel::Extreme => 5,
+    let n = match sampling_level.unwrap_or_default() {
+        SamplingLevel::Low => 13,
+        SamplingLevel::Medium => 21,
+        SamplingLevel::High => 34,
+        SamplingLevel::Ultra => 55,
+        SamplingLevel::Extreme => 89,
+        SamplingLevel::Extreme1 => 144,
+        SamplingLevel::Extreme2 => 233,
+        SamplingLevel::Extreme3 => 377,
     };
 
+    const PHI: f64 = 1.618033988749895;
+    const EPS: f64 = 0.5;
     let samples = (0..n)
-        .flat_map(|j| (0..n).map(move |i| (i, j)))
-        .flat_map(|(i, j)| {
-            let (x, y) = (2. * i as f64 / n as f64 - 1., 2. * j as f64 / n as f64 - 1.);
-            [(x, y), (x + 1. / n as f64, y + 1. / n as f64)]
+        .map(|i| {
+            (
+                i as f64 / PHI % 1.,
+                (i as f64 + EPS) / ((n - 1) as f64 + 2. * EPS),
+            )
         })
         .collect::<Vec<_>>();
 
-    // (0..n)
-    //     .map(|i| (i as f64 / PHI % 1., i as f64 / (n - 1) as f64))
-    //     .filter_map(|(x, y)| {
-    //         let (x, y) = (2. * x - 1., 2. * y - 1.);
-    //         (x.max(y) < 1.).then_some((x, y));
-    //         Some((x, y))
-    //     })
-    //     // .filter_map(|(x, y)| {
-    //     //     let r = R * y.sqrt();
-    //     //     let theta = f64::consts::TAU * x;
-    //     //     let x = r * theta.cos();
-    //     //     let y = r * theta.sin();
-    //     //     (x.abs().max(y.abs()) < 1.).then_some((r, theta))
-    //     // })
-    //     .collect::<Vec<_>>();
-
     samples
+}
+
+pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> Option<(f64, f64)> {
+    #[inline]
+    fn tent(x: f64) -> f64 {
+        let x = 2. * x - 1.;
+        if x != 0. {
+            x / x.abs().powf(0.7) - x.signum()
+        } else {
+            0.
+        }
+    }
+
+    let (x, y) = ((x + offset_x) % 1., (y + offset_y) % 1.);
+
+    const R: f64 = 1.5;
+    let (x, y) = (R * tent(x), R * tent(y));
+
+    (f64::max(x.abs(), y.abs()) < 0.5).then_some((x, y))
 }
 
 pub fn preview_sampling_points(sampling_points: &Vec<(f64, f64)>) -> Result<()> {
@@ -65,12 +74,16 @@ pub fn preview_sampling_points(sampling_points: &Vec<(f64, f64)>) -> Result<()> 
             } else {
                 Rgba([120, 120, 120, 255])
             };
+
+            let (offset_x, offset_y) = (fastrand::f64(), fastrand::f64());
             for &(x, y) in sampling_points {
-                preview.put_pixel(
-                    (center as f64 + px as f64 * (x + 2. * i as f64)) as u32,
-                    (center as f64 + px as f64 * (y + 2. * j as f64)) as u32,
-                    color,
-                );
+                if let Some((x, y)) = map_points_with_offsets(x, y, offset_x, offset_y) {
+                    preview.put_pixel(
+                        (center as f64 + 2. * px as f64 * (x + i as f64)) as u32,
+                        (center as f64 + 2. * px as f64 * (y + j as f64)) as u32,
+                        color,
+                    );
+                }
             }
         }
     }
