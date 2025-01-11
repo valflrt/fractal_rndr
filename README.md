@@ -75,12 +75,6 @@ These are preset renders I like, you can get their json parameters files by clic
 
 ![xvebhd.png](./presets/xvebhd.png)
 
-### [ztkhky.json](./presets/ztkhky.json)
-
-> Fractal: `ThirdDegreeRecWithGrowingExponent`
-
-![ztkhky.png](./presets/ztkhky.png)
-
 ### [idkzrg.json](./presets/idkzrg.json)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
