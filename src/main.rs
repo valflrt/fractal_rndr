@@ -261,17 +261,20 @@ fn main() -> Result<()> {
 
                                         // This only includes samples from a round-cornered square
                                         // (it works kind of like a distance function)
+                                        // https://www.desmos.com/3d/qwoffhgvwi
+
                                         if f64::max(dx.abs(), dy.abs()) < 0.5 {
                                             let w = 1.;
                                             weighted_sum += w * v;
                                             weight_total += w;
                                         } else {
-                                            const R: f64 = 0.4;
-                                            const R_SQR: f64 = R * R;
+                                            const D: f64 = 0.4;
+                                            const D_SQR: f64 = D * D;
+                                            const T: f64 = 0.5;
                                             let distance_sqr = (dx.abs() - 0.5).max(0.).powi(2)
                                                 + (dy.abs() - 0.5).max(0.).powi(2);
-                                            if distance_sqr < R_SQR {
-                                                let w = 1. - 0.25 * distance_sqr / R_SQR;
+                                            if distance_sqr < D_SQR {
+                                                let w = 1. - T * distance_sqr / D_SQR;
                                                 weighted_sum += w * v;
                                                 weight_total += w;
                                             }
