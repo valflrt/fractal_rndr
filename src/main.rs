@@ -1,4 +1,5 @@
 mod coloring;
+mod complex;
 mod error;
 mod fractal;
 mod mat;
@@ -13,9 +14,9 @@ use std::{
     time::Instant,
 };
 
+use complex::Complex;
 use image::{Rgb, RgbImage};
 use mat::{Mat2D, Mat3D};
-use num_complex::Complex;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use sampling::{
     generate_sampling_points, map_points_with_offsets, preview_sampling_points, Sampling,
@@ -187,6 +188,7 @@ fn main() -> Result<()> {
                             } else {
                                 (0., 0.)
                             };
+
                             let samples = sampling_points
                                 .iter()
                                 .filter_map(|&(dx, dy)| {

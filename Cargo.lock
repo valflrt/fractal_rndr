@@ -109,7 +109,6 @@ version = "0.1.4"
 dependencies = [
  "fastrand",
  "image",
- "num-complex",
  "rayon",
  "serde",
  "serde_json",
@@ -149,15 +148,6 @@ checksum = "e2d80299ef12ff69b16a84bb182e3b9df68b5a91574d3d4fa6e41b65deec4df1"
 dependencies = [
  "adler2",
  "simd-adler32",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.4.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
-dependencies = [
- "num-traits",
 ]
 
 [[package]]
