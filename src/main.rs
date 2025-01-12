@@ -1,6 +1,7 @@
 mod coloring;
 mod error;
 mod fractal;
+mod gpu;
 mod mat;
 mod sampling;
 
