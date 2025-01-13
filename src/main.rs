@@ -170,25 +170,16 @@ fn main() -> Result<()> {
                     let pi = ci * CHUNK_SIZE;
                     let pj = cj * CHUNK_SIZE;
 
+                    let rng = fastrand::Rng::new();
                     let (tx, rx) = mpsc::channel();
                     (0..chunk_height + 2 * KERNEL_SIZE)
                         .flat_map(|j| (0..chunk_width + 2 * KERNEL_SIZE).map(move |i| (i, j)))
                         .par_bridge()
-                        .for_each_with(tx, |s, (i, j)| {
+                        .for_each_with((tx, rng), |(s, rng), (i, j)| {
                             let x = (pi + i - KERNEL_SIZE) as f64;
                             let y = (pj + j - KERNEL_SIZE) as f64;
 
-                            let (offset_x, offset_y) = if let Some(Sampling {
-                                random_offsets: Some(true),
-                                ..
-                            }) = sampling
-                            {
-                                let mut rng = fastrand::Rng::new();
-                                (rng.f64(), rng.f64())
-                            } else {
-                                (0., 0.)
-                            };
-
+                            let (offset_x, offset_y) = (rng.f64(), rng.f64());
                             let samples = sampling_points
                                 .iter()
                                 .filter_map(|&(dx, dy)| {
@@ -198,8 +189,7 @@ fn main() -> Result<()> {
                                     let re = x_min + width * (x + 0.5 + dx) / img_width as f64;
                                     let im = y_min + height * (y + 0.5 + dy) / img_height as f64;
 
-                                    let (iter, _) =
-                                        fractal.get_pixel(Complex::new(re, im), max_iter);
+                                    let iter = fractal.get_pixel(Complex::new(re, im), max_iter);
 
                                     ((dx, dy), iter as f64 / max_iter as f64)
                                 })
@@ -242,24 +232,23 @@ fn main() -> Result<()> {
 
                     for j in 0..chunk_height as usize {
                         for i in 0..chunk_width as usize {
-                            let i = i + KERNEL_SIZE;
-                            let j = j + KERNEL_SIZE;
-
                             let mut weighted_sum = 0.;
                             let mut weight_total = 0.;
 
                             for dj in -KERNEL_SIZE_I..=KERNEL_SIZE_I {
                                 for di in -KERNEL_SIZE_I..=KERNEL_SIZE_I {
-                                    let ii =
-                                        i.saturating_add_signed(di).min(img_width as usize - 1);
-                                    let jj =
-                                        j.saturating_add_signed(dj).min(img_height as usize - 1);
+                                    let ii = (i + KERNEL_SIZE)
+                                        .checked_add_signed(di)
+                                        .expect("should never overflow");
+                                    let jj = (j + KERNEL_SIZE)
+                                        .checked_add_signed(dj)
+                                        .expect("should never overflow");
 
                                     for k in 0..sampling_points.len() {
                                         let &((dx, dy), v) =
                                             chunk_samples.get((ii, jj, k)).unwrap();
-                                        let dx = di as f64 + dx;
-                                        let dy = dj as f64 + dy;
+                                        let dx = di as f64 + dx - 0.5;
+                                        let dy = dj as f64 + dy - 0.5;
 
                                         // This only includes samples from a round-cornered square
                                         // (it works kind of like a distance function)
@@ -340,6 +329,18 @@ fn main() -> Result<()> {
                                 i as u32,
                                 j as u32,
                                 color_mapping(value.powi(2), custom_gradient.as_ref()),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::Powf(p) => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(value.powf(p), custom_gradient.as_ref()),
                             );
                         }
                     }

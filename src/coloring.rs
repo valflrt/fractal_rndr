@@ -6,6 +6,7 @@ pub enum ColoringMode {
     BlackAndWhite,
     Linear,
     Squared,
+    Powf(f64),
     #[default]
     CumulativeHistogram,
 }
