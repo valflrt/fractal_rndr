@@ -1,5 +1,6 @@
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
+#[repr(align(16))]
 #[derive(Debug, Clone, Copy)]
 pub struct Complex {
     pub re: f64,
@@ -8,13 +9,10 @@ pub struct Complex {
 
 impl Complex {
     pub const ZERO: Self = Self { re: 0., im: 0. };
+    // pub const ONE: Self = Self { re: 1., im: 0. };
+    // pub const I: Self = Self { re: 0., im: 1. };
 
-    #[inline]
-    pub const fn new(re: f64, im: f64) -> Self {
-        Complex { re, im }
-    }
-
-    #[inline]
+    #[inline(always)]
     pub const fn norm_sqr(self) -> f64 {
         self.re * self.re + self.im * self.im
     }
@@ -27,7 +25,7 @@ impl Complex {
 impl Add for Complex {
     type Output = Complex;
 
-    #[inline]
+    #[inline(always)]
     fn add(self, rhs: Self) -> Self::Output {
         Complex {
             re: self.re + rhs.re,
@@ -37,7 +35,7 @@ impl Add for Complex {
 }
 
 impl AddAssign for Complex {
-    #[inline]
+    #[inline(always)]
     fn add_assign(&mut self, rhs: Self) {
         self.re += rhs.re;
         self.im += rhs.im;
@@ -47,7 +45,7 @@ impl AddAssign for Complex {
 impl Mul for Complex {
     type Output = Complex;
 
-    #[inline]
+    #[inline(always)]
     fn mul(self, rhs: Self) -> Self::Output {
         let k1 = rhs.re * (self.re + self.im);
         let k2 = self.re * (rhs.im - rhs.re);
@@ -63,7 +61,7 @@ impl Mul for Complex {
 impl Neg for Complex {
     type Output = Complex;
 
-    #[inline]
+    #[inline(always)]
     fn neg(self) -> Self::Output {
         Complex {
             re: -self.re,
@@ -75,7 +73,7 @@ impl Neg for Complex {
 impl Sub for Complex {
     type Output = Complex;
 
-    #[inline]
+    #[inline(always)]
     fn sub(self, rhs: Self) -> Self::Output {
         Complex {
             re: self.re - rhs.re,
@@ -85,7 +83,7 @@ impl Sub for Complex {
 }
 
 impl SubAssign for Complex {
-    #[inline]
+    #[inline(always)]
     fn sub_assign(&mut self, rhs: Self) {
         self.re -= rhs.re;
         self.im -= rhs.im;

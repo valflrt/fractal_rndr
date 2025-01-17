@@ -10,6 +10,7 @@ pub enum Fractal {
     ThirdDegreeRecWithGrowingExponent,
     NthDegreeRecWithGrowingExponent(usize),
     ThirdDegreeRecPairs,
+    SecondDegreeThirtySevenBlend,
 }
 
 impl Fractal {
@@ -116,6 +117,29 @@ impl Fractal {
                     z0 = z1;
                     z1 = z2;
                     z2 = new_z2;
+
+                    i += 1;
+                }
+
+                i
+            }
+            Fractal::SecondDegreeThirtySevenBlend => {
+                const BAILOUT: f64 = 4.;
+
+                let mut z0 = Complex::ZERO;
+                let mut z1 = Complex::ZERO;
+
+                let mut i = 0;
+                while i < max_iter && z1.norm_sqr() < BAILOUT {
+                    if i % 37 == 0 {
+                        let new_z1 = z1 * z1 - z0 + c;
+                        z0 = z1;
+                        z1 = new_z1;
+                    } else {
+                        let new_z1 = z1 * z1 + z0;
+                        z0 = z1;
+                        z1 = new_z1;
+                    }
 
                     i += 1;
                 }

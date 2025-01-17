@@ -1,52 +1,55 @@
 use image::Rgb;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ColoringMode {
+    CumulativeHistogram,
+    MaxIterNorm {
+        map_value: Option<MapValue>,
+    },
+    MaxNorm {
+        map_value: Option<MapValue>,
+    },
+    MinMaxNorm {
+        map_value: Option<MapValue>,
+    },
+    CustomMaxNorm {
+        max: f64,
+        map_value: Option<MapValue>,
+    },
+    CustomMinMaxNorm {
+        min: f64,
+        max: f64,
+        map_value: Option<MapValue>,
+    },
     BlackAndWhite,
+}
+
+impl Default for ColoringMode {
+    fn default() -> Self {
+        ColoringMode::MaxNorm {
+            map_value: Some(MapValue::Linear),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub enum MapValue {
+    #[default]
     Linear,
     Squared,
     Powf(f64),
-    #[default]
-    CumulativeHistogram,
 }
 
-const HISTOGRAM_SIZE: usize = 1000000;
-
-fn map_f64_to_histogram_index(value: f64) -> usize {
-    ((value * (HISTOGRAM_SIZE - 1) as f64) as usize).min(HISTOGRAM_SIZE - 1)
-}
-
-/// Compute an histogram from normalized values in range
-/// (0, 1).
-pub fn compute_histogram(pixel_values: &[f64]) -> Vec<u32> {
-    let mut histogram = vec![0; HISTOGRAM_SIZE];
-
-    for &value in pixel_values.iter() {
-        histogram[map_f64_to_histogram_index(value)] += 1;
+impl MapValue {
+    #[inline]
+    pub fn map_value(&self, t: f64) -> f64 {
+        match self {
+            MapValue::Linear => t,
+            MapValue::Squared => t * t,
+            MapValue::Powf(p) => t.powf(*p),
+        }
     }
-
-    histogram
-}
-
-/// Computes the cumulative histogram associated with the
-/// histogram provided.
-pub fn cumulate_histogram(histogram: Vec<u32>) -> Vec<f64> {
-    let total = histogram.iter().sum::<u32>();
-    let mut cumulative = vec![0.; HISTOGRAM_SIZE];
-    let mut cumulative_sum = 0.;
-    for (i, &count) in histogram.iter().enumerate() {
-        cumulative_sum += count as f64 / total as f64;
-        cumulative[i] = cumulative_sum;
-    }
-
-    cumulative
-}
-
-/// Get the cumulative histogram value from a normalized value
-/// in range (0, 1).
-pub fn get_histogram_value(value: f64, cumulative_histogram: &Vec<f64>) -> f64 {
-    cumulative_histogram[map_f64_to_histogram_index(value)]
 }
 
 const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
@@ -88,5 +91,45 @@ pub fn color_mapping(t: f64, custom_gradient: Option<&Vec<(f64, [u8; 3])>>) -> R
         map(t, g)
     } else {
         map(t, DEFAULT_GRADIENT.as_ref())
+    }
+}
+
+pub mod cumulative_histogram {
+    const HISTOGRAM_SIZE: usize = 1000000;
+
+    fn map_f64_to_histogram_index(value: f64) -> usize {
+        ((value * (HISTOGRAM_SIZE - 1) as f64) as usize).min(HISTOGRAM_SIZE - 1)
+    }
+
+    /// Compute an histogram from normalized values in range
+    /// (0, 1).
+    pub fn compute_histogram(pixel_values: &[f64]) -> Vec<u32> {
+        let mut histogram = vec![0; HISTOGRAM_SIZE];
+
+        for &value in pixel_values.iter() {
+            histogram[map_f64_to_histogram_index(value)] += 1;
+        }
+
+        histogram
+    }
+
+    /// Computes the cumulative histogram associated with the
+    /// histogram provided.
+    pub fn cumulate_histogram(histogram: Vec<u32>) -> Vec<f64> {
+        let total = histogram.iter().sum::<u32>();
+        let mut cumulative = vec![0.; HISTOGRAM_SIZE];
+        let mut cumulative_sum = 0.;
+        for (i, &count) in histogram.iter().enumerate() {
+            cumulative_sum += count as f64 / total as f64;
+            cumulative[i] = cumulative_sum;
+        }
+
+        cumulative
+    }
+
+    /// Get the cumulative histogram value from a normalized value
+    /// in range (0, 1).
+    pub fn get_histogram_value(value: f64, cumulative_histogram: &Vec<f64>) -> f64 {
+        cumulative_histogram[map_f64_to_histogram_index(value)]
     }
 }

@@ -24,7 +24,9 @@ use sampling::{
 use serde::{Deserialize, Serialize};
 
 use coloring::{
-    color_mapping, compute_histogram, cumulate_histogram, get_histogram_value, ColoringMode,
+    color_mapping,
+    cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_value},
+    ColoringMode,
 };
 use error::{ErrorKind, Result};
 use fractal::Fractal;
@@ -105,7 +107,7 @@ fn main() -> Result<()> {
 
             // Get chunks
 
-            const CHUNK_SIZE: usize = 128;
+            const CHUNK_SIZE: usize = 256;
             const KERNEL_SIZE: usize = 1;
             const KERNEL_SIZE_I: isize = KERNEL_SIZE as isize;
 
@@ -179,7 +181,15 @@ fn main() -> Result<()> {
                             let x = (pi + i - KERNEL_SIZE) as f64;
                             let y = (pj + j - KERNEL_SIZE) as f64;
 
-                            let (offset_x, offset_y) = (rng.f64(), rng.f64());
+                            let (offset_x, offset_y) = if let Some(Sampling {
+                                random_offsets: Some(false),
+                                ..
+                            }) = sampling
+                            {
+                                (0., 0.)
+                            } else {
+                                (rng.f64(), rng.f64())
+                            };
                             let samples = sampling_points
                                 .iter()
                                 .filter_map(|&(dx, dy)| {
@@ -189,9 +199,9 @@ fn main() -> Result<()> {
                                     let re = x_min + width * (x + 0.5 + dx) / img_width as f64;
                                     let im = y_min + height * (y + 0.5 + dy) / img_height as f64;
 
-                                    let iter = fractal.get_pixel(Complex::new(re, im), max_iter);
+                                    let iter = fractal.get_pixel(Complex { re, im }, max_iter);
 
-                                    ((dx, dy), iter as f64 / max_iter as f64)
+                                    ((dx, dy), iter)
                                 })
                                 .collect::<Vec<_>>();
 
@@ -219,7 +229,7 @@ fn main() -> Result<()> {
                         });
 
                     let mut chunk_samples = Mat3D::filled_with(
-                        ((0., 0.), 0.),
+                        ((0., 0.), 0),
                         chunk_width as usize + 2 * KERNEL_SIZE,
                         chunk_height as usize + 2 * KERNEL_SIZE,
                         sampling_points.len(),
@@ -247,8 +257,10 @@ fn main() -> Result<()> {
                                     for k in 0..sampling_points.len() {
                                         let &((dx, dy), v) =
                                             chunk_samples.get((ii, jj, k)).unwrap();
-                                        let dx = di as f64 + dx - 0.5;
-                                        let dy = dj as f64 + dy - 0.5;
+                                        let dx = di as f64 + dx;
+                                        let dy = dj as f64 + dy;
+
+                                        let v = v as f64;
 
                                         // This only includes samples from a round-cornered square
                                         // (it works kind of like a distance function)
@@ -290,62 +302,11 @@ fn main() -> Result<()> {
             let mut output_image = RgbImage::new(img_width, img_height);
 
             let max = raw_image.vec.iter().copied().fold(0., f64::max);
-            // let min = raw_image.vec.iter().copied().fold(max, f64::min);
+            let min = raw_image.vec.iter().copied().fold(max, f64::min);
 
             match coloring_mode.unwrap_or_default() {
-                ColoringMode::BlackAndWhite => {
-                    for j in 0..img_height as usize {
-                        for i in 0..img_width as usize {
-                            let &value = raw_image.get((i, j)).unwrap();
-                            output_image.put_pixel(
-                                i as u32,
-                                j as u32,
-                                if value >= 0.95 {
-                                    Rgb([0, 0, 0])
-                                } else {
-                                    Rgb([255, 255, 255])
-                                },
-                            );
-                        }
-                    }
-                }
-                ColoringMode::Linear => {
-                    for j in 0..img_height as usize {
-                        for i in 0..img_width as usize {
-                            let &value = raw_image.get((i, j)).unwrap();
-                            output_image.put_pixel(
-                                i as u32,
-                                j as u32,
-                                color_mapping(value / max, custom_gradient.as_ref()),
-                            );
-                        }
-                    }
-                }
-                ColoringMode::Squared => {
-                    for j in 0..img_height as usize {
-                        for i in 0..img_width as usize {
-                            let &value = raw_image.get((i, j)).unwrap();
-                            output_image.put_pixel(
-                                i as u32,
-                                j as u32,
-                                color_mapping(value.powi(2), custom_gradient.as_ref()),
-                            );
-                        }
-                    }
-                }
-                ColoringMode::Powf(p) => {
-                    for j in 0..img_height as usize {
-                        for i in 0..img_width as usize {
-                            let &value = raw_image.get((i, j)).unwrap();
-                            output_image.put_pixel(
-                                i as u32,
-                                j as u32,
-                                color_mapping(value.powf(p), custom_gradient.as_ref()),
-                            );
-                        }
-                    }
-                }
                 ColoringMode::CumulativeHistogram => {
+                    raw_image.vec.iter_mut().for_each(|v| *v /= max);
                     let cumulative_histogram =
                         cumulate_histogram(compute_histogram(&raw_image.vec));
                     for j in 0..img_height as usize {
@@ -358,6 +319,107 @@ fn main() -> Result<()> {
                                     get_histogram_value(value, &cumulative_histogram).powi(12),
                                     custom_gradient.as_ref(),
                                 ),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::MaxIterNorm { map_value } => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+
+                            let t = map_value
+                                .unwrap_or_default()
+                                .map_value(value / max_iter as f64);
+
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(t, custom_gradient.as_ref()),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::MaxNorm { map_value } => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+
+                            let t = map_value.unwrap_or_default().map_value(value / max);
+
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(t, custom_gradient.as_ref()),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::MinMaxNorm { map_value } => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+
+                            let t = map_value
+                                .unwrap_or_default()
+                                .map_value((value - min) / (max - min));
+
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(t, custom_gradient.as_ref()),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::CustomMaxNorm { max, map_value } => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+
+                            let t = map_value.unwrap_or_default().map_value(value / max);
+
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(t, custom_gradient.as_ref()),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::CustomMinMaxNorm {
+                    min,
+                    max,
+                    map_value,
+                } => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+
+                            let t = map_value
+                                .unwrap_or_default()
+                                .map_value((value - min) / (max - min));
+
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                color_mapping(t, custom_gradient.as_ref()),
+                            );
+                        }
+                    }
+                }
+                ColoringMode::BlackAndWhite => {
+                    for j in 0..img_height as usize {
+                        for i in 0..img_width as usize {
+                            let &value = raw_image.get((i, j)).unwrap();
+                            output_image.put_pixel(
+                                i as u32,
+                                j as u32,
+                                if value >= 0.95 {
+                                    Rgb([0, 0, 0])
+                                } else {
+                                    Rgb([255, 255, 255])
+                                },
                             );
                         }
                     }
