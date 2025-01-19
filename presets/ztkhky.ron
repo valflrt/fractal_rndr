@@ -11,7 +11,4 @@
         level: Ultra,
         random_offsets: true,
     ),
-    custom_gradient: None,
-    diverging_areas: None,
-    dev_options: None,
 )

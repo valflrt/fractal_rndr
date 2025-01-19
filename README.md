@@ -30,12 +30,9 @@ Next, create a RON parameter file that with the following structure (see [parame
     fractal: SecondDegreeRecWithGrowingExponent,
     coloring_mode: CumulativeHistogram,
     sampling: (
-        level: Ultra,
+        level: High,
         random_offsets: true,
     ),
-    custom_gradient: None,
-    diverging_areas: None,
-    dev_options: None,
 )
 ```
 
@@ -149,7 +146,7 @@ I think this one looks a bit like Mandelbrot ?
 
 - `coloring_mode`: Set the way pixels are colored. Available options are:
 
-  - `CumulativeHistogram` _(default)_: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
+  - `CumulativeHistogram`: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
   - `MaxIterNorm { map_value }`: Normalizes the value based on the `max_iter` parameter.
   - `MaxNorm { map_value }`: Normalizes the value based on the highest iteration count reached while sampling.
   - `MinMaxNorm { map_value }`: Performs min-max normalization using the lowest and the highest iteration counts reached while sampling.
@@ -165,7 +162,7 @@ I think this one looks a bit like Mandelbrot ?
 
   - `level`: Set sampling level: higher values take more samples and (hopefully) give a smoother result. Available options are:
     - `Exploration`
-    - `Low` _(default)_
+    - `Low`
     - `Medium`
     - `High`
     - `Ultra`
@@ -183,14 +180,14 @@ I think this one looks a bit like Mandelbrot ?
   (
     ..
     custom_gradient: Some([
-      [0., [10, 2, 20]],
-      [0.1, [200, 40, 230]],
-      [0.25, [20, 160, 230]],
-      [0.4, [60, 230, 80]],
-      [0.55, [255, 230, 20]],
-      [0.7, [255, 120, 20]],
-      [0.85, [255, 40, 60]],
-      [0.95, [2, 0, 4]]
+        (0., (10, 2, 20)),
+        (0.1, (200, 40, 230)),
+        (0.25, (20, 160, 230)),
+        (0.4, (60, 230, 80)),
+        (0.55, (255, 230, 20)),
+        (0.7, (255, 120, 20)),
+        (0.85, (255, 40, 60)),
+        (0.95, (2, 0, 4))
     ]),
     ..
   )
@@ -202,8 +199,8 @@ I think this one looks a bit like Mandelbrot ?
   (
     ..
     diverging_areas: Some([
-      [min_x, max_x, min_y, max_y],
-      ..
+        (min_x, max_x, min_y, max_y),
+        ..
     ]),
     ..
   )

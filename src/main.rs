@@ -110,7 +110,7 @@ fn main() -> Result<()> {
 
             // sampling
 
-            let sampling_points = generate_sampling_points(Some(sampling.level));
+            let sampling_points = generate_sampling_points(sampling.level);
             if let Some(DevOptions {
                 save_sampling_pattern: true,
                 ..
@@ -171,12 +171,12 @@ fn main() -> Result<()> {
             for cj in 0..v_chunks + 1 {
                 for ci in 0..h_chunks + 1 {
                     let chunk_width = if ci == h_chunks {
-                        last_h_chunk + 1
+                        last_h_chunk
                     } else {
                         CHUNK_SIZE
                     };
                     let chunk_height = if cj == v_chunks {
-                        last_v_chunk + 1
+                        last_v_chunk
                     } else {
                         CHUNK_SIZE
                     };
@@ -198,12 +198,11 @@ fn main() -> Result<()> {
                             let should_render = diverging_areas
                                 .as_ref()
                                 .map(|areas| {
-                                    areas.iter().fold(true, |acc, (rx, ry)| {
-                                        acc && !(rx
-                                            .contains(&(x_min + width * x / img_width as f64))
+                                    !areas.iter().any(|(rx, ry)| {
+                                        rx.contains(&(x_min + width * x / img_width as f64))
                                             && ry.contains(
-                                                &(y_min + height * y / img_height as f64),
-                                            ))
+                                                &(-y_min - height * y / img_height as f64),
+                                            )
                                     })
                                 })
                                 .unwrap_or(true);
@@ -286,6 +285,7 @@ fn main() -> Result<()> {
 
                     for j in 0..chunk_height {
                         for i in 0..chunk_width {
+                            let mut is_empty = true;
                             let mut weighted_sum = 0.;
                             let mut weight_total = 0.;
 
@@ -302,6 +302,8 @@ fn main() -> Result<()> {
                                         if let &Some(((dx, dy), v)) =
                                             chunk_samples.get((ii, jj, k)).unwrap()
                                         {
+                                            is_empty = false;
+
                                             let dx = dx + di as f64;
                                             let dy = dy + dj as f64;
 
@@ -340,10 +342,10 @@ fn main() -> Result<()> {
                             raw_image
                                 .set(
                                     (pi + i, pj + j),
-                                    if weight_total != 0. {
-                                        weighted_sum / weight_total
-                                    } else {
+                                    if is_empty {
                                         max_iter as f64
+                                    } else {
+                                        weighted_sum / weight_total
                                     },
                                 )
                                 .unwrap();

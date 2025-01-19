@@ -25,17 +25,8 @@ pub enum ColoringMode {
     BlackAndWhite,
 }
 
-impl Default for ColoringMode {
-    fn default() -> Self {
-        ColoringMode::MaxNorm {
-            map_value: MapValue::Linear,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MapValue {
-    #[default]
     Linear,
     Squared,
     Powf(f64),

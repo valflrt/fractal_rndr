@@ -3,17 +3,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{ErrorKind, Result};
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Sampling {
     pub level: SamplingLevel,
     pub random_offsets: bool,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SamplingLevel {
     Exploration,
     Low,
-    #[default]
     Medium,
     High,
     Ultra,
@@ -23,8 +22,8 @@ pub enum SamplingLevel {
     Extreme3,
 }
 
-pub fn generate_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f64, f64)> {
-    let n = match sampling_level.unwrap_or_default() {
+pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(f64, f64)> {
+    let n = match sampling_level {
         SamplingLevel::Exploration => 5,
         SamplingLevel::Low => 21,
         SamplingLevel::Medium => 34,
