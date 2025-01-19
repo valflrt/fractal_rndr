@@ -312,9 +312,9 @@ fn main() -> Result<()> {
                                                 let w = 1.;
                                                 weighted_sum += w * v;
                                                 weight_total += w;
-                                            } else if i != 0 && j != 0 {
-                                                // `i != 0 && j != 0`` is an ugly fix for a small issue I
-                                                // wasn't able to find the origin: the first column and the
+                                            } else if pi + i != 0 && pj + j != 0 {
+                                                // `pi + i != 0 && pj + j != 0`` is an ugly fix for a small issue
+                                                // I wasn't able to find the origin: the first column and the
                                                 // first row of pixels of the image are colored weirdly without
                                                 // this condition...
 
