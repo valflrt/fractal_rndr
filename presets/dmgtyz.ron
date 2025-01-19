@@ -1,0 +1,17 @@
+(
+    img_width: 3840,
+    img_height: 2160,
+    zoom: 0.046,
+    center_x: -0.9858,
+    center_y: 0.05195,
+    max_iter: 100000,
+    fractal: SecondDegreeRecAlternating1WithGrowingExponent,
+    coloring_mode: CumulativeHistogram,
+    sampling: (
+        level: Ultra,
+        random_offsets: true,
+    ),
+    custom_gradient: None,
+    diverging_areas: None,
+    dev_options: None,
+)

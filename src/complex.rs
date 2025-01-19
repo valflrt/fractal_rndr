@@ -1,40 +1,53 @@
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
-#[repr(align(16))]
+use wide::f64x4;
+
+/// A simd complex type. It holds 4 complex numbers and performs
+/// calculations on them at once.
 #[derive(Debug, Clone, Copy)]
-pub struct Complex {
-    pub re: f64,
-    pub im: f64,
+pub struct Complexs {
+    pub re: f64x4,
+    pub im: f64x4,
 }
 
-impl Complex {
-    pub const ZERO: Self = Self { re: 0., im: 0. };
-    // pub const ONE: Self = Self { re: 1., im: 0. };
-    // pub const I: Self = Self { re: 0., im: 1. };
-
+impl Complexs {
     #[inline(always)]
-    pub const fn norm_sqr(self) -> f64 {
+    pub fn norm_sqr(self) -> f64x4 {
         self.re * self.re + self.im * self.im
     }
 
-    pub fn powu(self, n: usize) -> Complex {
+    pub fn powu(self, n: usize) -> Complexs {
         (0..n).fold(self, |acc, _| acc * acc)
+    }
+
+    pub fn splat(re: f64, im: f64) -> Complexs {
+        Complexs {
+            re: f64x4::splat(re),
+            im: f64x4::splat(im),
+        }
+    }
+
+    pub fn zeros() -> Complexs {
+        Complexs {
+            re: f64x4::splat(0.),
+            im: f64x4::splat(0.),
+        }
     }
 }
 
-impl Add for Complex {
-    type Output = Complex;
+impl Add for Complexs {
+    type Output = Complexs;
 
     #[inline(always)]
     fn add(self, rhs: Self) -> Self::Output {
-        Complex {
+        Complexs {
             re: self.re + rhs.re,
             im: self.im + rhs.im,
         }
     }
 }
 
-impl AddAssign for Complex {
+impl AddAssign for Complexs {
     #[inline(always)]
     fn add_assign(&mut self, rhs: Self) {
         self.re += rhs.re;
@@ -42,8 +55,8 @@ impl AddAssign for Complex {
     }
 }
 
-impl Mul for Complex {
-    type Output = Complex;
+impl Mul for Complexs {
+    type Output = Complexs;
 
     #[inline(always)]
     fn mul(self, rhs: Self) -> Self::Output {
@@ -51,38 +64,38 @@ impl Mul for Complex {
         let k2 = self.re * (rhs.im - rhs.re);
         let k3 = self.im * (rhs.re + rhs.im);
 
-        Complex {
+        Complexs {
             re: k1 - k3,
             im: k1 + k2,
         }
     }
 }
 
-impl Neg for Complex {
-    type Output = Complex;
+impl Neg for Complexs {
+    type Output = Complexs;
 
     #[inline(always)]
     fn neg(self) -> Self::Output {
-        Complex {
+        Complexs {
             re: -self.re,
             im: -self.im,
         }
     }
 }
 
-impl Sub for Complex {
-    type Output = Complex;
+impl Sub for Complexs {
+    type Output = Complexs;
 
     #[inline(always)]
     fn sub(self, rhs: Self) -> Self::Output {
-        Complex {
+        Complexs {
             re: self.re - rhs.re,
             im: self.im - rhs.im,
         }
     }
 }
 
-impl SubAssign for Complex {
+impl SubAssign for Complexs {
     #[inline(always)]
     fn sub_assign(&mut self, rhs: Self) {
         self.re -= rhs.re;

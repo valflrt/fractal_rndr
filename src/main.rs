@@ -6,30 +6,32 @@ mod mat;
 mod sampling;
 
 use std::{
-    env,
-    fs::{self, File},
+    array, env, fs,
     io::Write,
     path::PathBuf,
     sync::{atomic, mpsc},
     time::Instant,
 };
 
-use complex::Complex;
 use image::{Rgb, RgbImage};
-use mat::{Mat2D, Mat3D};
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use sampling::{
-    generate_sampling_points, map_points_with_offsets, preview_sampling_points, Sampling,
-};
 use serde::{Deserialize, Serialize};
+use wide::f64x4;
 
-use coloring::{
-    color_mapping,
-    cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_value},
-    ColoringMode,
+use crate::{
+    coloring::{
+        color_mapping,
+        cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_value},
+        ColoringMode,
+    },
+    complex::Complexs,
+    error::{ErrorKind, Result},
+    fractal::Fractal,
+    mat::{Mat2D, Mat3D},
+    sampling::{
+        generate_sampling_points, map_points_with_offsets, preview_sampling_points, Sampling,
+    },
 };
-use error::{ErrorKind, Result};
-use fractal::Fractal;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct FractalParams {
@@ -44,29 +46,37 @@ struct FractalParams {
 
     fractal: Fractal,
 
-    coloring_mode: Option<ColoringMode>,
-    sampling: Option<Sampling>,
+    coloring_mode: ColoringMode,
+    sampling: Sampling,
 
     custom_gradient: Option<Vec<(f64, [u8; 3])>>,
+
+    diverging_areas: Option<Vec<[f64; 4]>>,
 
     dev_options: Option<DevOptions>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct DevOptions {
-    save_sampling_pattern: Option<bool>,
-    display_gradient: Option<bool>,
+    save_sampling_pattern: bool,
+    display_gradient: bool,
 }
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
 
-    // In case I want to try out how serde_json serializes the
-    // param file
-    // fs::write("out.json", serde_json::to_string_pretty(&params).unwrap()).unwrap();
-
     match args.len() {
         3 => {
+            let params = ron::from_str::<FractalParams>(
+                &fs::read_to_string(&args[1]).map_err(ErrorKind::ReadParameterFile)?,
+            )
+            .map_err(ErrorKind::DecodeParameterFile)?;
+
+            // println!(
+            //     "{}",
+            //     ron::ser::to_string_pretty(&params, PrettyConfig::default()).unwrap()
+            // );
+
             let FractalParams {
                 img_width,
                 img_height,
@@ -78,11 +88,16 @@ fn main() -> Result<()> {
                 fractal,
                 coloring_mode,
                 custom_gradient,
+                diverging_areas,
                 dev_options,
-            } = serde_json::from_reader::<_, FractalParams>(
-                File::open(&args[1]).map_err(ErrorKind::ReadParameterFile)?,
-            )
-            .map_err(ErrorKind::DecodeParameterFile)?;
+            } = params;
+
+            let diverging_areas = diverging_areas.map(|areas| {
+                areas
+                    .iter()
+                    .map(|&[min_x, max_x, min_y, max_y]| (min_x..max_x, min_y..max_y))
+                    .collect::<Vec<_>>()
+            });
 
             let aspect_ratio = img_width as f64 / img_height as f64;
 
@@ -95,10 +110,9 @@ fn main() -> Result<()> {
 
             // sampling
 
-            let sampling_points =
-                generate_sampling_points(Some(sampling.unwrap_or_default().level));
+            let sampling_points = generate_sampling_points(Some(sampling.level));
             if let Some(DevOptions {
-                save_sampling_pattern: Some(true),
+                save_sampling_pattern: true,
                 ..
             }) = dev_options
             {
@@ -107,7 +121,7 @@ fn main() -> Result<()> {
 
             // Get chunks
 
-            const CHUNK_SIZE: usize = 256;
+            const CHUNK_SIZE: usize = 384;
             const KERNEL_SIZE: usize = 1;
             const KERNEL_SIZE_I: isize = KERNEL_SIZE as isize;
 
@@ -157,12 +171,12 @@ fn main() -> Result<()> {
             for cj in 0..v_chunks + 1 {
                 for ci in 0..h_chunks + 1 {
                     let chunk_width = if ci == h_chunks {
-                        last_h_chunk
+                        last_h_chunk + 1
                     } else {
                         CHUNK_SIZE
                     };
                     let chunk_height = if cj == v_chunks {
-                        last_v_chunk
+                        last_v_chunk + 1
                     } else {
                         CHUNK_SIZE
                     };
@@ -181,67 +195,97 @@ fn main() -> Result<()> {
                             let x = (pi + i - KERNEL_SIZE) as f64;
                             let y = (pj + j - KERNEL_SIZE) as f64;
 
-                            let (offset_x, offset_y) = if let Some(Sampling {
-                                random_offsets: Some(false),
-                                ..
-                            }) = sampling
-                            {
-                                (0., 0.)
-                            } else {
-                                (rng.f64(), rng.f64())
-                            };
-                            let samples = sampling_points
-                                .iter()
-                                .filter_map(|&(dx, dy)| {
-                                    map_points_with_offsets(dx, dy, offset_x, offset_y)
+                            let should_render = diverging_areas
+                                .as_ref()
+                                .map(|areas| {
+                                    areas.iter().fold(true, |acc, (rx, ry)| {
+                                        acc && !(rx
+                                            .contains(&(x_min + width * x / img_width as f64))
+                                            && ry.contains(
+                                                &(y_min + height * y / img_height as f64),
+                                            ))
+                                    })
                                 })
-                                .map(|(dx, dy)| {
-                                    let re = x_min + width * (x + 0.5 + dx) / img_width as f64;
-                                    let im = y_min + height * (y + 0.5 + dy) / img_height as f64;
+                                .unwrap_or(true);
 
-                                    let iter = fractal.get_pixel(Complex { re, im }, max_iter);
+                            if should_render {
+                                let (offset_x, offset_y) = if sampling.random_offsets {
+                                    (rng.f64(), rng.f64())
+                                } else {
+                                    (0., 0.)
+                                };
+                                let sampling_points = sampling_points
+                                    .iter()
+                                    .filter_map(|&(dx, dy)| {
+                                        map_points_with_offsets(dx, dy, offset_x, offset_y)
+                                    })
+                                    .collect::<Vec<_>>();
 
-                                    ((dx, dy), iter)
-                                })
-                                .collect::<Vec<_>>();
+                                let samples = sampling_points
+                                    .chunks(4)
+                                    .flat_map(|d| {
+                                        let l = d.len();
+                                        let re = f64x4::from(array::from_fn(|i| {
+                                            // Here we use `i % l` to avoid out of bounds error (when i < 4).
+                                            // When `i < 4`, the modulo operation will repeat the sample
+                                            // but as we use simd this is acceptable (the cost is the
+                                            // same whether it is computed along with the others or not).
+                                            let (dx, _) = d[i % l];
+                                            x_min + width * (x + 0.5 + dx) / img_width as f64
+                                        }));
+                                        let im = f64x4::from(array::from_fn(|i| {
+                                            let (_, dy) = d[i % l];
+                                            y_min + height * (y + 0.5 + dy) / img_height as f64
+                                        }));
 
-                            // Using atomic::Ordering::Relaxed because we don't really
-                            // care about the order `progress` is updated. As long as it
-                            // is updated it should be fine :>
-                            progress.fetch_add(1, atomic::Ordering::Relaxed);
-                            let progress = progress.load(atomic::Ordering::Relaxed);
+                                        let iter = fractal.get_pixel(Complexs { re, im }, max_iter);
 
-                            if progress % (total / 100000 + 1) == 0 {
-                                stdout
-                                    .lock()
-                                    .write_all(
-                                        format!(
-                                            "\r {:.1}% - {:.1}s elapsed",
-                                            100. * progress as f32 / total as f32,
-                                            start.elapsed().as_secs_f32(),
+                                        (0..l).map(move |i| (d[i], iter[i]))
+                                    })
+                                    .collect::<Vec<_>>();
+
+                                // Using atomic::Ordering::Relaxed because we don't really
+                                // care about the order `progress` is updated. As long as it
+                                // is updated it should be fine :>
+                                progress.fetch_add(1, atomic::Ordering::Relaxed);
+                                let progress = progress.load(atomic::Ordering::Relaxed);
+
+                                if progress % (total / 100000 + 1) == 0 {
+                                    stdout
+                                        .lock()
+                                        .write_all(
+                                            format!(
+                                                "\r {:.1}% - {:.1}s elapsed",
+                                                100. * progress as f32 / total as f32,
+                                                start.elapsed().as_secs_f32(),
+                                            )
+                                            .as_bytes(),
                                         )
-                                        .as_bytes(),
-                                    )
-                                    .unwrap();
-                            }
+                                        .unwrap();
+                                }
 
-                            s.send(((i, j), samples)).unwrap();
+                                s.send(((i, j), Some(samples))).unwrap();
+                            } else {
+                                s.send(((i, j), None)).unwrap();
+                            }
                         });
 
                     let mut chunk_samples = Mat3D::filled_with(
-                        ((0., 0.), 0),
-                        chunk_width as usize + 2 * KERNEL_SIZE,
-                        chunk_height as usize + 2 * KERNEL_SIZE,
+                        None,
+                        chunk_width + 2 * KERNEL_SIZE,
+                        chunk_height + 2 * KERNEL_SIZE,
                         sampling_points.len(),
                     );
                     for ((i, j), pixel_samples) in rx {
-                        for (k, &v) in pixel_samples.iter().enumerate() {
-                            chunk_samples.set((i as usize, j as usize, k), v).unwrap();
+                        if let Some(pixel_samples) = pixel_samples {
+                            for (k, &v) in pixel_samples.iter().enumerate() {
+                                chunk_samples.set((i, j, k), Some(v)).unwrap();
+                            }
                         }
                     }
 
-                    for j in 0..chunk_height as usize {
-                        for i in 0..chunk_width as usize {
+                    for j in 0..chunk_height {
+                        for i in 0..chunk_width {
                             let mut weighted_sum = 0.;
                             let mut weight_total = 0.;
 
@@ -255,41 +299,52 @@ fn main() -> Result<()> {
                                         .expect("should never overflow");
 
                                     for k in 0..sampling_points.len() {
-                                        let &((dx, dy), v) =
-                                            chunk_samples.get((ii, jj, k)).unwrap();
-                                        let dx = di as f64 + dx;
-                                        let dy = dj as f64 + dy;
+                                        if let &Some(((dx, dy), v)) =
+                                            chunk_samples.get((ii, jj, k)).unwrap()
+                                        {
+                                            let dx = dx + di as f64;
+                                            let dy = dy + dj as f64;
 
-                                        let v = v as f64;
+                                            // This only includes samples from a round-cornered square
+                                            // (it works kind of like a distance function)
+                                            // https://www.desmos.com/3d/xickbjpha7
 
-                                        // This only includes samples from a round-cornered square
-                                        // (it works kind of like a distance function)
-                                        // https://www.desmos.com/3d/qwoffhgvwi
-
-                                        if f64::max(dx.abs(), dy.abs()) < 0.5 {
-                                            let w = 1.;
-                                            weighted_sum += w * v;
-                                            weight_total += w;
-                                        } else {
-                                            const D: f64 = 0.4;
-                                            const D_SQR: f64 = D * D;
-                                            const T: f64 = 0.5;
-                                            let distance_sqr = (dx.abs() - 0.5).max(0.).powi(2)
-                                                + (dy.abs() - 0.5).max(0.).powi(2);
-                                            if distance_sqr < D_SQR {
-                                                let w = 1. - T * distance_sqr / D_SQR;
+                                            if f64::max(dx.abs(), dy.abs()) < 0.5 {
+                                                let w = 1.;
                                                 weighted_sum += w * v;
                                                 weight_total += w;
+                                            } else {
+                                                // Maximum distance for picking samples (out of the pixel)
+                                                const D: f64 = 0.5;
+                                                const D_SQR: f64 = D * D;
+                                                // This is the value of the weight at the border.
+                                                const T: f64 = 0.5;
+                                                // The "radius" of the square (half its side length), this
+                                                // should not be changed.
+                                                const R: f64 = 0.5;
+
+                                                let smooth_distance_sqr =
+                                                    (dx.abs() - R).max(0.).powi(2)
+                                                        + (dy.abs() - R).max(0.).powi(2);
+                                                if smooth_distance_sqr < D_SQR {
+                                                    let w = 1. - T * smooth_distance_sqr / D_SQR;
+                                                    weighted_sum += w * v;
+                                                    weight_total += w;
+                                                }
                                             }
-                                        }
+                                        };
                                     }
                                 }
                             }
 
                             raw_image
                                 .set(
-                                    (pi as usize + i, pj as usize + j),
-                                    weighted_sum / weight_total,
+                                    (pi + i, pj + j),
+                                    if weight_total != 0. {
+                                        weighted_sum / weight_total
+                                    } else {
+                                        max_iter as f64
+                                    },
                                 )
                                 .unwrap();
                         }
@@ -304,7 +359,7 @@ fn main() -> Result<()> {
             let max = raw_image.vec.iter().copied().fold(0., f64::max);
             let min = raw_image.vec.iter().copied().fold(max, f64::min);
 
-            match coloring_mode.unwrap_or_default() {
+            match coloring_mode {
                 ColoringMode::CumulativeHistogram => {
                     raw_image.vec.iter_mut().for_each(|v| *v /= max);
                     let cumulative_histogram =
@@ -328,9 +383,7 @@ fn main() -> Result<()> {
                         for i in 0..img_width as usize {
                             let &value = raw_image.get((i, j)).unwrap();
 
-                            let t = map_value
-                                .unwrap_or_default()
-                                .map_value(value / max_iter as f64);
+                            let t = map_value.map_value(value / max_iter as f64);
 
                             output_image.put_pixel(
                                 i as u32,
@@ -345,7 +398,7 @@ fn main() -> Result<()> {
                         for i in 0..img_width as usize {
                             let &value = raw_image.get((i, j)).unwrap();
 
-                            let t = map_value.unwrap_or_default().map_value(value / max);
+                            let t = map_value.map_value(value / max);
 
                             output_image.put_pixel(
                                 i as u32,
@@ -360,9 +413,7 @@ fn main() -> Result<()> {
                         for i in 0..img_width as usize {
                             let &value = raw_image.get((i, j)).unwrap();
 
-                            let t = map_value
-                                .unwrap_or_default()
-                                .map_value((value - min) / (max - min));
+                            let t = map_value.map_value((value - min) / (max - min));
 
                             output_image.put_pixel(
                                 i as u32,
@@ -377,7 +428,7 @@ fn main() -> Result<()> {
                         for i in 0..img_width as usize {
                             let &value = raw_image.get((i, j)).unwrap();
 
-                            let t = map_value.unwrap_or_default().map_value(value / max);
+                            let t = map_value.map_value(value / max);
 
                             output_image.put_pixel(
                                 i as u32,
@@ -396,9 +447,7 @@ fn main() -> Result<()> {
                         for i in 0..img_width as usize {
                             let &value = raw_image.get((i, j)).unwrap();
 
-                            let t = map_value
-                                .unwrap_or_default()
-                                .map_value((value - min) / (max - min));
+                            let t = map_value.map_value((value - min) / (max - min));
 
                             output_image.put_pixel(
                                 i as u32,
@@ -427,7 +476,7 @@ fn main() -> Result<()> {
             };
 
             if let Some(DevOptions {
-                display_gradient: Some(true),
+                display_gradient: true,
                 ..
             }) = dev_options
             {
