@@ -95,7 +95,7 @@ fn main() -> Result<()> {
             let diverging_areas = diverging_areas.map(|areas| {
                 areas
                     .iter()
-                    .map(|&[min_x, max_x, min_y, max_y]| (min_x..max_x, min_y..max_y))
+                    .map(|&[min_x, max_x, min_y, max_y]| (min_x..max_x, (-max_y)..(-min_y)))
                     .collect::<Vec<_>>()
             });
 
@@ -122,13 +122,13 @@ fn main() -> Result<()> {
             // Get chunks
 
             const CHUNK_SIZE: usize = 384;
-            const KERNEL_SIZE: usize = 1;
-            const KERNEL_SIZE_I: isize = KERNEL_SIZE as isize;
+            const AVG_KERNEL_SIZE: usize = 1;
+            const AVG_KERNEL_SIZE_I: isize = AVG_KERNEL_SIZE as isize;
 
             let mut raw_image = Mat2D::filled_with(
                 0.,
-                img_width as usize + 2 * KERNEL_SIZE,
-                img_height as usize + 2 * KERNEL_SIZE,
+                img_width as usize + 2 * AVG_KERNEL_SIZE,
+                img_height as usize + 2 * AVG_KERNEL_SIZE,
             );
 
             let (v_chunks, last_v_chunk) = (
@@ -159,7 +159,7 @@ fn main() -> Result<()> {
                             CHUNK_SIZE
                         };
 
-                        (chunk_width + 2 * KERNEL_SIZE) * (chunk_height + 2 * KERNEL_SIZE)
+                        (chunk_width + 2 * AVG_KERNEL_SIZE) * (chunk_height + 2 * AVG_KERNEL_SIZE)
                     })
                 })
                 .sum::<usize>();
@@ -188,91 +188,91 @@ fn main() -> Result<()> {
 
                     let rng = fastrand::Rng::new();
                     let (tx, rx) = mpsc::channel();
-                    (0..chunk_height + 2 * KERNEL_SIZE)
-                        .flat_map(|j| (0..chunk_width + 2 * KERNEL_SIZE).map(move |i| (i, j)))
+                    (0..chunk_height + 2 * AVG_KERNEL_SIZE)
+                        .flat_map(|j| (0..chunk_width + 2 * AVG_KERNEL_SIZE).map(move |i| (i, j)))
                         .par_bridge()
                         .for_each_with((tx, rng), |(s, rng), (i, j)| {
-                            let x = (pi + i - KERNEL_SIZE) as f64;
-                            let y = (pj + j - KERNEL_SIZE) as f64;
+                            let x = (pi + i - AVG_KERNEL_SIZE) as f64;
+                            let y = (pj + j - AVG_KERNEL_SIZE) as f64;
 
                             let should_render = diverging_areas
                                 .as_ref()
                                 .map(|areas| {
                                     !areas.iter().any(|(rx, ry)| {
                                         rx.contains(&(x_min + width * x / img_width as f64))
-                                            && ry.contains(
-                                                &(-y_min - height * y / img_height as f64),
-                                            )
+                                            && ry
+                                                .contains(&(y_min + height * y / img_height as f64))
                                     })
                                 })
                                 .unwrap_or(true);
 
-                            if should_render {
-                                let (offset_x, offset_y) = if sampling.random_offsets {
-                                    (rng.f64(), rng.f64())
-                                } else {
-                                    (0., 0.)
-                                };
-                                let sampling_points = sampling_points
-                                    .iter()
-                                    .filter_map(|&(dx, dy)| {
-                                        map_points_with_offsets(dx, dy, offset_x, offset_y)
-                                    })
-                                    .collect::<Vec<_>>();
+                            s.send((
+                                (i, j),
+                                should_render.then(|| {
+                                    let (offset_x, offset_y) = if sampling.random_offsets {
+                                        (rng.f64(), rng.f64())
+                                    } else {
+                                        (0., 0.)
+                                    };
+                                    let sampling_points = sampling_points
+                                        .iter()
+                                        .filter_map(|&(dx, dy)| {
+                                            map_points_with_offsets(dx, dy, offset_x, offset_y)
+                                        })
+                                        .collect::<Vec<_>>();
 
-                                let samples = sampling_points
-                                    .chunks(4)
-                                    .flat_map(|d| {
-                                        let l = d.len();
-                                        let re = f64x4::from(array::from_fn(|i| {
-                                            // Here we use `i % l` to avoid out of bounds error (when i < 4).
-                                            // When `i < 4`, the modulo operation will repeat the sample
-                                            // but as we use simd this is acceptable (the cost is the
-                                            // same whether it is computed along with the others or not).
-                                            let (dx, _) = d[i % l];
-                                            x_min + width * (x + 0.5 + dx) / img_width as f64
-                                        }));
-                                        let im = f64x4::from(array::from_fn(|i| {
-                                            let (_, dy) = d[i % l];
-                                            y_min + height * (y + 0.5 + dy) / img_height as f64
-                                        }));
+                                    sampling_points
+                                        .chunks(4)
+                                        .flat_map(|d| {
+                                            let l = d.len();
+                                            let re = f64x4::from(array::from_fn(|i| {
+                                                // Here we use `i % l` to avoid out of bounds error (when i < 4).
+                                                // When `i < 4`, the modulo operation will repeat the sample
+                                                // but as we use simd this is acceptable (the cost is the
+                                                // same whether it is computed along with the others or not).
+                                                let (dx, _) = d[i % l];
+                                                x_min + width * (x + 0.5 + dx) / img_width as f64
+                                            }));
+                                            let im = f64x4::from(array::from_fn(|i| {
+                                                let (_, dy) = d[i % l];
+                                                y_min + height * (y + 0.5 + dy) / img_height as f64
+                                            }));
 
-                                        let iter = fractal.get_pixel(Complexs { re, im }, max_iter);
+                                            let iter =
+                                                fractal.get_pixel(Complexs { re, im }, max_iter);
 
-                                        (0..l).map(move |i| (d[i], iter[i]))
-                                    })
-                                    .collect::<Vec<_>>();
+                                            (0..l).map(move |i| (d[i], iter[i]))
+                                        })
+                                        .collect::<Vec<_>>()
+                                }),
+                            ))
+                            .unwrap();
 
-                                // Using atomic::Ordering::Relaxed because we don't really
-                                // care about the order `progress` is updated. As long as it
-                                // is updated it should be fine :>
-                                progress.fetch_add(1, atomic::Ordering::Relaxed);
-                                let progress = progress.load(atomic::Ordering::Relaxed);
+                            // Using atomic::Ordering::Relaxed because we don't really
+                            // care about the order `progress` is updated. As long as it
+                            // is updated it should be fine :>
+                            progress.fetch_add(1, atomic::Ordering::Relaxed);
+                            let progress = progress.load(atomic::Ordering::Relaxed);
 
-                                if progress % (total / 100000 + 1) == 0 {
-                                    stdout
-                                        .lock()
-                                        .write_all(
-                                            format!(
-                                                "\r {:.1}% - {:.1}s elapsed",
-                                                100. * progress as f32 / total as f32,
-                                                start.elapsed().as_secs_f32(),
-                                            )
-                                            .as_bytes(),
+                            if progress % (total / 100000 + 1) == 0 {
+                                stdout
+                                    .lock()
+                                    .write_all(
+                                        format!(
+                                            "\r {:.1}% - {:.1}s elapsed",
+                                            100. * progress as f32 / total as f32,
+                                            start.elapsed().as_secs_f32(),
                                         )
-                                        .unwrap();
-                                }
-
-                                s.send(((i, j), Some(samples))).unwrap();
-                            } else {
-                                s.send(((i, j), None)).unwrap();
+                                        .as_bytes(),
+                                    )
+                                    .unwrap();
                             }
                         });
 
                     let mut chunk_samples = Mat3D::filled_with(
                         None,
-                        chunk_width + 2 * KERNEL_SIZE,
-                        chunk_height + 2 * KERNEL_SIZE,
+                        chunk_width + 2 * AVG_KERNEL_SIZE,
+                        chunk_height + 2 * AVG_KERNEL_SIZE,
                         sampling_points.len(),
                     );
                     for ((i, j), pixel_samples) in rx {
@@ -285,16 +285,16 @@ fn main() -> Result<()> {
 
                     for j in 0..chunk_height {
                         for i in 0..chunk_width {
-                            let mut is_empty = true;
                             let mut weighted_sum = 0.;
                             let mut weight_total = 0.;
 
-                            for dj in -KERNEL_SIZE_I..=KERNEL_SIZE_I {
-                                for di in -KERNEL_SIZE_I..=KERNEL_SIZE_I {
-                                    let ii = (i + KERNEL_SIZE)
+                            let mut is_empty = true;
+                            for dj in -AVG_KERNEL_SIZE_I..=AVG_KERNEL_SIZE_I {
+                                for di in -AVG_KERNEL_SIZE_I..=AVG_KERNEL_SIZE_I {
+                                    let ii = (i + AVG_KERNEL_SIZE)
                                         .checked_add_signed(di)
                                         .expect("should never overflow");
-                                    let jj = (j + KERNEL_SIZE)
+                                    let jj = (j + AVG_KERNEL_SIZE)
                                         .checked_add_signed(dj)
                                         .expect("should never overflow");
 
@@ -302,27 +302,29 @@ fn main() -> Result<()> {
                                         if let &Some(((dx, dy), v)) =
                                             chunk_samples.get((ii, jj, k)).unwrap()
                                         {
-                                            is_empty = false;
-
                                             let dx = dx + di as f64;
                                             let dy = dy + dj as f64;
 
-                                            // This only includes samples from a round-cornered square
-                                            // (it works kind of like a distance function)
-                                            // https://www.desmos.com/3d/xickbjpha7
+                                            // This only includes samples from a round-cornered square.
+                                            // see https://www.desmos.com/3d/kgdwgwp4dk
 
-                                            if f64::max(dx.abs(), dy.abs()) < 0.5 {
+                                            if dx.abs() <= 0.5 && dy.abs() <= 0.5 {
                                                 let w = 1.;
                                                 weighted_sum += w * v;
                                                 weight_total += w;
-                                            } else {
+                                            } else if i != 0 && j != 0 {
+                                                // `i != 0 && j != 0`` is an ugly fix for a small issue I
+                                                // wasn't able to find the origin: the first column and the
+                                                // first row of pixels of the image are colored weirdly without
+                                                // this condition...
+
                                                 // Maximum distance for picking samples (out of the pixel)
-                                                const D: f64 = 0.5;
+                                                const D: f64 = 0.4;
                                                 const D_SQR: f64 = D * D;
                                                 // This is the value of the weight at the border.
                                                 const T: f64 = 0.5;
-                                                // The "radius" of the square (half its side length), this
-                                                // should not be changed.
+                                                // The "radius" of the square (half its side length).
+                                                // This should not be changed.
                                                 const R: f64 = 0.5;
 
                                                 let smooth_distance_sqr =
@@ -334,6 +336,8 @@ fn main() -> Result<()> {
                                                     weight_total += w;
                                                 }
                                             }
+
+                                            is_empty = false;
                                         };
                                     }
                                 }
