@@ -1,0 +1,19 @@
+(
+    img_width: 3840,
+    img_height: 2160,
+    zoom: 0.000005,
+    center_x: -0.0099789,
+    center_y: -0.0002448,
+    max_iter: 120000,
+    fractal: SecondDegreeRecWithGrowingExponent,
+    coloring_mode: MaxNorm(
+        map_value: Linear,
+    ),
+    sampling: (
+        level: Extreme,
+        random_offsets: true,
+    ),
+    custom_gradient: None,
+    diverging_areas: None,
+    dev_options: None,
+)

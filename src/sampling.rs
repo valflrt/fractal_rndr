@@ -6,7 +6,7 @@ use crate::error::{ErrorKind, Result};
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Sampling {
     pub level: SamplingLevel,
-    pub random_offsets: Option<bool>,
+    pub random_offsets: bool,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -38,16 +38,15 @@ pub fn generate_sampling_points(sampling_level: Option<SamplingLevel>) -> Vec<(f
 
     const PHI: f64 = 1.618033988749895;
     const EPS: f64 = 0.5;
-    let samples = (0..n)
+
+    (0..n)
         .map(|i| {
             (
                 i as f64 / PHI % 1.,
                 (i as f64 + EPS) / ((n - 1) as f64 + 2. * EPS),
             )
         })
-        .collect::<Vec<_>>();
-
-    samples
+        .collect::<Vec<_>>()
 }
 
 pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> Option<(f64, f64)> {

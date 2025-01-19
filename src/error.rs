@@ -1,10 +1,12 @@
 use std::{fmt::Debug, io};
 
+use ron::de::SpannedError;
+
 pub type Result<T> = std::result::Result<T, ErrorKind>;
 
 pub enum ErrorKind {
     ReadParameterFile(io::Error),
-    DecodeParameterFile(serde_json::Error),
+    DecodeParameterFile(SpannedError),
     SaveImage(image::ImageError),
 }
 

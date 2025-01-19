@@ -5,22 +5,22 @@ use serde::{Deserialize, Serialize};
 pub enum ColoringMode {
     CumulativeHistogram,
     MaxIterNorm {
-        map_value: Option<MapValue>,
+        map_value: MapValue,
     },
     MaxNorm {
-        map_value: Option<MapValue>,
+        map_value: MapValue,
     },
     MinMaxNorm {
-        map_value: Option<MapValue>,
+        map_value: MapValue,
     },
     CustomMaxNorm {
         max: f64,
-        map_value: Option<MapValue>,
+        map_value: MapValue,
     },
     CustomMinMaxNorm {
         min: f64,
         max: f64,
-        map_value: Option<MapValue>,
+        map_value: MapValue,
     },
     BlackAndWhite,
 }
@@ -28,7 +28,7 @@ pub enum ColoringMode {
 impl Default for ColoringMode {
     fn default() -> Self {
         ColoringMode::MaxNorm {
-            map_value: Some(MapValue::Linear),
+            map_value: MapValue::Linear,
         }
     }
 }
@@ -129,7 +129,7 @@ pub mod cumulative_histogram {
 
     /// Get the cumulative histogram value from a normalized value
     /// in range (0, 1).
-    pub fn get_histogram_value(value: f64, cumulative_histogram: &Vec<f64>) -> f64 {
+    pub fn get_histogram_value(value: f64, cumulative_histogram: &[f64]) -> f64 {
         cumulative_histogram[map_f64_to_histogram_index(value)]
     }
 }
