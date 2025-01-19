@@ -212,8 +212,8 @@ I think this one looks a bit like Mandelbrot ?
 
 # Ideas
 
-- Add a way to set up a list of "non-render rectangles" in the param file: this would allow marking areas as highly divergent and prevent huge amounts of computation.
 - use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
+- use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
 
 # Fractal ideas
 
