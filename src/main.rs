@@ -3,12 +3,12 @@ mod complex;
 mod error;
 mod fractal;
 mod mat;
+mod path;
 mod sampling;
 
 use std::{
     array, env, fs,
     io::Write,
-    path::PathBuf,
     sync::{atomic, mpsc},
     time::Instant,
 };
@@ -28,6 +28,7 @@ use crate::{
     error::{ErrorKind, Result},
     fractal::Fractal,
     mat::{Mat2D, Mat3D},
+    path::Path,
     sampling::{
         generate_sampling_points, map_points_with_offsets, preview_sampling_points, Sampling,
     },
@@ -67,8 +68,10 @@ fn main() -> Result<()> {
 
     match args.len() {
         3 => {
+            let (param_file_path, output_image_path) = (Path::new(&args[1]), Path::new(&args[2]));
+
             let params = ron::from_str::<FractalParams>(
-                &fs::read_to_string(&args[1]).map_err(ErrorKind::ReadParameterFile)?,
+                &fs::read_to_string(&param_file_path).map_err(ErrorKind::ReadParameterFile)?,
             )
             .map_err(ErrorKind::DecodeParameterFile)?;
 
@@ -121,7 +124,7 @@ fn main() -> Result<()> {
 
             // Get chunks
 
-            const CHUNK_SIZE: usize = 384;
+            const CHUNK_SIZE: usize = 512;
             const AVG_KERNEL_SIZE: usize = 1;
             const AVG_KERNEL_SIZE_I: isize = AVG_KERNEL_SIZE as isize;
 
@@ -283,8 +286,11 @@ fn main() -> Result<()> {
                         }
                     }
 
-                    for j in 0..chunk_height {
-                        for i in 0..chunk_width {
+                    let (tx, rx) = mpsc::channel();
+                    (0..chunk_height)
+                        .flat_map(|j| (0..chunk_width).map(move |i| (i, j)))
+                        .par_bridge()
+                        .for_each_with(tx, |s, (i, j)| {
                             let mut weighted_sum = 0.;
                             let mut weight_total = 0.;
 
@@ -343,17 +349,19 @@ fn main() -> Result<()> {
                                 }
                             }
 
-                            raw_image
-                                .set(
-                                    (pi + i, pj + j),
-                                    if is_empty {
-                                        max_iter as f64
-                                    } else {
-                                        weighted_sum / weight_total
-                                    },
-                                )
-                                .unwrap();
-                        }
+                            s.send((
+                                (pi + i, pj + j),
+                                if is_empty {
+                                    max_iter as f64
+                                } else {
+                                    weighted_sum / weight_total
+                                },
+                            ))
+                            .unwrap();
+                        });
+
+                    for (index, v) in rx {
+                        raw_image.set(index, v).unwrap();
                     }
                 }
             }
@@ -504,11 +512,11 @@ fn main() -> Result<()> {
                 }
             }
 
-            let path = PathBuf::from(&args[2]);
+            output_image
+                .save(&output_image_path)
+                .map_err(ErrorKind::SaveImage)?;
 
-            output_image.save(&path).map_err(ErrorKind::SaveImage)?;
-
-            let image_size = fs::metadata(&path).unwrap().len();
+            let image_size = fs::metadata(&output_image_path).unwrap().len();
             println!(
                 " output image: {}x{} - {} {}",
                 img_width,
@@ -520,8 +528,8 @@ fn main() -> Result<()> {
                 } else {
                     format!("{}b", image_size)
                 },
-                if let Some(ext) = path.extension() {
-                    format!("- {} ", ext.to_str().unwrap())
+                if let Some(ext) = output_image_path.extension() {
+                    format!("- {} ", ext)
                 } else {
                     "".to_string()
                 }

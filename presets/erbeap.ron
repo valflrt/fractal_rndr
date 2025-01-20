@@ -10,7 +10,10 @@
         map_value: Linear,
     ),
     sampling: (
-        level: Ultra,
+        level: Extreme,
         random_offsets: true,
     ),
+    diverging_areas: Some([
+        (-0.37, -0.361, 0.5792, 0.5829)
+    ])
 )

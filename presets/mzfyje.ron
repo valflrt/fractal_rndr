@@ -8,7 +8,7 @@
     fractal: SecondDegreeRecWithGrowingExponent,
     coloring_mode: CumulativeHistogram,
     sampling: (
-        level: Ultra,
+        level: Extreme,
         random_offsets: true,
     ),
 )

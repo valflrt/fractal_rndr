@@ -10,7 +10,7 @@
         map_value: Linear,
     ),
     sampling: (
-        level: Ultra,
+        level: Extreme,
         random_offsets: true,
     ),
 )

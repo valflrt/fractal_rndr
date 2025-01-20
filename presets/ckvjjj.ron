@@ -8,7 +8,7 @@
     fractal: SecondDegreeThirtySevenBlend,
     coloring_mode: CumulativeHistogram,
     sampling: (
-        level: Extreme2,
+        level: Extreme,
         random_offsets: true,
     ),
 )

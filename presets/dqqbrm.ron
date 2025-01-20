@@ -4,13 +4,17 @@
     zoom: 1.6,
     center_x: -0.5,
     center_y: 0.0,
-    max_iter: 800,
+    max_iter: 2000,
     fractal: ThirdDegreeRecPairs,
-    coloring_mode: MaxNorm(
+    coloring_mode: CustomMaxNorm(
+        max: 800,
         map_value: Linear,
     ),
     sampling: (
-        level: Ultra,
+        level: Extreme,
         random_offsets: true,
     ),
+    diverging_areas: Some([
+        (-0.6, 0.04, -0.32, 0.32),
+    ])
 )
