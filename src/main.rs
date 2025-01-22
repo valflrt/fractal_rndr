@@ -24,7 +24,7 @@ use crate::{
         cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_value},
         ColoringMode,
     },
-    complex::Complexs,
+    complex::Complex4,
     error::{ErrorKind, Result},
     fractal::Fractal,
     mat::{Mat2D, Mat3D},
@@ -242,7 +242,7 @@ fn main() -> Result<()> {
                                             }));
 
                                             let iter =
-                                                fractal.get_pixel(Complexs { re, im }, max_iter);
+                                                fractal.get_pixel(Complex4 { re, im }, max_iter);
 
                                             (0..l).map(move |i| (d[i], iter[i]))
                                         })

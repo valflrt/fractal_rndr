@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 use wide::{f64x4, CmpLe};
 
-use crate::complex::Complexs;
+use crate::complex::Complex4;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Fractal {
     Mandelbrot,
+    MandelbrotCustomExp { exp: f64 },
     SecondDegreeRecWithGrowingExponent,
     SecondDegreeRecAlternating1WithGrowingExponent,
     ThirdDegreeRecWithGrowingExponent,
@@ -16,7 +17,7 @@ pub enum Fractal {
 }
 
 impl Fractal {
-    pub fn get_pixel(&self, c: Complexs, max_iter: u32) -> [f64; 4] {
+    pub fn get_pixel(&self, c: Complex4, max_iter: u32) -> [f64; 4] {
         let one = f64x4::splat(1.0);
         let zero = f64x4::splat(0.0);
 
@@ -25,7 +26,7 @@ impl Fractal {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z = Complexs::zeros();
+                let mut z = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -41,12 +42,32 @@ impl Fractal {
 
                 iter.to_array()
             }
+            &Fractal::MandelbrotCustomExp { exp } => {
+                const BAILOUT: f64 = 4.;
+                let bailout_mask = f64x4::splat(BAILOUT);
+
+                let mut z = Complex4::zeros();
+
+                let mut iter = f64x4::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+
+                    z = z.powf(exp) + c;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                iter.to_array()
+            }
             Fractal::SecondDegreeRecWithGrowingExponent => {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z0 = Complexs::zeros();
-                let mut z1 = Complexs::zeros();
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -68,8 +89,8 @@ impl Fractal {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z0 = Complexs::zeros();
-                let mut z1 = Complexs::zeros();
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -91,9 +112,9 @@ impl Fractal {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z0 = Complexs::zeros();
-                let mut z1 = Complexs::zeros();
-                let mut z2 = Complexs::zeros();
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
+                let mut z2 = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -116,7 +137,7 @@ impl Fractal {
                 let bailout_mask = f64x4::splat(BAILOUT);
 
                 let n = *n;
-                let mut z = vec![Complexs::zeros(); n];
+                let mut z = vec![Complex4::zeros(); n];
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -143,9 +164,9 @@ impl Fractal {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z0 = Complexs::zeros();
-                let mut z1 = Complexs::zeros();
-                let mut z2 = Complexs::zeros();
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
+                let mut z2 = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -168,8 +189,8 @@ impl Fractal {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z0 = Complexs::zeros();
-                let mut z1 = Complexs::zeros();
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for i in 0..max_iter {
@@ -197,8 +218,8 @@ impl Fractal {
                 const BAILOUT: f64 = 8.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
-                let mut z0 = Complexs::zeros();
-                let mut z1 = Complexs::zeros();
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -207,7 +228,7 @@ impl Fractal {
                         break;
                     }
 
-                    let new_z1 = z1 * (Complexs::splat(re, im) - z0) + c;
+                    let new_z1 = z1 * (Complex4::splat(re, im) - z0) + c;
                     z0 = z1;
                     z1 = new_z1;
 
