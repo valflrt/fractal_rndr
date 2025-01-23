@@ -33,7 +33,7 @@ impl Complex4 {
     // }
 
     #[inline]
-    pub fn to_polar(&self) -> (f64x4, f64x4) {
+    pub fn to_polar(self) -> (f64x4, f64x4) {
         (self.norm(), self.arg())
     }
 

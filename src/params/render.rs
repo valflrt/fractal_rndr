@@ -33,7 +33,7 @@ pub enum RenderStep {
 }
 
 impl RenderStep {
-    pub fn get_current_step_index(steps: &Vec<RenderStep>, t: f64) -> usize {
+    pub fn get_current_step_index(steps: &[RenderStep], t: f64) -> usize {
         steps
             .iter()
             .enumerate()
@@ -49,13 +49,13 @@ impl RenderStep {
 
     pub fn get_value(&self, t: f64) -> f64 {
         // see https://www.desmos.com/calculator/a1ddmg7pxk
-        match self {
-            &RenderStep::Const(_, _, value) => value,
-            &RenderStep::Linear(start_time, end_time, start_value, end_value) => {
+        match *self {
+            RenderStep::Const(_, _, value) => value,
+            RenderStep::Linear(start_time, end_time, start_value, end_value) => {
                 let w = (t - start_time) / (end_time - start_time);
                 start_value * (1. - w) + end_value * w
             }
-            &RenderStep::Smooth(start_time, end_time, start_value, end_value) => {
+            RenderStep::Smooth(start_time, end_time, start_value, end_value) => {
                 let w = (t - start_time) / (end_time - start_time);
                 let smooth_w = w * w * (3. - 2. * w);
                 start_value * (1. - smooth_w) + end_value * smooth_w
