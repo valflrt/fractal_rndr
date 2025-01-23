@@ -71,11 +71,11 @@ impl Complex4 {
         Complex4::from_polar(r.powf(exp), theta * exp)
     }
 
-    #[inline]
-    pub fn powf4(&self, exp: f64x4) -> Complex4 {
-        let (r, theta) = self.to_polar();
-        Complex4::from_polar(r.pow_f64x4(exp), theta * exp)
-    }
+    // #[inline]
+    // pub fn powf4(&self, exp: f64x4) -> Complex4 {
+    //     let (r, theta) = self.to_polar();
+    //     Complex4::from_polar(r.pow_f64x4(exp), theta * exp)
+    // }
 }
 
 impl Add for Complex4 {

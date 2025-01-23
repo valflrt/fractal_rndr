@@ -1,14 +1,14 @@
 (
     img_width: 2160,
     img_height: 2160,
-    zoom: 0.1,
-    center_x: -0.38,
-    center_y: 0.6,
-    max_iter: 2000,
-    fractal: ThirdDegreeRecPairs,
-    coloring_mode: MaxNorm(
-        map_value: Linear,
+    render: Frame(
+        zoom: 0.1,
+        center_x: -0.38,
+        center_y: 0.6,
+        fractal: ThirdDegreeRecPairs,
     ),
+    max_iter: 2000,
+    coloring_mode: MaxNorm(map_value: Linear),
     sampling: (
         level: Extreme,
         random_offsets: true,

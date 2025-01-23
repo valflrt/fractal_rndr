@@ -1,19 +1,26 @@
 (
     img_width: 3840,
     img_height: 2160,
-    zoom: 0.025,
-    center_x: -0.357,
-    center_y: 0.5848,
-    max_iter: 2000,
-    fractal: ThirdDegreeRecPairs,
-    coloring_mode: MaxNorm(
-        map_value: Linear,
+    render: Frame(
+        zoom: 0.025,
+        center_x: -0.357,
+        center_y: 0.5848,
+        fractal: ThirdDegreeRecPairs,
     ),
+    max_iter: 2000,
+    coloring_mode: MaxNorm(map_value: Linear),
     sampling: (
         level: Extreme,
         random_offsets: true,
     ),
-    diverging_areas: Some([
-        (-0.37, -0.361, 0.5792, 0.5829)
-    ])
+    diverging_areas: Some(
+        [
+            (
+                -0.37,
+                -0.361,
+                0.5792,
+                0.5829,
+            ),
+        ],
+    ),
 )

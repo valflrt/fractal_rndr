@@ -1,14 +1,13 @@
 (
     img_width: 1920,
     img_height: 1080,
-    zoom: 0.0025,
-    center_x: -0.07238,
-    center_y: 0.0159,
-    max_iter: 100000,
-    fractal: ThirdDegreeRecWithGrowingExponent,
-    coloring_mode: CumulativeHistogram,
-    sampling: (
-        level: Ultra,
-        random_offsets: true,
+    render: Frame(
+        zoom: 0.0025,
+        center_x: -0.07238,
+        center_y: 0.0159,
+        fractal: ThirdDegreeRecWithGrowingExponent,
     ),
+    max_iter: 100000,
+    coloring_mode: CumulativeHistogram,
+    sampling: (level: Ultra, random_offsets: true),
 )
