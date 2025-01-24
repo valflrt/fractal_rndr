@@ -80,6 +80,8 @@ These are preset renders I like, you can get their ron parameters files by click
 
 > Fractal: `SecondDegreeRecWithGrowingExponentParam`
 
+https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
+
 ### [xvebhd.ron](./presets/xvebhd.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
@@ -95,6 +97,8 @@ These are preset renders I like, you can get their ron parameters files by click
 ### [gqwzzr.ron](./presets/gqwzzr.ron)
 
 > Fractal: `ComplexLogisticMapLike`
+
+https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 ### [idkzrg.ron](./presets/idkzrg.ron)
 
