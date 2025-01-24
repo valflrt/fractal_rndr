@@ -1,0 +1,44 @@
+(
+    img_width: 1920,
+    img_height: 1080,
+    render: Animation(
+        zoom: [Const(0, 4, 0.001)],
+        center_x: [Const(0, 4, 0.0097)],
+        center_y: [Const(0, 4, -0.01)],
+        fractal: SecondDegreeRecWithGrowingExponentParam(
+            a_re: [
+                Smooth(
+                    0,
+                    1,
+                    0.9999,
+                    1.0001,
+                ),
+                Smooth(
+                    1,
+                    4,
+                    1.0001,
+                    0.9999,
+                ),
+            ],
+            a_im: [
+                Smooth(
+                    0,
+                    3,
+                    -0.0001,
+                    0.0001,
+                ),
+                Smooth(
+                    3,
+                    4,
+                    0.0001,
+                    -0.0001,
+                ),
+            ],
+        ),
+        duration: 4,
+        fps: 30,
+    ),
+    max_iter: 2000,
+    coloring_mode: CumulativeHistogram,
+    sampling: (level: Ultra, random_offsets: true),
+)

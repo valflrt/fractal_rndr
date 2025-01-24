@@ -9,6 +9,10 @@ pub enum Fractal {
         exp: Vec<RenderStep>,
     },
     SecondDegreeRecWithGrowingExponent,
+    SecondDegreeRecWithGrowingExponentParam {
+        a_re: Vec<RenderStep>,
+        a_im: Vec<RenderStep>,
+    },
     SecondDegreeRecAlternating1WithGrowingExponent,
     ThirdDegreeRecWithGrowingExponent,
     NthDegreeRecWithGrowingExponent(usize),
@@ -29,6 +33,12 @@ impl Fractal {
             },
             Self::SecondDegreeRecWithGrowingExponent => {
                 crate::fractal::Fractal::SecondDegreeRecWithGrowingExponent
+            }
+            Self::SecondDegreeRecWithGrowingExponentParam { a_re, a_im } => {
+                crate::fractal::Fractal::SecondDegreeRecWithGrowingExponentParam {
+                    a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
+                    a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
+                }
             }
             Self::SecondDegreeRecAlternating1WithGrowingExponent => {
                 crate::fractal::Fractal::SecondDegreeRecAlternating1WithGrowingExponent

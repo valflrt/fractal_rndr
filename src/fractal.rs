@@ -8,6 +8,7 @@ pub enum Fractal {
     Mandelbrot,
     MandelbrotCustomExp { exp: f64 },
     SecondDegreeRecWithGrowingExponent,
+    SecondDegreeRecWithGrowingExponentParam { a_re: f64, a_im: f64 },
     SecondDegreeRecAlternating1WithGrowingExponent,
     ThirdDegreeRecWithGrowingExponent,
     NthDegreeRecWithGrowingExponent(usize),
@@ -77,6 +78,31 @@ impl Fractal {
                     }
 
                     let new_z1 = z1 * z1 + z0 + c;
+                    z0 = z1;
+                    z1 = new_z1;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                iter.to_array()
+            }
+            &Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im } => {
+                const BAILOUT: f64 = 4.;
+                let bailout_mask = f64x4::splat(BAILOUT);
+
+                let a = Complex4::splat(a_re, a_im);
+
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
+
+                let mut iter = f64x4::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z1.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+
+                    let new_z1 = z1 * z1 + a * z0 + c;
                     z0 = z1;
                     z1 = new_z1;
 

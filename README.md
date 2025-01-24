@@ -12,6 +12,7 @@ It includes different fractal kinds among which the Mandelbrot set and a (potent
 - [Parameter file reference](#parameter-file-reference)
 - [Ideas](#ideas)
 - [Fractal ideas](#fractal-ideas)
+- [Notes](#notes)
 
 # How to use
 
@@ -23,11 +24,13 @@ Next, create a RON parameter file that with the following structure (see [parame
 (
     img_width: 1920,
     img_height: 1080,
-    zoom: 0.001,
-    center_x: 0.0097,
-    center_y: -0.01,
+    render: Frame(
+        zoom: 0.001,
+        center_x: 0.0097,
+        center_y: -0.01,
+        fractal: SecondDegreeRecWithGrowingExponent,
+    )
     max_iter: 100000,
-    fractal: SecondDegreeRecWithGrowingExponent,
     coloring_mode: CumulativeHistogram,
     sampling: (
         level: High,
@@ -73,6 +76,10 @@ These are preset renders I like, you can get their ron parameters files by click
 
 ![mzfyje.png](./presets/mzfyje.png)
 
+### [ecwfwb.ron](./presets/ecwfwb.ron)
+
+> Fractal: `SecondDegreeRecWithGrowingExponentParam`
+
 ### [xvebhd.ron](./presets/xvebhd.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
@@ -84,6 +91,10 @@ These are preset renders I like, you can get their ron parameters files by click
 > Fractal: `SecondDegreeThirtySevenBlend`
 
 ![ckvjjj.png](./presets/ckvjjj.png)
+
+### [gqwzzr.ron](./presets/gqwzzr.ron)
+
+> Fractal: `ComplexLogisticMapLike`
 
 ### [idkzrg.ron](./presets/idkzrg.ron)
 
@@ -127,36 +138,74 @@ I think this one looks a bit like Mandelbrot ?
 
 - `img_width` _(int)_ and `img_height` _(int)_: Set image width and height.
 
-- `zoom` _(float)_: Set zoom. A smaller number means a deeper zoom.
+- `render`: Set render mode and render options. Available values are:
 
-- `center_x` _(float)_ and `center_y` _(float)_: Set the position of the center of the render area (floats).
+  - `Frame`: Render an image.
 
-  > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
+    - `zoom` _(float)_: Set zoom. A smaller number means a deeper zoom.
+
+    - `center_x` _(float)_ and `center_y` _(float)_: Set the position of the center of the render area.
+
+      > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
+
+    - `fractal_kind`: Set the fractal you want to draw. Available options are:
+
+      - `Mandelbrot`
+      - `MandelbrotCustomExp ( exp: float )`
+      - `SecondDegreeRecWithGrowingExponent`
+      - `SecondDegreeRecWithGrowingExponentParam ( a_re: float, a_im: float )`
+      - `SecondDegreeRecAlternating1WithGrowingExponent`
+      - `ThirdDegreeRecWithGrowingExponent`
+      - `NthDegreeRecWithGrowingExponent(n)`
+      - `ThirdDegreeRecPairs`
+      - `SecondDegreeThirtySevenBlend`
+      - `ComplexLogisticMapLike ( re: float, im: float )`
+
+  - `Animation`: Render the frames of an animation.
+
+    It uses `RenderStep` to perform transitions between float values. `RenderStep` has three possible options: `Const(start_time, end_time, value)`, `Linear(start_time, end_time, start_value, end_value)` and `Smooth(start_time, end_time, start_value, end_value)`.
+    See [gqwzzr.ron](./presets/gqwzzr.ron) for an example.
+
+    - `zoom` _(RenderStep)_: Set zoom. A smaller number means a deeper zoom.
+
+    - `center_x` _(RenderStep)_ and `center_y` _(RenderStep)_: Set the position of the center of the render area.
+
+      > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
+
+    - `fractal_kind`: Set the fractal you want to draw. Available options are:
+
+      - `Mandelbrot`
+      - `MandelbrotCustomExp ( exp: RenderStep )`
+      - `SecondDegreeRecWithGrowingExponent`
+      - `SecondDegreeRecWithGrowingExponentParam ( a_re: RenderStep, a_im: RenderStep )`
+      - `SecondDegreeRecAlternating1WithGrowingExponent`
+      - `ThirdDegreeRecWithGrowingExponent`
+      - `NthDegreeRecWithGrowingExponent(n)`
+      - `ThirdDegreeRecPairs`
+      - `SecondDegreeThirtySevenBlend`
+      - `ComplexLogisticMapLike ( re: RenderStep, im: RenderStep )`
+
+    - `duration` _(float)_: The duration of the animation (in seconds).
+
+    - `fps` _(float)_: The number of frames per second.
 
 - `max_iter` _(int)_: Set the maximum iteration count (around 80000 recommended except for mandelbrot-like fractals that look better with ~1000 iterations).
-
-- `fractal_kind`: Set the fractal you want to draw. Available options are:
-
-  - `Mandelbrot`
-  - `SecondDegreeRecWithGrowingExponent`
-  - `SecondDegreeRecAlternating1WithGrowingExponent`
-  - `ThirdDegreeRecWithGrowingExponent`
-  - `NthDegreeRecWithGrowingExponent(n)`
-  - `ThirdDegreeRecPairs`
 
 - `coloring_mode`: Set the way pixels are colored. Available options are:
 
   - `CumulativeHistogram`: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
-  - `MaxIterNorm { map_value }`: Normalizes the value based on the `max_iter` parameter.
-  - `MaxNorm { map_value }`: Normalizes the value based on the highest iteration count reached while sampling.
-  - `MinMaxNorm { map_value }`: Performs min-max normalization using the lowest and the highest iteration counts reached while sampling.
-    `CustomMaxNorm { max, map_value }`: Normalizes the value based on the given max value. Setting this allows getting the visuals obtained with a maximum iteration count of `max` except the actual maximum iteration count is `max_iter`.
-  - `CustomMinMaxNorm { min, max, map_value }`: Performs min-max normalization using the provided `min` and `max` values.
+  - `MaxIterNorm ( map_value )`: Normalizes the value based on the `max_iter` parameter.
+  - `MaxNorm ( map_value )`: Normalizes the value based on the highest iteration count reached while sampling.
+  - `MinMaxNorm ( map_value )`: Performs min-max normalization using the lowest and the highest iteration counts reached while sampling.
+    `CustomMaxNorm ( max, map_value )`: Normalizes the value based on the given max value. Setting this allows getting the visuals obtained with a maximum iteration count of `max` except the actual maximum iteration count is `max_iter`.
+  - `CustomMinMaxNorm ( min, max, map_value )`: Performs min-max normalization using the provided `min` and `max` values.
   - `BlackAndWhite`: Draws a pixel black if the maximum iteration count (`max_iter`) has been reached, otherwise white.
 
-  Here, all `map_value` fields must takes one of the following values:
+  Here, all `map_value` fields must be one of the following options:
 
-  -
+  - `Linear`
+  - `Squared`
+  - `Powf(exp)`
 
 - `sampling`: Set sampling options.
 
@@ -219,3 +268,10 @@ I think this one looks a bit like Mandelbrot ?
 # Fractal ideas
 
 - Do an animation of the fractal defined by `z_n+2 = z_n+1 * (a - z_n)` with a (a complex number) varying over time.
+
+# Notes
+
+- To create a video from the frames:
+  ```bash
+  ffmpeg -framerate 30 -pattern_type glob -i '_test/*.png' -c:v libx264 -pix_fmt yuv420p _test/out.mp4
+  ```
