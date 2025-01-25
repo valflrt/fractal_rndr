@@ -1,8 +1,6 @@
 # Fractal Renderer
 
-This is a very simple program used to render fractals to images using a parameter [RON](https://docs.rs/ron/latest/ron/) file.
-
-It includes different fractal kinds among which the Mandelbrot set and a (potentially new) kind of fractal I came up with by using second- and third-degree recursive sequences instead of the classic first-degree recursive pattern used to draw the Mandelbrot set...
+This is a program used to render fractals to images using a parameter [RON](https://docs.rs/ron/latest/ron/) file.
 
 ### Table of contents
 
