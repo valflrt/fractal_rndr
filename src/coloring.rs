@@ -4,24 +4,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ColoringMode {
     CumulativeHistogram,
-    MaxIterNorm {
-        map_value: MapValue,
-    },
-    MaxNorm {
-        map_value: MapValue,
-    },
-    MinMaxNorm {
-        map_value: MapValue,
-    },
-    CustomMaxNorm {
-        max: f64,
-        map_value: MapValue,
-    },
-    CustomMinMaxNorm {
-        min: f64,
-        max: f64,
-        map_value: MapValue,
-    },
+    MaxIterNorm { map: MapValue },
+    MaxNorm { map: MapValue },
+    MinMaxNorm { map: MapValue },
+    CustomMaxNorm { max: f64, map: MapValue },
+    CustomMinMaxNorm { min: f64, max: f64, map: MapValue },
     BlackAndWhite,
 }
 
@@ -34,7 +21,7 @@ pub enum MapValue {
 
 impl MapValue {
     #[inline]
-    pub fn map_value(&self, t: f64) -> f64 {
+    pub fn apply(&self, t: f64) -> f64 {
         match self {
             MapValue::Linear => t,
             MapValue::Squared => t * t,

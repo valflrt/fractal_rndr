@@ -8,7 +8,7 @@
         fractal: SecondDegreeRecWithGrowingExponent,
     ),
     max_iter: 120000,
-    coloring_mode: MaxNorm(map_value: Linear),
+    coloring_mode: MaxNorm(map: Linear),
     sampling: (
         level: Extreme,
         random_offsets: true,

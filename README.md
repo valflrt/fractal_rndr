@@ -9,7 +9,6 @@ This is a program used to render fractals to images using a parameter [RON](http
 - [Preset renders](#preset-renders)
 - [Parameter file reference](#parameter-file-reference)
 - [Ideas](#ideas)
-- [Fractal ideas](#fractal-ideas)
 - [Notes](#notes)
 
 # How to use
@@ -196,14 +195,14 @@ I think this one looks a bit like Mandelbrot ?
 - `coloring_mode`: Set the way pixels are colored. Available options are:
 
   - `CumulativeHistogram`: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
-  - `MaxIterNorm ( map_value )`: Normalizes the value based on the `max_iter` parameter.
-  - `MaxNorm ( map_value )`: Normalizes the value based on the highest iteration count reached while sampling.
-  - `MinMaxNorm ( map_value )`: Performs min-max normalization using the lowest and the highest iteration counts reached while sampling.
-    `CustomMaxNorm ( max, map_value )`: Normalizes the value based on the given max value. Setting this allows getting the visuals obtained with a maximum iteration count of `max` except the actual maximum iteration count is `max_iter`.
-  - `CustomMinMaxNorm ( min, max, map_value )`: Performs min-max normalization using the provided `min` and `max` values.
+  - `MaxIterNorm ( map )`: Normalizes the value based on the `max_iter` parameter.
+  - `MaxNorm ( map )`: Normalizes the value based on the highest iteration count reached while sampling.
+  - `MinMaxNorm ( map )`: Performs min-max normalization using the lowest and the highest iteration counts reached while sampling.
+    `CustomMaxNorm ( max, map )`: Normalizes the value based on the given max value. Setting this allows getting the visuals obtained with a maximum iteration count of `max` except the actual maximum iteration count is `max_iter`.
+  - `CustomMinMaxNorm ( min, max, map )`: Performs min-max normalization using the provided `min` and `max` values.
   - `BlackAndWhite`: Draws a pixel black if the maximum iteration count (`max_iter`) has been reached, otherwise white.
 
-  Here, all `map_value` fields must be one of the following options:
+  Here, all `map` fields must be one of the following options:
 
   - `Linear`
   - `Squared`
@@ -258,22 +257,19 @@ I think this one looks a bit like Mandelbrot ?
   ```
 
 - `dev_options` _(optional)_: For development purposes.
+
   - `save_sampling_pattern` _(bool)_: Save the sampling pattern as an image.
+
   - `display_gradient` _(bool)_: Draw the gradient used for coloring in the bottom right corner of the image.
 
 # Ideas
 
-- allow rendering animations by adding frames/transitions settings
 - use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
 - use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
-
-# Fractal ideas
-
-- Do an animation of the fractal defined by `z_n+2 = z_n+1 * (a - z_n)` with a (a complex number) varying over time.
 
 # Notes
 
 - To create a video from the frames:
   ```bash
-  ffmpeg -framerate 30 -pattern_type glob -i '_test/*.png' -c:v libx264 -pix_fmt yuv420p _test/out.mp4
+  ffmpeg -framerate <fps> -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p video.mp4
   ```

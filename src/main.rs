@@ -594,60 +594,56 @@ fn color_raw_image(
                 }
             }
         }
-        ColoringMode::MaxIterNorm { map_value } => {
+        ColoringMode::MaxIterNorm { map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
 
-                    let t = map_value.map_value(value / max_iter as f64);
+                    let t = map.apply(value / max_iter as f64);
 
                     output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
                 }
             }
         }
-        ColoringMode::MaxNorm { map_value } => {
+        ColoringMode::MaxNorm { map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
 
-                    let t = map_value.map_value(value / max);
+                    let t = map.apply(value / max);
 
                     output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
                 }
             }
         }
-        ColoringMode::MinMaxNorm { map_value } => {
+        ColoringMode::MinMaxNorm { map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
 
-                    let t = map_value.map_value((value - min) / (max - min));
+                    let t = map.apply((value - min) / (max - min));
 
                     output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
                 }
             }
         }
-        ColoringMode::CustomMaxNorm { max, map_value } => {
+        ColoringMode::CustomMaxNorm { max, map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
 
-                    let t = map_value.map_value(value / max);
+                    let t = map.apply(value / max);
 
                     output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
                 }
             }
         }
-        ColoringMode::CustomMinMaxNorm {
-            min,
-            max,
-            map_value,
-        } => {
+        ColoringMode::CustomMinMaxNorm { min, max, map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
 
-                    let t = map_value.map_value((value - min) / (max - min));
+                    let t = map.apply((value - min) / (max - min));
 
                     output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
                 }
