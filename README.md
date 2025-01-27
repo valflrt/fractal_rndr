@@ -164,27 +164,25 @@ I think this one looks a bit like Mandelbrot ?
 
   - `Animation`: Render the frames of an animation.
 
-    It uses `RenderStep` to perform transitions between float values. `RenderStep` has three possible options: `Const(start_time, end_time, value)`, `Linear(start_time, end_time, start_value, end_value)` and `Smooth(start_time, end_time, start_value, end_value)`.
+    This mode uses `RenderStep` arrays to perform transitions between float values. `RenderStep` has three possible options: `Const(start_time, end_time, value)`, `Linear(start_time, end_time, start_value, end_value)` and `Smooth(start_time, end_time, start_value, end_value)`.
     See [gqwzzr.ron](./presets/gqwzzr.ron) for an example.
 
-    - `zoom` _(RenderStep)_: Set zoom. A smaller number means a deeper zoom.
+    - `zoom` _([RenderStep])_: Set zoom. A smaller number means a deeper zoom.
 
-    - `center_x` _(RenderStep)_ and `center_y` _(RenderStep)_: Set the position of the center of the render area.
-
-      > This corresponds to coordinates of the center of the render area in the complex plane: `z = center_x + i * center_y`
+    - `center_x` _([RenderStep])_ and `center_y` _(RenderStep)_: Set the position of the center of the render area.
 
     - `fractal_kind`: Set the fractal you want to draw. Available options are:
 
       - `Mandelbrot`
-      - `MandelbrotCustomExp ( exp: RenderStep )`
+      - `MandelbrotCustomExp ( exp: [RenderStep] )`
       - `SecondDegreeRecWithGrowingExponent`
-      - `SecondDegreeRecWithGrowingExponentParam ( a_re: RenderStep, a_im: RenderStep )`
+      - `SecondDegreeRecWithGrowingExponentParam ( a_re: [RenderStep], a_im: [RenderStep] )`
       - `SecondDegreeRecAlternating1WithGrowingExponent`
       - `ThirdDegreeRecWithGrowingExponent`
       - `NthDegreeRecWithGrowingExponent(n)`
       - `ThirdDegreeRecPairs`
       - `SecondDegreeThirtySevenBlend`
-      - `ComplexLogisticMapLike ( re: RenderStep, im: RenderStep )`
+      - `ComplexLogisticMapLike ( re: [RenderStep], im: [RenderStep] )`
 
     - `duration` _(float)_: The duration of the animation (in seconds).
 
