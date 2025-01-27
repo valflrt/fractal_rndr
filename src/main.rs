@@ -380,7 +380,6 @@ fn main() -> Result<()> {
                     let output_image = color_raw_image(
                         img_width,
                         img_height,
-                        max_iter,
                         raw_image,
                         coloring_mode,
                         custom_gradient.as_ref(),
@@ -450,7 +449,6 @@ fn main() -> Result<()> {
                         let output_image = color_raw_image(
                             img_width,
                             img_height,
-                            max_iter,
                             raw_image,
                             coloring_mode,
                             custom_gradient.as_ref(),
@@ -493,7 +491,11 @@ fn main() -> Result<()> {
                         println!();
                     }
 
-                    println!("{} frames - {:?} elapsed", frame_count, start.elapsed())
+                    println!(
+                        "{} frames - {:.1}s elapsed",
+                        frame_count,
+                        start.elapsed().as_secs_f32()
+                    )
                 }
             }
         }
@@ -565,7 +567,6 @@ fn init_progress(
 fn color_raw_image(
     img_width: u32,
     img_height: u32,
-    max_iter: u32,
     mut raw_image: Mat2D<f64>,
     coloring_mode: ColoringMode,
     custom_gradient: Option<&Vec<(f64, [u8; 3])>>,
@@ -573,12 +574,12 @@ fn color_raw_image(
 ) -> RgbImage {
     let mut output_image = RgbImage::new(img_width, img_height);
 
-    let max = raw_image.vec.iter().copied().fold(0., f64::max);
-    let min = raw_image.vec.iter().copied().fold(max, f64::min);
+    let max_v = raw_image.vec.iter().copied().fold(0., f64::max);
+    let min_v = raw_image.vec.iter().copied().fold(max_v, f64::min);
 
     match coloring_mode {
         ColoringMode::CumulativeHistogram => {
-            raw_image.vec.iter_mut().for_each(|v| *v /= max);
+            raw_image.vec.iter_mut().for_each(|v| *v /= max_v);
             let cumulative_histogram = cumulate_histogram(compute_histogram(&raw_image.vec));
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
@@ -594,18 +595,9 @@ fn color_raw_image(
                 }
             }
         }
-        ColoringMode::MaxIterNorm { map } => {
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let &value = raw_image.get((i, j)).unwrap();
+        ColoringMode::MaxNorm { max, map } => {
+            let max = max.unwrap_or(max_v);
 
-                    let t = map.apply(value / max_iter as f64);
-
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
-                }
-            }
-        }
-        ColoringMode::MaxNorm { map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
@@ -616,29 +608,10 @@ fn color_raw_image(
                 }
             }
         }
-        ColoringMode::MinMaxNorm { map } => {
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let &value = raw_image.get((i, j)).unwrap();
+        ColoringMode::MinMaxNorm { min, max, map } => {
+            let min = min.unwrap_or(min_v);
+            let max = max.unwrap_or(max_v);
 
-                    let t = map.apply((value - min) / (max - min));
-
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
-                }
-            }
-        }
-        ColoringMode::CustomMaxNorm { max, map } => {
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let &value = raw_image.get((i, j)).unwrap();
-
-                    let t = map.apply(value / max);
-
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
-                }
-            }
-        }
-        ColoringMode::CustomMinMaxNorm { min, max, map } => {
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();

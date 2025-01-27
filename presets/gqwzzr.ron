@@ -22,6 +22,6 @@
         fps: 30,
     ),
     max_iter: 800,
-    coloring_mode: CustomMaxNorm(max: 400, map: Linear),
+    coloring_mode: MaxNorm(max: Some(400), map: Linear),
     sampling: (level: High, random_offsets: true),
 )

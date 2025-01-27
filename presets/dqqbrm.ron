@@ -8,7 +8,7 @@
         fractal: ThirdDegreeRecPairs,
     ),
     max_iter: 2000,
-    coloring_mode: CustomMaxNorm(max: 800, map: Linear),
+    coloring_mode: MaxNorm(max: Some(800), map: Linear),
     sampling: (
         level: Extreme,
         random_offsets: true,

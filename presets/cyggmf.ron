@@ -8,9 +8,9 @@
         fractal: ThirdDegreeRecWithGrowingExponent,
     ),
     max_iter: 2000,
-    coloring_mode: CustomMinMaxNorm(
-        min: 200,
-        max: 750,
+    coloring_mode: MinMaxNorm(
+        min: Some(200),
+        max: Some(750),
         map: Linear,
     ),
     sampling: (

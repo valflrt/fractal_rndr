@@ -4,11 +4,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ColoringMode {
     CumulativeHistogram,
-    MaxIterNorm { map: MapValue },
-    MaxNorm { map: MapValue },
-    MinMaxNorm { map: MapValue },
-    CustomMaxNorm { max: f64, map: MapValue },
-    CustomMinMaxNorm { min: f64, max: f64, map: MapValue },
+    MaxNorm {
+        max: Option<f64>,
+        map: MapValue,
+    },
+    MinMaxNorm {
+        min: Option<f64>,
+        max: Option<f64>,
+        map: MapValue,
+    },
     BlackAndWhite,
 }
 

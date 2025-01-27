@@ -241,7 +241,7 @@ impl Fractal {
                 iter.to_array()
             }
             &Fractal::ComplexLogisticMapLike { re, im } => {
-                const BAILOUT: f64 = 8.;
+                const BAILOUT: f64 = 50.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
                 let mut z0 = Complex4::zeros();

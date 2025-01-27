@@ -193,11 +193,8 @@ I think this one looks a bit like Mandelbrot ?
 - `coloring_mode`: Set the way pixels are colored. Available options are:
 
   - `CumulativeHistogram`: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
-  - `MaxIterNorm ( map )`: Normalizes the value based on the `max_iter` parameter.
-  - `MaxNorm ( map )`: Normalizes the value based on the highest iteration count reached while sampling.
-  - `MinMaxNorm ( map )`: Performs min-max normalization using the lowest and the highest iteration counts reached while sampling.
-    `CustomMaxNorm ( max, map )`: Normalizes the value based on the given max value. Setting this allows getting the visuals obtained with a maximum iteration count of `max` except the actual maximum iteration count is `max_iter`.
-  - `CustomMinMaxNorm ( min, max, map )`: Performs min-max normalization using the provided `min` and `max` values.
+  - `MaxNorm ( max, map )`: Normalizes the value based on the provided (optional) max value or the highest iteration count reached while sampling.
+  - `MinMaxNorm ( min, max, map )`: Performs min-max normalization using the provided (optional) min and max or using the lowest and the highest iteration counts reached while sampling.
   - `BlackAndWhite`: Draws a pixel black if the maximum iteration count (`max_iter`) has been reached, otherwise white.
 
   Here, all `map` fields must be one of the following options:
