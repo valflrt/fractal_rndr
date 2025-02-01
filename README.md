@@ -109,6 +109,12 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 ![dmgtyz.png](./presets/dmgtyz.png)
 
+### [wztpft.ron](./presets/wztpft.ron)
+
+> Fractal: `Vshqwj`
+
+![wztpft.png](./presets/wztpft.png)
+
 ### [datgdv.ron](./presets/datgdv.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`

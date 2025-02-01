@@ -64,6 +64,7 @@ pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> 
     const R: f64 = 1.5;
     let (x, y) = (R * tent(x), R * tent(y));
 
+    // outputs in range (-0.5, 0.5)
     (f64::max(x.abs(), y.abs()) < 0.5).then_some((x, y))
 }
 

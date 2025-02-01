@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use wide::{f64x4, CmpLe};
 
-use crate::complex::Complex4;
+use crate::complex4::Complex4;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Fractal {
@@ -15,6 +15,11 @@ pub enum Fractal {
     ThirdDegreeRecPairs,
     SecondDegreeThirtySevenBlend,
     ComplexLogisticMapLike { re: f64, im: f64 },
+
+    // This is where I started lacking inspiration for names...
+    Vshqwj,
+
+    MoireTest,
 }
 
 impl Fractal {
@@ -262,6 +267,36 @@ impl Fractal {
                 }
 
                 iter.to_array()
+            }
+
+            Fractal::Vshqwj => {
+                const BAILOUT: f64 = 4.;
+                let bailout_mask = f64x4::splat(BAILOUT);
+
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
+                let mut z2 = Complex4::zeros();
+
+                let mut iter = f64x4::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z2.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+                    let new_z2 = (z2 + z1) * (z1 + z0) * (z2 - z0) + c;
+                    z0 = z1;
+                    z1 = z2;
+                    z2 = new_z2;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                iter.to_array()
+            }
+
+            Fractal::MoireTest => {
+                let Complex4 { re: x, im: y } = c * 100.;
+                (x * x + y * y).sin().abs().to_array()
             }
         }
     }
