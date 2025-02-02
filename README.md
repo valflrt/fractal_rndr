@@ -91,6 +91,12 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ![ckvjjj.png](./presets/ckvjjj.png)
 
+### [phgzbz.ron](./presets/phgzbz.ron)
+
+> Fractal: `SecondDegreeThirtySevenBlend`
+
+![phgzbz.png](./presets/phgzbz.png)
+
 ### [gqwzzr.ron](./presets/gqwzzr.ron)
 
 > Fractal: `ComplexLogisticMapLike`
