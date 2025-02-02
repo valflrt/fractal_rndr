@@ -15,15 +15,15 @@
     - `fractal_kind`: Set the fractal you want to draw. Available options are:
 
       - `Mandelbrot`
-      - `MandelbrotCustomExp ( exp: float )`
+      - `MandelbrotCustomExp(exp: float)`
       - `SecondDegreeRecWithGrowingExponent`
-      - `SecondDegreeRecWithGrowingExponentParam ( a_re: float, a_im: float )`
+      - `SecondDegreeRecWithGrowingExponentParam(a_re: float, a_im: float)`
       - `SecondDegreeRecAlternating1WithGrowingExponent`
       - `ThirdDegreeRecWithGrowingExponent`
       - `NthDegreeRecWithGrowingExponent(n)`
       - `ThirdDegreeRecPairs`
       - `SecondDegreeThirtySevenBlend`
-      - `ComplexLogisticMapLike ( re: float, im: float )`
+      - `ComplexLogisticMapLike(re: float, im: float)`
 
   - `Animation`: Render the frames of an animation.
 
@@ -55,9 +55,9 @@
 
 - `coloring_mode`: Set the way pixels are colored. Available options are:
 
-  - `CumulativeHistogram`: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
-  - `MaxNorm ( max, map )`: Normalizes the value based on the provided (optional) max value or the highest iteration count reached while sampling.
-  - `MinMaxNorm ( min, max, map )`: Performs min-max normalization using the provided (optional) min and max or using the lowest and the highest iteration counts reached while sampling.
+  - `CumulativeHistogram(map)`: More information [here](https://en.wikipedia.org/wiki/Plotting_algorithms_for_the_Mandelbrot_set#Histogram_coloring).
+  - `MaxNorm(max, map)`: Normalizes the value based on the provided (optional) max value or the highest iteration count reached while sampling.
+  - `MinMaxNorm(min, max, map)`: Performs min-max normalization using the provided (optional) min and max or using the lowest and the highest iteration counts reached while sampling.
   - `BlackAndWhite`: Draws a pixel black if the maximum iteration count (`max_iter`) has been reached, otherwise white.
 
   Here, all `map` fields must be one of the following options:
