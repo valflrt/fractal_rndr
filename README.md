@@ -103,12 +103,6 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
-### [idkzrg.ron](./presets/idkzrg.ron)
-
-> Fractal: `SecondDegreeRecWithGrowingExponent`
-
-![idkzrg.png](./presets/idkzrg.png)
-
 ### [dmgtyz.ron](./presets/dmgtyz.ron)
 
 > Fractal: `SecondDegreeRecAlternating1WithGrowingExponent`
@@ -126,20 +120,6 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 > Fractal: `SecondDegreeRecWithGrowingExponent`
 
 ![datgdv.png](./presets/datgdv.png)
-
-### [dqqbrm.ron](./presets/dqqbrm.ron)
-
-> Fractal: `ThirdDegreeRecPairs`
-
-I think this one looks a bit like Mandelbrot ?
-
-![dqqbrm.png](./presets/dqqbrm.png)
-
-### [efhhgk.ron](./presets/efhhgk.ron)
-
-> Fractal: `ThirdDegreeRecPairs`
-
-![efhhgk.png](./presets/efhhgk.png)
 
 ### [erbeap.ron](./presets/erbeap.ron)
 
