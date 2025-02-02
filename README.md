@@ -85,6 +85,12 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ![xvebhd.png](./presets/xvebhd.png)
 
+### [iabppp.ron](./presets/iabppp.ron)
+
+> Fractal: `Mandelbrot`
+
+![iabppp.png](./presets/iabppp.png)
+
 ### [ckvjjj.ron](./presets/ckvjjj.ron)
 
 > Fractal: `SecondDegreeThirtySevenBlend`
