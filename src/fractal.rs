@@ -19,6 +19,7 @@ pub enum Fractal {
     // This is where I started lacking inspiration for names...
     Vshqwj,
     Wmriho { a_re: f64, a_im: f64 },
+    Iigdzh,
 
     MoireTest,
 }
@@ -313,6 +314,35 @@ impl Fractal {
                         + Complex4 {
                             re: z0.im,
                             im: z0.re,
+                        }
+                        + c;
+                    z0 = z1;
+                    z1 = z2;
+                    z2 = new_z2;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                iter.to_array()
+            }
+            &Fractal::Iigdzh => {
+                const BAILOUT: f64 = 10.;
+                let bailout_mask = f64x4::splat(BAILOUT);
+
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
+                let mut z2 = Complex4::zeros();
+
+                let mut iter = f64x4::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z2.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+                    let new_z2 = z2 * z2
+                        + Complex4 {
+                            re: z0.im + z1.re,
+                            im: z2.re,
                         }
                         + c;
                     z0 = z1;
