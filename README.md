@@ -1,6 +1,6 @@
 # Fractal Renderer
 
-This is a program used to render fractals to images using a parameter [RON](https://docs.rs/ron/latest/ron/) file.
+This is a program used to render fractals using a [RON](https://docs.rs/ron/latest/ron/) parameter file.
 
 ### Table of contents
 
@@ -12,7 +12,7 @@ This is a program used to render fractals to images using a parameter [RON](http
 
 First, download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
-Next, create a RON parameter file that with the following structure (see [parameter file reference](./REFERENCE.md)):
+Next, create a RON parameter file that with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
 (
