@@ -85,6 +85,18 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ![xvebhd.png](./presets/xvebhd.png)
 
+### [quhuap.ron](./presets/quhuap.ron)
+
+> Fractal: `Iigdzh`
+
+![quhuap.png](./presets/quhuap.png)
+
+### [dvzrjn.ron](./presets/dvzrjn.ron)
+
+> Fractal: `Iigdzh`
+
+![dvzrjn.png](./presets/dvzrjn.png)
+
 ### [iabppp.ron](./presets/iabppp.ron)
 
 > Fractal: `Mandelbrot`
