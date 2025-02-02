@@ -50,7 +50,7 @@ cargo run -r -- fractal.ron fractal.png
 
 # Preset renders
 
-These are preset renders I like, you can get their ron parameters files by clicking on the title. There are some more in [`presets/`](./presets/).
+These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](./presets/).
 
 ### [ukhbrp.ron](./presets/ukhbrp.ron)
 
