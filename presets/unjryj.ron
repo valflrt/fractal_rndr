@@ -7,7 +7,7 @@
         center_y: -0.00026,
         fractal: SecondDegreeRecWithGrowingExponent,
     ),
-    max_iter: 80000,
+    max_iter: 20000,
     coloring_mode: MaxNorm(map: Linear),
     sampling: (
         level: Ultra,

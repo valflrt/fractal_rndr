@@ -1,6 +1,6 @@
 (
-    img_width: 3840,
-    img_height: 2160,
+    img_width: 1920,
+    img_height: 1080,
     render: Frame(
         zoom: 0.046,
         center_x: -0.9858,
@@ -10,7 +10,7 @@
     max_iter: 100000,
     coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (
-        level: Ultra,
+        level: Extreme,
         random_offsets: true,
     ),
 )

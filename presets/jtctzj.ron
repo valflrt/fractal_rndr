@@ -1,6 +1,6 @@
 (
-    img_width: 2160,
-    img_height: 2160,
+    img_width: 1080,
+    img_height: 1080,
     render: Frame(
         zoom: 0.000025,
         center_x: -0.009978,
@@ -8,7 +8,7 @@
         fractal: SecondDegreeRecWithGrowingExponent,
     ),
     max_iter: 80000,
-    coloring_mode: MaxNorm(map: Linear),
+    coloring_mode: MinMaxNorm(map: Powf(0.7)),
     sampling: (
         level: Ultra,
         random_offsets: true,

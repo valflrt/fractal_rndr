@@ -1,6 +1,6 @@
 (
-    img_width: 3840,
-    img_height: 2160,
+    img_width: 1920,
+    img_height: 1080,
     render: Frame(
         zoom: 0.001,
         center_x: 0.0097,

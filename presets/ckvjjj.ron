@@ -1,14 +1,14 @@
 (
-    img_width: 3840,
-    img_height: 2160,
+    img_width: 1920,
+    img_height: 1080,
     render: Frame(
-        zoom: 1.0,
-        center_x: 0.0,
-        center_y: 0.0,
+        zoom: 1.5,
+        center_x: 0,
+        center_y: 0,
         fractal: SecondDegreeThirtySevenBlend,
     ),
-    max_iter: 50000,
-    coloring_mode: CumulativeHistogram(map: Powf(12)),
+    max_iter: 20000,
+    coloring_mode: CumulativeHistogram(map: Powf(6)),
     sampling: (
         level: Ultra,
         random_offsets: true,
