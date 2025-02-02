@@ -12,7 +12,7 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 
 First, download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
-Next, create a RON parameter file that with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
+Next, create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
 (
