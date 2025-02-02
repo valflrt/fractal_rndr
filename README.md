@@ -26,11 +26,11 @@ Next, create a RON parameter file that with the following structure (see [parame
         center_x: 0.0097,
         center_y: -0.01,
         fractal: SecondDegreeRecWithGrowingExponent,
-    )
+    ),
     max_iter: 100000,
-    coloring_mode: CumulativeHistogram,
+    coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (
-        level: High,
+        level: Ultra,
         random_offsets: true,
     ),
 )
@@ -194,7 +194,7 @@ I think this one looks a bit like Mandelbrot ?
 
     - `fps` _(float)_: The number of frames per second.
 
-- `max_iter` _(int)_: Set the maximum iteration count (around 80000 recommended except for mandelbrot-like fractals that look better with ~1000 iterations).
+- `max_iter` _(int)_: Set the maximum iteration count (around 80000 recommended except for fractals with slow divergence parts such as Mandelbrot where you should settle for ~1000).
 
 - `coloring_mode`: Set the way pixels are colored. Available options are:
 

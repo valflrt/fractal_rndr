@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ColoringMode {
-    CumulativeHistogram,
+    CumulativeHistogram {
+        map: MapValue,
+    },
     MaxNorm {
         max: Option<f64>,
         map: MapValue,
@@ -35,14 +37,14 @@ impl MapValue {
 }
 
 const DEFAULT_GRADIENT: [(f64, [u8; 3]); 8] = [
-    (0., [10, 2, 20]),
-    (0.1, [200, 40, 230]),
+    (0., [20, 5, 30]),
+    (0.1, [120, 20, 160]),
     (0.25, [20, 160, 230]),
     (0.4, [60, 230, 80]),
     (0.55, [255, 230, 20]),
     (0.7, [255, 120, 20]),
     (0.85, [255, 40, 60]),
-    (0.95, [20, 2, 10]),
+    (0.95, [20, 10, 15]),
 ];
 
 pub fn color_mapping(t: f64, custom_gradient: Option<&Vec<(f64, [u8; 3])>>) -> Rgb<u8> {

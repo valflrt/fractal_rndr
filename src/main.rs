@@ -333,20 +333,16 @@ fn color_raw_image(
     let min_v = raw_image.vec.iter().copied().fold(max_v, f64::min);
 
     match coloring_mode {
-        ColoringMode::CumulativeHistogram => {
+        ColoringMode::CumulativeHistogram { map } => {
             raw_image.vec.iter_mut().for_each(|v| *v /= max_v);
             let cumulative_histogram = cumulate_histogram(compute_histogram(&raw_image.vec));
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
                     let &value = raw_image.get((i, j)).unwrap();
-                    output_image.put_pixel(
-                        i as u32,
-                        j as u32,
-                        color_mapping(
-                            get_histogram_value(value, &cumulative_histogram).powi(12),
-                            custom_gradient,
-                        ),
-                    );
+
+                    let t = map.apply(get_histogram_value(value, &cumulative_histogram));
+
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
                 }
             }
         }

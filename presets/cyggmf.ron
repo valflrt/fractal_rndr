@@ -14,7 +14,7 @@
         map: Linear,
     ),
     sampling: (
-        level: Extreme,
+        level: Ultra,
         random_offsets: true,
     ),
 )

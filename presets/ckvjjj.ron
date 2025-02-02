@@ -8,9 +8,9 @@
         fractal: SecondDegreeThirtySevenBlend,
     ),
     max_iter: 50000,
-    coloring_mode: CumulativeHistogram,
+    coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (
-        level: Extreme,
+        level: Ultra,
         random_offsets: true,
     ),
 )

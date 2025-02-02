@@ -39,6 +39,6 @@
         fps: 30,
     ),
     max_iter: 2000,
-    coloring_mode: CumulativeHistogram,
+    coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (level: Ultra, random_offsets: true),
 )

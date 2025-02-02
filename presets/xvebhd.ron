@@ -10,7 +10,7 @@
     max_iter: 120000,
     coloring_mode: MaxNorm(map: Linear),
     sampling: (
-        level: Extreme,
+        level: Ultra,
         random_offsets: true,
     ),
 )

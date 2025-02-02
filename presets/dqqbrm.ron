@@ -10,7 +10,7 @@
     max_iter: 2000,
     coloring_mode: MaxNorm(max: Some(800), map: Linear),
     sampling: (
-        level: Extreme,
+        level: Ultra,
         random_offsets: true,
     ),
     diverging_areas: Some([(-0.6, 0.04, -0.32, 0.32)]),

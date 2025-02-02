@@ -18,6 +18,13 @@ pub enum Fractal {
     NthDegreeRecWithGrowingExponent(usize),
     ThirdDegreeRecPairs,
     SecondDegreeThirtySevenBlend,
+
+    Vshqwj,
+    Wmriho {
+        a_re: Vec<RenderStep>,
+        a_im: Vec<RenderStep>,
+    },
+
     ComplexLogisticMapLike {
         re: Vec<RenderStep>,
         im: Vec<RenderStep>,
@@ -53,6 +60,13 @@ impl Fractal {
             Self::SecondDegreeThirtySevenBlend => {
                 crate::fractal::Fractal::SecondDegreeThirtySevenBlend
             }
+
+            Self::Vshqwj => crate::fractal::Fractal::Vshqwj,
+            Self::Wmriho { a_re, a_im } => crate::fractal::Fractal::Wmriho {
+                a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
+                a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
+            },
+
             Self::ComplexLogisticMapLike { re, im } => {
                 crate::fractal::Fractal::ComplexLogisticMapLike {
                     re: re[RenderStep::get_current_step_index(re, t)].get_value(t),
