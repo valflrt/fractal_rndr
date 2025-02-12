@@ -7,6 +7,8 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 - [Fractal Renderer](#fractal-renderer)
 - [How to use](#how-to-use)
 - [Preset renders](#preset-renders)
+- [Ideas](#ideas)
+- [Notes](#notes)
 
 # How to use
 
@@ -141,3 +143,17 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 > Fractal: `ThirdDegreeRecPairs`
 
 ![erbeap.png](./presets/erbeap.png)
+
+# Ideas
+
+- create gui using code from https://github.com/mattfbacon/eo2
+- use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
+- use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
+
+# Notes
+
+- To create a video from the frames:
+  ```bash
+  ffmpeg -framerate <fps> -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p video.mp4
+  ```
+
