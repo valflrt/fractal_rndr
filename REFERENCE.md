@@ -119,15 +119,3 @@
   - `save_sampling_pattern` _(bool)_: Save the sampling pattern as an image.
 
   - `display_gradient` _(bool)_: Draw the gradient used for coloring in the bottom right corner of the image.
-
-# Ideas
-
-- use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
-- use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
-
-# Notes
-
-- To create a video from the frames:
-  ```bash
-  ffmpeg -framerate <fps> -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p video.mp4
-  ```
