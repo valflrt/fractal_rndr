@@ -2,14 +2,14 @@ mod animation;
 
 use serde::{Deserialize, Serialize};
 
-use crate::fractal::Fractal;
+use crate::{fractal::Fractal, F};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Render {
     Frame {
-        zoom: f64,
-        center_x: f64,
-        center_y: f64,
+        zoom: F,
+        center_x: F,
+        center_y: F,
         fractal: Fractal,
     },
     Animation {
@@ -17,23 +17,23 @@ pub enum Render {
         center_x: Vec<RenderStep>,
         center_y: Vec<RenderStep>,
         fractal: animation::Fractal,
-        duration: f64,
-        fps: f64,
+        duration: f32,
+        fps: f32,
     },
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum RenderStep {
     /// (start_time, end_time, value)
-    Const(f64, f64, f64),
+    Const(f32, f32, F),
     /// (start_time, end_time, start_value, end_value)
-    Linear(f64, f64, f64, f64),
+    Linear(f32, f32, F, F),
     /// (start_time, end_time, start_value, end_value)
-    Smooth(f64, f64, f64, f64),
+    Smooth(f32, f32, F, F),
 }
 
 impl RenderStep {
-    pub fn get_current_step_index(steps: &[RenderStep], t: f64) -> usize {
+    pub fn get_current_step_index(steps: &[RenderStep], t: f32) -> usize {
         steps
             .iter()
             .enumerate()
@@ -47,16 +47,16 @@ impl RenderStep {
             .unwrap()
     }
 
-    pub fn get_value(&self, t: f64) -> f64 {
+    pub fn get_value(&self, t: f32) -> F {
         // see https://www.desmos.com/calculator/a1ddmg7pxk
         match *self {
             RenderStep::Const(_, _, value) => value,
             RenderStep::Linear(start_time, end_time, start_value, end_value) => {
-                let w = (t - start_time) / (end_time - start_time);
+                let w = ((t - start_time) / (end_time - start_time)) as F;
                 start_value * (1. - w) + end_value * w
             }
             RenderStep::Smooth(start_time, end_time, start_value, end_value) => {
-                let w = (t - start_time) / (end_time - start_time);
+                let w = ((t - start_time) / (end_time - start_time)) as F;
                 let smooth_w = w * w * (3. - 2. * w);
                 start_value * (1. - smooth_w) + end_value * smooth_w
             }

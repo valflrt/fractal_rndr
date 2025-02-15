@@ -1,5 +1,5 @@
 mod coloring;
-mod complex4;
+mod complexx;
 mod error;
 mod fractal;
 mod mat;
@@ -27,11 +27,25 @@ use crate::{
     sampling::{generate_sampling_points, preview_sampling_points},
 };
 
+#[cfg(feature = "force_f32")]
+type F = f32;
+#[cfg(feature = "force_f32")]
+use wide::f32x8;
+#[cfg(feature = "force_f32")]
+type FX = f32x8;
+
+#[cfg(not(feature = "force_f32"))]
+type F = f64;
+#[cfg(not(feature = "force_f32"))]
+use wide::f64x4;
+#[cfg(not(feature = "force_f32"))]
+type FX = f64x4;
+
 struct ViewParams {
-    width: f64,
-    height: f64,
-    x_min: f64,
-    y_min: f64,
+    width: F,
+    height: F,
+    x_min: F,
+    y_min: F,
 }
 
 fn main() -> Result<()> {
@@ -155,7 +169,7 @@ fn main() -> Result<()> {
                     println!();
 
                     for frame_i in 0..frame_count {
-                        let t = frame_i as f64 / fps;
+                        let t = frame_i as f32 / fps;
 
                         let zoom = zoom[RenderStep::get_current_step_index(&zoom, t)].get_value(t);
                         let center_x =
@@ -240,14 +254,8 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn setup_view(
-    img_width: u32,
-    img_height: u32,
-    zoom: f64,
-    center_x: f64,
-    center_y: f64,
-) -> ViewParams {
-    let aspect_ratio = img_width as f64 / img_height as f64;
+fn setup_view(img_width: u32, img_height: u32, zoom: F, center_x: F, center_y: F) -> ViewParams {
+    let aspect_ratio = img_width as F / img_height as F;
 
     let width = zoom;
     let height = width / aspect_ratio;
@@ -267,15 +275,15 @@ fn setup_view(
 fn color_raw_image(
     img_width: u32,
     img_height: u32,
-    mut raw_image: Mat2D<f64>,
+    mut raw_image: Mat2D<F>,
     coloring_mode: ColoringMode,
-    custom_gradient: Option<&Vec<(f64, [u8; 3])>>,
+    custom_gradient: Option<&Vec<(f32, [u8; 3])>>,
     dev_options: Option<DevOptions>,
 ) -> RgbImage {
     let mut output_image = RgbImage::new(img_width, img_height);
 
-    let max_v = raw_image.vec.iter().copied().fold(0., f64::max);
-    let min_v = raw_image.vec.iter().copied().fold(max_v, f64::min);
+    let max_v = raw_image.vec.iter().copied().fold(0., F::max);
+    let min_v = raw_image.vec.iter().copied().fold(max_v, F::min);
 
     match coloring_mode {
         ColoringMode::CumulativeHistogram { map } => {
@@ -350,7 +358,7 @@ fn color_raw_image(
                 output_image.put_pixel(
                     img_width - GRADIENT_WIDTH - OFFSET + i,
                     img_height - GRADIENT_HEIGHT - OFFSET + j,
-                    color_mapping(i as f64 / GRADIENT_WIDTH as f64, custom_gradient),
+                    color_mapping(i as F / GRADIENT_WIDTH as F, custom_gradient),
                 );
             }
         }

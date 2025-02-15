@@ -1,103 +1,103 @@
 use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
-use wide::f64x4;
+use crate::{F, FX};
 
 /// A simd complex type. It holds 4 complex numbers and performs
 /// calculations on them at once.
 #[derive(Debug, Clone, Copy)]
-pub struct Complex4 {
-    pub re: f64x4,
-    pub im: f64x4,
+pub struct Complexx {
+    pub re: FX,
+    pub im: FX,
 }
 
-impl Complex4 {
+impl Complexx {
     #[inline]
-    pub fn splat(re: f64, im: f64) -> Complex4 {
-        Complex4 {
-            re: f64x4::splat(re),
-            im: f64x4::splat(im),
+    pub fn splat(re: F, im: F) -> Complexx {
+        Complexx {
+            re: FX::splat(re),
+            im: FX::splat(im),
         }
     }
 
     #[inline]
-    pub fn zeros() -> Complex4 {
-        Complex4 {
-            re: f64x4::splat(0.),
-            im: f64x4::splat(0.),
+    pub fn zeros() -> Complexx {
+        Complexx {
+            re: FX::splat(0.),
+            im: FX::splat(0.),
         }
     }
 
     // #[inline]
-    // pub fn is_zero(&self) -> f64x4 {
+    // pub fn is_zero(&self) -> FX {
     //     self.re.cmp_eq(0.) * self.im.cmp_eq(0.)
     // }
 
     #[inline]
-    pub fn to_polar(self) -> (f64x4, f64x4) {
+    pub fn to_polar(self) -> (FX, FX) {
         (self.norm(), self.arg())
     }
 
     #[inline]
-    pub fn from_polar(r: f64x4, theta: f64x4) -> Complex4 {
-        Complex4 {
+    pub fn from_polar(r: FX, theta: FX) -> Complexx {
+        Complexx {
             re: r * theta.cos(),
             im: r * theta.sin(),
         }
     }
 
     #[inline(always)]
-    pub fn norm_sqr(&self) -> f64x4 {
+    pub fn norm_sqr(&self) -> FX {
         self.re * self.re + self.im * self.im
     }
 
     #[inline]
-    pub fn norm(&self) -> f64x4 {
+    pub fn norm(&self) -> FX {
         self.norm_sqr().sqrt()
     }
 
     #[inline]
-    pub fn arg(&self) -> f64x4 {
+    pub fn arg(&self) -> FX {
         self.im.atan2(self.re)
     }
 
     #[inline]
-    pub fn powu(&self, n: usize) -> Complex4 {
+    pub fn powu(&self, n: usize) -> Complexx {
         (0..n).fold(*self, |acc, _| acc * acc)
     }
 
     #[inline]
-    pub fn powf(&self, exp: f64) -> Complex4 {
+    pub fn powf(&self, exp: F) -> Complexx {
         let (r, theta) = self.to_polar();
-        Complex4::from_polar(r.powf(exp), theta * exp)
+        Complexx::from_polar(r.powf(exp), theta * exp)
     }
 
     // #[inline]
-    // pub fn powf4(&self, exp: f64x4) -> Complex4 {
+    // pub fn powf4(&self, exp: FX) -> Complex4 {
     //     let (r, theta) = self.to_polar();
-    //     Complex4::from_polar(r.pow_f64x4(exp), theta * exp)
+    //     Complex4::from_polar(r.pow_FX(exp), theta * exp)
     // }
 }
 
-impl Add for Complex4 {
-    type Output = Complex4;
+impl Add for Complexx {
+    type Output = Complexx;
 
     #[inline(always)]
     fn add(self, rhs: Self) -> Self::Output {
-        Complex4 {
+        Complexx {
             re: self.re + rhs.re,
             im: self.im + rhs.im,
         }
     }
 }
-impl AddAssign for Complex4 {
+impl AddAssign for Complexx {
     #[inline(always)]
     fn add_assign(&mut self, rhs: Self) {
         self.re += rhs.re;
         self.im += rhs.im;
     }
 }
-impl Mul for Complex4 {
-    type Output = Complex4;
+impl Mul for Complexx {
+    type Output = Complexx;
 
     #[inline(always)]
     fn mul(self, rhs: Self) -> Self::Output {
@@ -105,35 +105,35 @@ impl Mul for Complex4 {
         let k2 = self.re * (rhs.im - rhs.re);
         let k3 = self.im * (rhs.re + rhs.im);
 
-        Complex4 {
+        Complexx {
             re: k1 - k3,
             im: k1 + k2,
         }
     }
 }
-impl Neg for Complex4 {
-    type Output = Complex4;
+impl Neg for Complexx {
+    type Output = Complexx;
 
     #[inline(always)]
     fn neg(self) -> Self::Output {
-        Complex4 {
+        Complexx {
             re: -self.re,
             im: -self.im,
         }
     }
 }
-impl Sub for Complex4 {
-    type Output = Complex4;
+impl Sub for Complexx {
+    type Output = Complexx;
 
     #[inline(always)]
     fn sub(self, rhs: Self) -> Self::Output {
-        Complex4 {
+        Complexx {
             re: self.re - rhs.re,
             im: self.im - rhs.im,
         }
     }
 }
-impl SubAssign for Complex4 {
+impl SubAssign for Complexx {
     #[inline(always)]
     fn sub_assign(&mut self, rhs: Self) {
         self.re -= rhs.re;
@@ -141,24 +141,24 @@ impl SubAssign for Complex4 {
     }
 }
 
-impl Mul<f64> for Complex4 {
-    type Output = Complex4;
+impl Mul<F> for Complexx {
+    type Output = Complexx;
 
     #[inline(always)]
-    fn mul(self, rhs: f64) -> Self::Output {
-        Complex4 {
+    fn mul(self, rhs: F) -> Self::Output {
+        Complexx {
             re: self.re * rhs,
             im: self.im * rhs,
         }
     }
 }
 
-impl Mul<f64x4> for Complex4 {
-    type Output = Complex4;
+impl Mul<FX> for Complexx {
+    type Output = Complexx;
 
     #[inline(always)]
-    fn mul(self, rhs: f64x4) -> Self::Output {
-        Complex4 {
+    fn mul(self, rhs: FX) -> Self::Output {
+        Complexx {
             re: self.re * rhs,
             im: self.im * rhs,
         }

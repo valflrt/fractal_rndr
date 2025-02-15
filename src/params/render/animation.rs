@@ -36,7 +36,7 @@ pub enum Fractal {
 }
 
 impl Fractal {
-    pub fn get_fractal(&self, t: f64) -> crate::fractal::Fractal {
+    pub fn get_fractal(&self, t: f32) -> crate::fractal::Fractal {
         match self {
             Self::Mandelbrot => crate::fractal::Fractal::Mandelbrot,
             Self::MandelbrotCustomExp { exp } => crate::fractal::Fractal::MandelbrotCustomExp {

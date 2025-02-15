@@ -1,7 +1,10 @@
 use image::{Pixel, Rgba, RgbaImage};
 use serde::{Deserialize, Serialize};
 
-use crate::error::{ErrorKind, Result};
+use crate::{
+    error::{ErrorKind, Result},
+    F,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Sampling {
@@ -22,7 +25,7 @@ pub enum SamplingLevel {
     Extreme3,
 }
 
-pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(f64, f64)> {
+pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(F, F)> {
     let n = match sampling_level {
         SamplingLevel::Exploration => 5,
         SamplingLevel::Low => 21,
@@ -35,22 +38,22 @@ pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(f64, f64)
         SamplingLevel::Extreme3 => 610,
     };
 
-    const PHI: f64 = 1.618033988749895;
-    const EPS: f64 = 0.5;
+    const PHI: F = 1.618033988749895;
+    const EPS: F = 0.5;
 
     (0..n)
         .map(|i| {
             (
-                i as f64 / PHI % 1.,
-                (i as f64 + EPS) / ((n - 1) as f64 + 2. * EPS),
+                i as F / PHI % 1.,
+                (i as F + EPS) / ((n - 1) as F + 2. * EPS),
             )
         })
         .collect::<Vec<_>>()
 }
 
-pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> (f64, f64) {
+pub fn map_points_with_offsets(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {
     #[inline]
-    fn tent(x: f64) -> f64 {
+    fn tent(x: F) -> F {
         let x = 2. * x - 1.;
         if x != 0. {
             x / x.abs().powf(0.7) - x.signum()
@@ -61,13 +64,13 @@ pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> 
 
     let (x, y) = ((x + offset_x) % 1., (y + offset_y) % 1.);
 
-    const R: f64 = 1.5;
+    const R: F = 1.5;
     let (x, y) = (R * tent(x), R * tent(y));
 
     (x, y)
 }
 
-pub fn preview_sampling_points(sampling_points: &Vec<(f64, f64)>) -> Result<()> {
+pub fn preview_sampling_points(sampling_points: &Vec<(F, F)>) -> Result<()> {
     let size = 350;
     let center = size / 2;
     let px = 50;
@@ -82,12 +85,15 @@ pub fn preview_sampling_points(sampling_points: &Vec<(f64, f64)>) -> Result<()> 
             };
 
             if i == 0 && j == 0 {
+                #[cfg(feature = "force_f32")]
+                let (offset_x, offset_y) = (fastrand::f32(), fastrand::f32());
+                #[cfg(not(feature = "force_f32"))]
                 let (offset_x, offset_y) = (fastrand::f64(), fastrand::f64());
                 for &(x, y) in sampling_points {
                     let (x, y) = map_points_with_offsets(x, y, offset_x, offset_y);
                     preview.put_pixel(
-                        (center as f64 + 2. * px as f64 * (x + i as f64)) as u32,
-                        (center as f64 + 2. * px as f64 * (y + j as f64)) as u32,
+                        (center as F + 2. * px as F * (x + i as F)) as u32,
+                        (center as F + 2. * px as F * (y + j as F)) as u32,
                         color,
                     );
                 }
