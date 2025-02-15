@@ -110,7 +110,7 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ### [phgzbz.ron](./presets/phgzbz.ron)
 
-> Fractal: `SecondDegreeThirtySevenBlend`
+> Fractal: `Wmriho(a_re: -0.1, a_im: 0)`
 
 ![phgzbz.png](./presets/phgzbz.png)
 
