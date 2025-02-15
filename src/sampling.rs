@@ -48,7 +48,7 @@ pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(f64, f64)
         .collect::<Vec<_>>()
 }
 
-pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> Option<(f64, f64)> {
+pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> (f64, f64) {
     #[inline]
     fn tent(x: f64) -> f64 {
         let x = 2. * x - 1.;
@@ -64,8 +64,7 @@ pub fn map_points_with_offsets(x: f64, y: f64, offset_x: f64, offset_y: f64) -> 
     const R: f64 = 1.5;
     let (x, y) = (R * tent(x), R * tent(y));
 
-    // outputs in range (-0.5, 0.5)
-    (f64::max(x.abs(), y.abs()) < 0.5).then_some((x, y))
+    (x, y)
 }
 
 pub fn preview_sampling_points(sampling_points: &Vec<(f64, f64)>) -> Result<()> {
@@ -82,9 +81,10 @@ pub fn preview_sampling_points(sampling_points: &Vec<(f64, f64)>) -> Result<()> 
                 Rgba([120, 120, 120, 255])
             };
 
-            let (offset_x, offset_y) = (fastrand::f64(), fastrand::f64());
-            for &(x, y) in sampling_points {
-                if let Some((x, y)) = map_points_with_offsets(x, y, offset_x, offset_y) {
+            if i == 0 && j == 0 {
+                let (offset_x, offset_y) = (fastrand::f64(), fastrand::f64());
+                for &(x, y) in sampling_points {
+                    let (x, y) = map_points_with_offsets(x, y, offset_x, offset_y);
                     preview.put_pixel(
                         (center as f64 + 2. * px as f64 * (x + i as f64)) as u32,
                         (center as f64 + 2. * px as f64 * (y + j as f64)) as u32,

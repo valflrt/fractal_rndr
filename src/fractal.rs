@@ -19,17 +19,18 @@ pub enum Fractal {
     // This is where I started lacking inspiration for names...
     Vshqwj,
     Wmriho { a_re: f64, a_im: f64 },
-    Iigdzh,
+    Iigdzh { a_re: f64, a_im: f64 },
+    Fxdicq,
 
     MoireTest,
 }
 
 impl Fractal {
-    pub fn get_pixel(&self, c: Complex4, max_iter: u32) -> [f64; 4] {
+    pub fn sample(&self, c: Complex4, max_iter: u32) -> [f64; 4] {
         let one = f64x4::splat(1.0);
         let zero = f64x4::splat(0.0);
 
-        match self {
+        let (iter, _last_z) = match self {
             Fractal::Mandelbrot => {
                 const BAILOUT: f64 = 4.;
                 let bailout_mask = f64x4::splat(BAILOUT);
@@ -48,7 +49,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z)
             }
             &Fractal::MandelbrotCustomExp { exp } => {
                 const BAILOUT: f64 = 4.;
@@ -68,7 +69,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z)
             }
             Fractal::SecondDegreeRecWithGrowingExponent => {
                 const BAILOUT: f64 = 4.;
@@ -91,7 +92,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z1)
             }
             &Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im } => {
                 const BAILOUT: f64 = 4.;
@@ -116,7 +117,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z1)
             }
             Fractal::SecondDegreeRecAlternating1WithGrowingExponent => {
                 const BAILOUT: f64 = 4.;
@@ -139,7 +140,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z1)
             }
             Fractal::ThirdDegreeRecWithGrowingExponent => {
                 const BAILOUT: f64 = 4.;
@@ -163,7 +164,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z2)
             }
             Fractal::NthDegreeRecWithGrowingExponent(n) => {
                 const BAILOUT: f64 = 4.;
@@ -191,7 +192,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z[n - 1])
             }
             Fractal::ThirdDegreeRecPairs => {
                 const BAILOUT: f64 = 4.;
@@ -216,7 +217,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z2)
             }
             Fractal::SecondDegreeThirtySevenBlend => {
                 const BAILOUT: f64 = 4.;
@@ -245,7 +246,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z1)
             }
             &Fractal::ComplexLogisticMapLike { re, im } => {
                 const BAILOUT: f64 = 50.;
@@ -268,7 +269,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z1)
             }
 
             Fractal::Vshqwj => {
@@ -293,7 +294,7 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z2)
             }
             &Fractal::Wmriho { a_re, a_im } => {
                 const BAILOUT: f64 = 10.;
@@ -323,15 +324,15 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z2)
             }
-            &Fractal::Iigdzh => {
+            &Fractal::Iigdzh { a_re, a_im } => {
                 const BAILOUT: f64 = 10.;
                 let bailout_mask = f64x4::splat(BAILOUT);
 
                 let mut z0 = Complex4::zeros();
                 let mut z1 = Complex4::zeros();
-                let mut z2 = Complex4::zeros();
+                let mut z2 = Complex4::splat(a_re, a_im);
 
                 let mut iter = f64x4::splat(0.);
                 for _ in 0..max_iter {
@@ -352,13 +353,47 @@ impl Fractal {
                     iter += undiverged_mask.blend(one, zero);
                 }
 
-                iter.to_array()
+                (iter, z2)
+            }
+            Fractal::Fxdicq => {
+                const BAILOUT: f64 = 10.;
+                let bailout_mask = f64x4::splat(BAILOUT);
+
+                let mut z0 = Complex4::zeros();
+                let mut z1 = Complex4::zeros();
+                let mut z2 = Complex4::zeros();
+
+                let mut iter = f64x4::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z2.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+                    let new_z2 = z2 * z2
+                        + Complex4 {
+                            re: z0.im * z1.re,
+                            im: z2.re,
+                        }
+                        + c;
+                    z0 = z1;
+                    z1 = z2;
+                    z2 = new_z2;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                (iter, z2)
             }
 
             Fractal::MoireTest => {
                 let Complex4 { re: x, im: y } = c * 100.;
-                (x * x + y * y).sin().abs().to_array()
+                ((x * x + y * y).sin().abs(), Complex4::splat(1., 0.))
             }
-        }
+        };
+
+        // let s = _last_z.norm_sqr().ln().log2();
+        // (iter + one - s.min(100. * one)).to_array()
+
+        iter.to_array()
     }
 }

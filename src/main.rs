@@ -23,26 +23,15 @@ use crate::{
     mat::Mat2D,
     params::{DevOptions, FractalParams, RenderStep},
     progress::Progress,
-    rendering::RenderingCtx,
-    rendering::{render_raw_image, RDR_KERNEL_SIZE},
+    rendering::{render_raw_image, RenderingCtx},
     sampling::{generate_sampling_points, preview_sampling_points},
 };
-
-const CHUNK_SIZE: usize = 512;
 
 struct ViewParams {
     width: f64,
     height: f64,
     x_min: f64,
     y_min: f64,
-}
-
-#[derive(Debug, Clone, Copy)]
-struct ChunkDimensions {
-    v_chunks: usize,
-    h_chunks: usize,
-    last_v_chunk: usize,
-    last_h_chunk: usize,
 }
 
 fn main() -> Result<()> {
@@ -87,19 +76,6 @@ fn main() -> Result<()> {
                 preview_sampling_points(&sampling_points)?;
             }
 
-            // Get chunks
-
-            let v_chunks = (img_height as usize).div_euclid(CHUNK_SIZE);
-            let h_chunks = (img_width as usize).div_euclid(CHUNK_SIZE);
-            let last_v_chunk = (img_height as usize).rem_euclid(CHUNK_SIZE);
-            let last_h_chunk = (img_width as usize).rem_euclid(CHUNK_SIZE);
-            let chunk_dims = ChunkDimensions {
-                v_chunks,
-                h_chunks,
-                last_v_chunk,
-                last_h_chunk,
-            };
-
             // Render
 
             let start = Instant::now();
@@ -113,7 +89,6 @@ fn main() -> Result<()> {
                 max_iter,
                 sampling,
                 sampling_points: &sampling_points,
-                chunk_dims,
                 diverging_areas: &diverging_areas,
                 start,
                 stdout: &stdout,
@@ -128,7 +103,7 @@ fn main() -> Result<()> {
                 } => {
                     let view_params = setup_view(img_width, img_height, zoom, center_x, center_y);
 
-                    let progress = init_progress(chunk_dims);
+                    let progress = Progress::new((img_width * img_height) as usize);
 
                     let raw_image = render_raw_image(fractal, view_params, rendering_ctx, progress);
 
@@ -191,7 +166,7 @@ fn main() -> Result<()> {
                         let view_params =
                             setup_view(img_width, img_height, zoom, center_x, center_y);
 
-                        let progress = init_progress(chunk_dims);
+                        let progress = Progress::new((img_width * img_height) as usize);
 
                         let raw_image = render_raw_image(
                             fractal.get_fractal(t),
@@ -287,36 +262,6 @@ fn setup_view(
         x_min,
         y_min,
     }
-}
-
-fn init_progress(
-    ChunkDimensions {
-        v_chunks,
-        h_chunks,
-        last_v_chunk,
-        last_h_chunk,
-    }: ChunkDimensions,
-) -> Progress {
-    let total = (0..v_chunks + 1)
-        .flat_map(|cj| {
-            (0..h_chunks + 1).map(move |ci| {
-                let chunk_width = if ci == h_chunks {
-                    last_h_chunk
-                } else {
-                    CHUNK_SIZE
-                };
-                let chunk_height = if cj == v_chunks {
-                    last_v_chunk
-                } else {
-                    CHUNK_SIZE
-                };
-
-                (chunk_width + 2 * RDR_KERNEL_SIZE) * (chunk_height + 2 * RDR_KERNEL_SIZE)
-            })
-        })
-        .sum::<usize>();
-
-    Progress::new(total)
 }
 
 fn color_raw_image(

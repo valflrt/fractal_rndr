@@ -24,7 +24,10 @@ pub enum Fractal {
         a_re: Vec<RenderStep>,
         a_im: Vec<RenderStep>,
     },
-    Iigdzh,
+    Iigdzh {
+        a_re: Vec<RenderStep>,
+        a_im: Vec<RenderStep>,
+    },
 
     ComplexLogisticMapLike {
         re: Vec<RenderStep>,
@@ -67,7 +70,10 @@ impl Fractal {
                 a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
                 a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
             },
-            Self::Iigdzh => crate::fractal::Fractal::Iigdzh,
+            Self::Iigdzh { a_re, a_im } => crate::fractal::Fractal::Iigdzh {
+                a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
+                a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
+            },
 
             Self::ComplexLogisticMapLike { re, im } => {
                 crate::fractal::Fractal::ComplexLogisticMapLike {
