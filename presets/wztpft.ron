@@ -12,7 +12,7 @@
         max: Some(600),
         map: Powf(1.1),
     ),
-    sampling: (level: Ultra, random_offsets: true),
+    sampling: (level: Extreme, random_offsets: true),
     custom_gradient: Some(
         [
             (0, (255, 255, 255)),

@@ -7,10 +7,10 @@
         center_y: -0.01,
         fractal: SecondDegreeRecWithGrowingExponent,
     ),
-    max_iter: 100000,
+    max_iter: 10000,
     coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (
-        level: Ultra,
+        level: Extreme2,
         random_offsets: true,
     ),
 )

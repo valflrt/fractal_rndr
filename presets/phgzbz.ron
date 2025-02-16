@@ -16,5 +16,5 @@
         max: Some(100),
         map: Linear,
     ),
-    sampling: (level: Ultra, random_offsets: true),
+    sampling: (level: Extreme, random_offsets: true),
 )

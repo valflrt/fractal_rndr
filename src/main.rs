@@ -75,7 +75,6 @@ fn main() -> Result<()> {
                 sampling,
                 coloring_mode,
                 custom_gradient,
-                diverging_areas,
                 dev_options,
             } = params;
 
@@ -103,7 +102,6 @@ fn main() -> Result<()> {
                 max_iter,
                 sampling,
                 sampling_points: &sampling_points,
-                diverging_areas: &diverging_areas,
                 start,
                 stdout: &stdout,
             };

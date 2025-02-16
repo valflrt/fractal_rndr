@@ -25,8 +25,6 @@ pub struct RenderingCtx<'a> {
     pub sampling: Sampling,
     pub sampling_points: &'a [(F, F)],
 
-    pub diverging_areas: &'a Option<Vec<[F; 4]>>,
-
     pub start: Instant,
     pub stdout: &'a Stdout,
 }
@@ -43,7 +41,6 @@ pub fn render_raw_image(
         max_iter,
         sampling,
         sampling_points,
-        diverging_areas,
         start,
         stdout,
         ..
@@ -72,66 +69,50 @@ pub fn render_raw_image(
             let x = i as F;
             let y = j as F;
 
-            let should_render = {
-                let x = x_min + width * x / img_width as F;
-                let y = y_min + height * y / img_height as F;
-
-                diverging_areas
-                    .as_ref()
-                    .map(|areas| {
-                        !areas.iter().any(|&[min_x, max_x, min_y, max_y]| {
-                            min_x <= x && x <= max_x && -max_y <= y && y <= -min_y
-                        })
-                    })
-                    .unwrap_or(true)
-            };
-
-            if should_render {
-                let (offset_x, offset_y) = if sampling.random_offsets {
-                    #[cfg(feature = "force_f32")]
-                    let v = (rng.f32(), rng.f32());
-                    #[cfg(not(feature = "force_f32"))]
-                    let v = (rng.f64(), rng.f64());
-
-                    v
-                } else {
-                    (0., 0.)
-                };
-                let sampling_points = sampling_points
-                    .iter()
-                    .map(|&(dx, dy)| map_points_with_offsets(dx, dy, offset_x, offset_y))
-                    .collect::<Vec<_>>();
-
+            let (offset_x, offset_y) = if sampling.random_offsets {
                 #[cfg(feature = "force_f32")]
-                const CHUNK_SIZE: usize = 8;
+                let v = (rng.f32(), rng.f32());
                 #[cfg(not(feature = "force_f32"))]
-                const CHUNK_SIZE: usize = 4;
-                let value = sampling_points
-                    .chunks(CHUNK_SIZE)
-                    .flat_map(|d| {
-                        let l = d.len();
-                        let re = FX::from(array::from_fn(|i| {
-                            // Here we use `i % l` to avoid out of bounds error (when i < 4).
-                            // When `i < 4`, the modulo operation will repeat the sample
-                            // but as we use simd this is acceptable (the cost is the
-                            // same whether it is computed along with the others or not).
-                            let (dx, _) = d[i % l];
-                            x_min + width * (x + 0.5 + dx) / img_width as F
-                        }));
-                        let im = FX::from(array::from_fn(|i| {
-                            let (_, dy) = d[i % l];
-                            y_min + height * (y + 0.5 + dy) / img_height as F
-                        }));
+                let v = (rng.f64(), rng.f64());
 
-                        let iter = fractal.sample(Complexx { re, im }, max_iter);
+                v
+            } else {
+                (0., 0.)
+            };
+            let sampling_points = sampling_points
+                .iter()
+                .map(|&(dx, dy)| map_points_with_offsets(dx, dy, offset_x, offset_y))
+                .collect::<Vec<_>>();
 
-                        (0..l).map(move |i| iter[i])
-                    })
-                    .sum::<F>()
-                    / sampling_points.len() as F;
+            #[cfg(feature = "force_f32")]
+            const CHUNK_SIZE: usize = 8;
+            #[cfg(not(feature = "force_f32"))]
+            const CHUNK_SIZE: usize = 4;
+            let value = sampling_points
+                .chunks(CHUNK_SIZE)
+                .flat_map(|d| {
+                    let l = d.len();
+                    let re = FX::from(array::from_fn(|i| {
+                        // Here we use `i % l` to avoid out of bounds error (when i < 4).
+                        // When `i < 4`, the modulo operation will repeat the sample
+                        // but as we use simd this is acceptable (the cost is the
+                        // same whether it is computed along with the others or not).
+                        let (dx, _) = d[i % l];
+                        x_min + width * (x + 0.5 + dx) / img_width as F
+                    }));
+                    let im = FX::from(array::from_fn(|i| {
+                        let (_, dy) = d[i % l];
+                        y_min + height * (y + 0.5 + dy) / img_height as F
+                    }));
 
-                s.send(((i, j), value)).unwrap();
-            }
+                    let iter = fractal.sample(Complexx { re, im }, max_iter);
+
+                    (0..l).map(move |i| iter[i])
+                })
+                .sum::<F>()
+                / sampling_points.len() as F;
+
+            s.send(((i, j), value)).unwrap();
 
             progress.incr();
 

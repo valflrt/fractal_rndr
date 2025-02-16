@@ -101,19 +101,6 @@
   )
   ```
 
-- `diverging_areas` _(optional)_: This allows setting areas where computing pixel values will be skipped assuming they diverge.
-
-  ```rust
-  (
-    ..
-    diverging_areas: Some([
-        (min_x, max_x, min_y, max_y),
-        ..
-    ]),
-    ..
-  )
-  ```
-
 - `dev_options` _(optional)_: For development purposes.
 
   - `save_sampling_pattern` _(bool)_: Save the sampling pattern as an image.

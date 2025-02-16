@@ -396,8 +396,9 @@ impl Fractal {
             }
         };
 
-        // let s = _last_z.norm_sqr().ln().log2();
-        // (iter + one - s.min(100. * one)).to_array()
+        // let s = _last_z.norm_sqr().ln().ln();
+        // (iter + one - s.min(20. * one)).to_array()
+        // (iter + one - s).to_array()
 
         iter.to_array()
     }

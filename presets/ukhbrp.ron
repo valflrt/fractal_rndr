@@ -10,7 +10,7 @@
     max_iter: 20000,
     coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (
-        level: Ultra,
+        level: Extreme,
         random_offsets: true,
     ),
 )

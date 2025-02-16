@@ -2,7 +2,7 @@ mod render;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{coloring::ColoringMode, sampling::Sampling, F};
+use crate::{coloring::ColoringMode, sampling::Sampling};
 pub use {render::Render, render::RenderStep};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -17,8 +17,6 @@ pub struct FractalParams {
     pub sampling: Sampling,
 
     pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
-
-    pub diverging_areas: Option<Vec<[F; 4]>>,
 
     pub dev_options: Option<DevOptions>,
 }

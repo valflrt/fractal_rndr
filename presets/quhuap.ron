@@ -13,7 +13,7 @@
         max: Some(300),
         map: Linear,
     ),
-    sampling: (level: Extreme2, random_offsets: true),
+    sampling: (level: Extreme3, random_offsets: true),
     custom_gradient: Some([
         (0, (0, 0, 0)),
         (1, (255, 255, 255)),
