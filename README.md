@@ -90,12 +90,6 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ![quhuap.png](./presets/quhuap.png)
 
-### [dvzrjn.ron](./presets/dvzrjn.ron)
-
-> Fractal: `Iigdzh`
-
-![dvzrjn.png](./presets/dvzrjn.png)
-
 ### [iabppp.ron](./presets/iabppp.ron)
 
 > Fractal: `Mandelbrot`
@@ -107,6 +101,18 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 > Fractal: `Mjygzr`
 
 ![ajwrkx.png](./presets/ajwrkx.png)
+
+### [wztpft.ron](./presets/wztpft.ron)
+
+> Fractal: `Vshqwj`
+
+![wztpft.png](./presets/wztpft.png)
+
+### [dvzrjn.ron](./presets/dvzrjn.ron)
+
+> Fractal: `Iigdzh`
+
+![dvzrjn.png](./presets/dvzrjn.png)
 
 ### [ckvjjj.ron](./presets/ckvjjj.ron)
 
@@ -132,23 +138,11 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 ![dmgtyz.png](./presets/dmgtyz.png)
 
-### [wztpft.ron](./presets/wztpft.ron)
-
-> Fractal: `Vshqwj`
-
-![wztpft.png](./presets/wztpft.png)
-
 ### [datgdv.ron](./presets/datgdv.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
 
 ![datgdv.png](./presets/datgdv.png)
-
-### [erbeap.ron](./presets/erbeap.ron)
-
-> Fractal: `ThirdDegreeRecPairs`
-
-![erbeap.png](./presets/erbeap.png)
 
 # Ideas
 
