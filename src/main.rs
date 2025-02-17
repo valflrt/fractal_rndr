@@ -82,7 +82,7 @@ fn main() -> Result<()> {
 
             let sampling_points = generate_sampling_points(sampling.level);
             if let Some(DevOptions {
-                save_sampling_pattern: true,
+                save_sampling_pattern: Some(true),
                 ..
             }) = dev_options
             {
@@ -107,7 +107,7 @@ fn main() -> Result<()> {
             };
 
             match render {
-                params::Render::Frame {
+                params::RenderKind::Frame {
                     zoom,
                     center_x,
                     center_y,
@@ -153,7 +153,7 @@ fn main() -> Result<()> {
                         }
                     );
                 }
-                params::Render::Animation {
+                params::RenderKind::Animation {
                     zoom,
                     center_x,
                     center_y,
@@ -343,7 +343,7 @@ fn color_raw_image(
     };
 
     if let Some(DevOptions {
-        display_gradient: true,
+        display_gradient: Some(true),
         ..
     }) = dev_options
     {

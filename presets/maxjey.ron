@@ -1,0 +1,17 @@
+(
+    img_width: 1920,
+    img_height: 1080,
+    render: Frame(
+        zoom: 0.0000011,
+        center_x: 0,
+        center_y: 0.53991194,
+        fractal: Mjygzr,
+    ),
+    max_iter: 600,
+    coloring_mode: MinMaxNorm(
+        min: Some(250),
+        max: Some(500),
+        map: Linear,
+    ),
+    sampling: (level: Ultra, random_offsets: true),
+)
