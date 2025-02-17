@@ -54,6 +54,12 @@ cargo run -r -- fractal.ron fractal.png
 
 These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](./presets/).
 
+### [cyggmf.ron](./presets/cyggmf.ron)
+
+> Fractal: `ThirdDegreeRecWithGrowingExponent`
+
+![cyggmf.png](./presets/cyggmf.png)
+
 ### [ukhbrp.ron](./presets/ukhbrp.ron)
 
 > Fractal: `ThirdDegreeRecWithGrowingExponent`
@@ -146,7 +152,6 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 # Ideas
 
-- create gui using code from https://github.com/mattfbacon/eo2
 - use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
 - use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
 
