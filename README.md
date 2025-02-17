@@ -102,6 +102,12 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ![iabppp.png](./presets/iabppp.png)
 
+### [ajwrkx.ron](./presets/ajwrkx.ron)
+
+> Fractal: `Mjygzr`
+
+![ajwrkx.png](./presets/ajwrkx.png)
+
 ### [ckvjjj.ron](./presets/ckvjjj.ron)
 
 > Fractal: `SecondDegreeThirtySevenBlend`
@@ -156,4 +162,3 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
   ```bash
   ffmpeg -framerate <fps> -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p video.mp4
   ```
-

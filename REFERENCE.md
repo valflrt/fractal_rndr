@@ -78,7 +78,7 @@
     - `Extreme1`
     - `Extreme2`
     - `Extreme3`
-  - `random_offsets` _(bool)_: Enable or disable random offsets. They are used to get rid of moiré patterns but they make noise appear on some fractals so it might be useful to disable them.
+  - `random_offsets` _(bool)_: Enable or disable random offsets. They are used to get rid of moiré patterns but they make noise appear on some fractals so it might be useful to be able to disable them.
 
 - `custom_gradient` _(optional)_: Set a custom gradient. This is an array of array of the form `[t, [r, g, b]]` where `t` is a float between 0 and 1 and `r`, `g`, `b` the color at that point in the gradient. Colors in between are interpolated.
 
@@ -103,6 +103,6 @@
 
 - `dev_options` _(optional)_: For development purposes.
 
-  - `save_sampling_pattern` _(bool)_: Save the sampling pattern as an image.
+  - `save_sampling_pattern` _(optional, bool)_: Save the sampling pattern as an image.
 
-  - `display_gradient` _(bool)_: Draw the gradient used for coloring in the bottom right corner of the image.
+  - `display_gradient` _(optional, bool)_: Draw the gradient used for coloring in the bottom right corner of the image.
