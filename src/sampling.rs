@@ -64,7 +64,7 @@ pub fn map_points_with_offsets(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {
 
     let (x, y) = ((x + offset_x) % 1., (y + offset_y) % 1.);
 
-    const R: F = 1.5;
+    const R: F = 1.8;
     let (x, y) = (R * tent(x), R * tent(y));
 
     (x, y)
