@@ -18,6 +18,7 @@ pub fn get_args_and_options() -> (Vec<String>, Vec<(String, Option<String>)>) {
         } else {
             args.push(arg);
         }
+        i += 1;
     }
 
     (args, options)
