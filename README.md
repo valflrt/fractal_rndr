@@ -54,7 +54,7 @@ cargo run -r -- fractal.ron fractal.png
 
 These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](./presets/).
 
-> The following renders are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 
+> The renders found in `presets/` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 
 
 ### [cyggmf.ron](./presets/cyggmf.ron)
 
