@@ -1,3 +1,5 @@
+use std::ops::{Index, IndexMut};
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Mat2D<T> {
     pub width: usize,
@@ -5,11 +7,11 @@ pub struct Mat2D<T> {
     pub vec: Vec<T>,
 }
 
-impl<T> Mat2D<T>
-where
-    T: Clone,
-{
-    pub fn filled_with(value: T, width: usize, height: usize) -> Self {
+impl<T> Mat2D<T> {
+    pub fn filled_with(value: T, width: usize, height: usize) -> Self
+    where
+        T: Clone,
+    {
         Self {
             width,
             height,
@@ -26,28 +28,33 @@ where
         }
     }
 
-    // pub fn get_mut(&mut self, index: (usize, usize)) -> Option<&mut T> {
-    //     let index = self.map_index(index);
-    //     if index < self.vec.len() {
-    //         Some(&mut self.vec[index])
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    pub fn set(&mut self, index: (usize, usize), v: T) -> Result<(), ()> {
+    pub fn get_mut(&mut self, index: (usize, usize)) -> Option<&mut T> {
         let index = self.map_index(index);
         if index < self.vec.len() {
-            self.vec[index] = v;
-            Ok(())
+            Some(&mut self.vec[index])
         } else {
-            Err(())
+            None
         }
     }
 
     #[inline]
     fn map_index(&self, index: (usize, usize)) -> usize {
         index.0 + index.1 * self.width
+    }
+}
+
+impl<T> Index<(usize, usize)> for Mat2D<T> {
+    type Output = T;
+
+    fn index(&self, index: (usize, usize)) -> &Self::Output {
+        self.get(index)
+            .expect(&format!("index {:?} out of bounds", index))
+    }
+}
+impl<T> IndexMut<(usize, usize)> for Mat2D<T> {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        self.get_mut(index)
+            .expect(&format!("index {:?} out of bounds", index))
     }
 }
 

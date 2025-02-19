@@ -1,7 +1,87 @@
-use image::Rgb;
+use cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_value};
+use image::{Rgb, RgbImage};
 use serde::{Deserialize, Serialize};
 
-use crate::F;
+use crate::{mat::Mat2D, RenderCtx, F};
+
+pub fn color_raw_image(
+    render_ctx: &RenderCtx,
+    coloring_mode: ColoringMode,
+    custom_gradient: Option<&Vec<(f32, [u8; 3])>>,
+    mut raw_image: Mat2D<F>,
+) -> RgbImage {
+    let &RenderCtx {
+        img_width,
+        img_height,
+        ..
+    } = render_ctx;
+
+    let mut output_image = RgbImage::new(img_width, img_height);
+
+    let max_v = raw_image.vec.iter().copied().fold(0., F::max);
+    let min_v = raw_image.vec.iter().copied().fold(max_v, F::min);
+
+    match coloring_mode {
+        ColoringMode::CumulativeHistogram { map } => {
+            raw_image.vec.iter_mut().for_each(|v| *v /= max_v);
+            let cumulative_histogram = cumulate_histogram(compute_histogram(&raw_image.vec));
+            for j in 0..img_height as usize {
+                for i in 0..img_width as usize {
+                    let value = raw_image[(i, j)];
+
+                    let t = map.apply(get_histogram_value(value, &cumulative_histogram));
+
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
+                }
+            }
+        }
+        ColoringMode::MaxNorm { max, map } => {
+            let max = max.unwrap_or(max_v);
+
+            for j in 0..img_height as usize {
+                for i in 0..img_width as usize {
+                    let value = raw_image[(i, j)];
+
+                    let t = map.apply(value / max);
+
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
+                }
+            }
+        }
+        ColoringMode::MinMaxNorm { min, max, map } => {
+            let min = min.unwrap_or(min_v);
+            let max = max.unwrap_or(max_v);
+
+            for j in 0..img_height as usize {
+                for i in 0..img_width as usize {
+                    let value = raw_image[(i, j)];
+
+                    let t = map.apply((value - min) / (max - min));
+
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
+                }
+            }
+        }
+        ColoringMode::BlackAndWhite => {
+            for j in 0..img_height as usize {
+                for i in 0..img_width as usize {
+                    let value = raw_image[(i, j)];
+                    output_image.put_pixel(
+                        i as u32,
+                        j as u32,
+                        if value >= 0.95 {
+                            Rgb([0, 0, 0])
+                        } else {
+                            Rgb([255, 255, 255])
+                        },
+                    );
+                }
+            }
+        }
+    };
+
+    output_image
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ColoringMode {

@@ -1,52 +1,32 @@
-use std::{
-    array,
-    io::{Stdout, Write},
-    sync::mpsc,
-    time::Instant,
-};
+use std::{array, io::Write, sync::mpsc};
 
 use rayon::prelude::*;
 
 use crate::{
-    complexx::Complexx,
-    fractal::Fractal,
-    mat::Mat2D,
-    progress::Progress,
-    sampling::{map_points_with_offsets, Sampling},
-    ViewParams, F, FX,
+    complexx::Complexx, fractal::Fractal, mat::Mat2D, progress::Progress,
+    sampling::map_points_with_offsets, RenderCtx, View, F, FX,
 };
-
-#[derive(Debug, Clone, Copy)]
-pub struct RenderingCtx<'a> {
-    pub img_width: u32,
-    pub img_height: u32,
-
-    pub max_iter: u32,
-    pub sampling: Sampling,
-    pub sampling_points: &'a [(F, F)],
-
-    pub start: Instant,
-    pub stdout: &'a Stdout,
-}
 
 pub fn render_raw_image(
     fractal: Fractal,
-    view_params: ViewParams,
-    rendering_ctx: RenderingCtx,
+    view_params: &View,
+    rendering_ctx: &RenderCtx,
     progress: Progress,
 ) -> Mat2D<F> {
-    let RenderingCtx {
+    let &RenderCtx {
         img_width,
         img_height,
+
         max_iter,
+
         sampling,
-        sampling_points,
         start,
-        stdout,
         ..
     } = rendering_ctx;
 
-    let ViewParams {
+    let sampling_points = &rendering_ctx.sampling_points;
+
+    let View {
         width,
         height,
         mut x_min,
@@ -57,6 +37,8 @@ pub fn render_raw_image(
         x_min = 0.;
         y_min = 0.;
     }
+
+    let stdout = std::io::stdout();
 
     let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
 
@@ -132,7 +114,7 @@ pub fn render_raw_image(
         });
 
     for ((i, j), sample) in rx {
-        let _ = raw_image.set((i as usize, j as usize), sample);
+        raw_image[(i as usize, j as usize)] = sample;
     }
 
     raw_image
