@@ -154,6 +154,10 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 - use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
 - use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
+- Make a new program using this one that is a purely gui program with progressive rendering
+  - Progressive rendering ? Save a global `raw_image` and sample continuously from another thread to improve image quality
+    - How to sample ? Use `Low` or `Medium` for first pass then do other passes with `High` (as the number of passes increases, the value of each pixel gets more and more accurate)
+    - Careful: The average between new passes and the current values must be weighted: `(sampling_point_count_from_start * stored_value + sampling_point_count_for_current_pass * new_value) / (sampling_point_count_from_start + sampling_point_count_for_current_pass)`
 
 # Notes
 
