@@ -1,8 +1,8 @@
-use std::env;
+use std::{collections::HashMap, env};
 
-pub fn get_args_and_options() -> (Vec<String>, Vec<(String, Option<String>)>) {
+pub fn get_args_and_options() -> (Vec<String>, HashMap<String, Option<String>>) {
     let mut args = Vec::new();
-    let mut options = Vec::new();
+    let mut options = HashMap::new();
 
     let raw_args = env::args().collect::<Vec<_>>();
     let l = raw_args.len();
@@ -11,10 +11,13 @@ pub fn get_args_and_options() -> (Vec<String>, Vec<(String, Option<String>)>) {
     while i < l {
         let arg = raw_args[i].to_owned();
         if arg.starts_with("--") {
-            options.push((arg, raw_args.get(i + 1).map(|s| s.to_owned())));
+            options.insert(
+                arg[2..].to_owned(),
+                raw_args.get(i + 1).map(|s| s.to_owned()),
+            );
             i += 1;
         } else if arg.starts_with("-") {
-            options.push((arg, None));
+            options.insert(arg[1..].to_owned(), None);
         } else {
             args.push(arg);
         }

@@ -3,6 +3,7 @@ mod coloring;
 mod complexx;
 mod error;
 mod fractal;
+mod gui;
 mod mat;
 mod params;
 mod progress;
@@ -11,13 +12,15 @@ mod sampling;
 
 use std::{fs, time::Instant};
 
+use gui::Gui;
+use params::FrameParams;
 use uni_path::PathBuf;
 
 use crate::{
     cli::get_args_and_options,
     coloring::{color_mapping, color_raw_image},
     error::{ErrorKind, Result},
-    params::{DevOptions, FractalParams, RenderStep},
+    params::{DevOptions, ParamsKind},
     progress::Progress,
     rendering::render_raw_image,
     sampling::preview_sampling_points,
@@ -52,14 +55,14 @@ pub struct RenderCtx {
 }
 
 fn main() -> Result<()> {
-    let (args, _options) = get_args_and_options();
+    let (args, options) = get_args_and_options();
 
     match args.len() {
         3 => {
             let (param_file_path, output_image_path) =
                 (PathBuf::from(&args[1]), PathBuf::from(&args[2]));
 
-            let params = ron::from_str::<FractalParams>(
+            let params = ron::from_str::<ParamsKind>(
                 &fs::read_to_string(param_file_path.as_str())
                     .map_err(ErrorKind::ReadParameterFile)?,
             )
@@ -70,97 +73,115 @@ fn main() -> Result<()> {
             //     ron::ser::to_string_pretty(&params, PrettyConfig::default()).unwrap()
             // );
 
-            let render_ctx = RenderCtx::new(&params)?;
-
-            if let Some(DevOptions {
-                save_sampling_pattern: Some(true),
-                ..
-            }) = params.dev_options
-            {
-                preview_sampling_points(&render_ctx.sampling_points)?;
-            }
-
-            let img_width = params.img_width;
-            let img_height = params.img_height;
-
-            match params.render {
-                params::RenderKind::Frame {
-                    zoom,
-                    center_x,
-                    center_y,
-                    fractal,
-                } => {
-                    let view_params = View::new(img_width, img_height, zoom, center_x, center_y);
-
-                    let progress = Progress::new((img_width * img_height) as usize);
-
-                    let raw_image = render_raw_image(fractal, &view_params, &render_ctx, progress);
-
-                    println!();
-
-                    let output_image = color_raw_image(
-                        &render_ctx,
-                        params.coloring_mode,
-                        params.custom_gradient.as_ref(),
-                        raw_image,
-                    );
-
-                    output_image
-                        .save(output_image_path.as_str())
-                        .map_err(ErrorKind::SaveImage)?;
-
-                    let image_size = fs::metadata(output_image_path.as_str()).unwrap().len();
-                    println!(
-                        " output image: {}x{} - {} {}",
+            match params {
+                ParamsKind::Frame { .. } => {
+                    let params = params.get_frame_params(0.);
+                    let FrameParams {
                         img_width,
                         img_height,
-                        if image_size / 1_000_000 != 0 {
-                            format!("{:.1}mb", image_size as f32 / 1_000_000.)
-                        } else if image_size / 1_000 != 0 {
-                            format!("{:.1}kb", image_size as f32 / 1_000.)
-                        } else {
-                            format!("{}b", image_size)
-                        },
-                        if let Some(ext) = output_image_path.extension() {
-                            format!("- {} ", ext)
-                        } else {
-                            "".to_string()
-                        }
-                    );
+                        zoom,
+                        center_x,
+                        center_y,
+                        fractal,
+                        ..
+                    } = params;
+                    let render_ctx = RenderCtx::new(&params)?;
+
+                    if let Some(DevOptions {
+                        save_sampling_pattern: Some(true),
+                        ..
+                    }) = params.dev_options
+                    {
+                        preview_sampling_points(&render_ctx.sampling_points)?;
+                    }
+
+                    let view = View::new(img_width, img_height, zoom, center_x, center_y);
+
+                    if options.contains_key("gui") {
+                        let options = eframe::NativeOptions::default();
+                        eframe::run_native(
+                            "app",
+                            options,
+                            Box::new(|cc| {
+                                Ok(Box::new(Gui::new(
+                                    cc,
+                                    params,
+                                    render_ctx,
+                                    view,
+                                    param_file_path,
+                                )))
+                            }),
+                        )
+                        .unwrap();
+                    } else {
+                        let progress = Progress::new((img_width * img_height) as usize);
+
+                        let raw_image =
+                            render_raw_image(fractal, &view, &render_ctx, Some(progress));
+
+                        println!();
+
+                        let output_image = color_raw_image(
+                            &render_ctx,
+                            params.coloring_mode,
+                            params.custom_gradient.as_ref(),
+                            raw_image,
+                        );
+
+                        output_image
+                            .save(output_image_path.as_str())
+                            .map_err(ErrorKind::SaveImage)?;
+
+                        let image_size = fs::metadata(output_image_path.as_str()).unwrap().len();
+                        println!(
+                            " output image: {}x{} - {} {}",
+                            img_width,
+                            img_height,
+                            if image_size / 1_000_000 != 0 {
+                                format!("{:.1}mb", image_size as f32 / 1_000_000.)
+                            } else if image_size / 1_000 != 0 {
+                                format!("{:.1}kb", image_size as f32 / 1_000.)
+                            } else {
+                                format!("{}b", image_size)
+                            },
+                            if let Some(ext) = output_image_path.extension() {
+                                format!("- {} ", ext)
+                            } else {
+                                "".to_string()
+                            }
+                        );
+                    }
                 }
-                params::RenderKind::Animation {
-                    zoom,
-                    center_x,
-                    center_y,
-                    fractal,
-                    duration,
-                    fps,
-                } => {
+                ParamsKind::Animation { duration, fps, .. } => {
                     let frame_count = (duration * fps) as usize;
 
                     println!("frame count: {}", frame_count);
                     println!();
 
+                    let global_start = Instant::now();
+
                     for frame_i in 0..frame_count {
                         let t = frame_i as f32 / fps;
 
-                        let zoom = zoom[RenderStep::get_current_step_index(&zoom, t)].get_value(t);
-                        let center_x =
-                            center_x[RenderStep::get_current_step_index(&center_x, t)].get_value(t);
-                        let center_y =
-                            center_y[RenderStep::get_current_step_index(&center_y, t)].get_value(t);
+                        let params = params.get_frame_params(t);
+                        let FrameParams {
+                            img_width,
+                            img_height,
+                            zoom,
+                            center_x,
+                            center_y,
+                            fractal,
+                            ..
+                        } = params;
 
-                        let view_params =
-                            View::new(img_width, img_height, zoom, center_x, center_y);
+                        let render_ctx = RenderCtx::new(&params)?;
+
+                        let view = View::new(img_width, img_height, zoom, center_x, center_y);
 
                         let progress = Progress::new((img_width * img_height) as usize);
 
-                        let raw_image = render_raw_image(
-                            fractal.get_fractal(t),
-                            &view_params,
-                            &render_ctx,
-                            progress,
-                        );
+                        let raw_image =
+                            render_raw_image(fractal, &view, &render_ctx, Some(progress));
 
                         println!();
 
@@ -233,7 +254,7 @@ fn main() -> Result<()> {
                     println!(
                         "{} frames - {:.1}s elapsed",
                         frame_count,
-                        render_ctx.start.elapsed().as_secs_f32()
+                        global_start.elapsed().as_secs_f32()
                     )
                 }
             }
@@ -248,6 +269,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, Clone, Copy)]
 struct View {
     width: F,
     height: F,
@@ -276,8 +298,8 @@ impl View {
 }
 
 impl RenderCtx {
-    pub fn new(params: &FractalParams) -> Result<RenderCtx> {
-        let &FractalParams {
+    pub fn new(params: &FrameParams) -> Result<RenderCtx> {
+        let &FrameParams {
             img_width,
             img_height,
             max_iter,

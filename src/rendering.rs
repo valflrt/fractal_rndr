@@ -11,7 +11,7 @@ pub fn render_raw_image(
     fractal: Fractal,
     view_params: &View,
     rendering_ctx: &RenderCtx,
-    progress: Progress,
+    progress: Option<Progress>,
 ) -> Mat2D<F> {
     let &RenderCtx {
         img_width,
@@ -96,20 +96,22 @@ pub fn render_raw_image(
 
             s.send(((i, j), value)).unwrap();
 
-            progress.incr();
+            if let Some(progress) = &progress {
+                progress.incr();
 
-            if progress.get() % (progress.total / 100000 + 1) == 0 {
-                stdout
-                    .lock()
-                    .write_all(
-                        format!(
-                            "\r {:.1}% - {:.1}s elapsed",
-                            progress.get_percent(),
-                            start.elapsed().as_secs_f32(),
+                if progress.get() % (progress.total / 100000 + 1) == 0 {
+                    stdout
+                        .lock()
+                        .write_all(
+                            format!(
+                                "\r {:.1}% - {:.1}s elapsed",
+                                progress.get_percent(),
+                                start.elapsed().as_secs_f32(),
+                            )
+                            .as_bytes(),
                         )
-                        .as_bytes(),
-                    )
-                    .unwrap();
+                        .unwrap();
+                }
             }
         });
 
