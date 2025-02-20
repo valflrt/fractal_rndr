@@ -1,4 +1,4 @@
-# Parameter file reference
+# Parameter file reference (currently out of date)
 
 - `img_width` _(int)_ and `img_height` _(int)_: Set image width and height.
 

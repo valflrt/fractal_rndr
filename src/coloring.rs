@@ -2,19 +2,19 @@ use cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_
 use image::{Rgb, RgbImage};
 use serde::{Deserialize, Serialize};
 
-use crate::{mat::Mat2D, RenderCtx, F};
+use crate::{mat::Mat2D, params::FrameParams, F};
 
 pub fn color_raw_image(
-    render_ctx: &RenderCtx,
+    params: &FrameParams,
     coloring_mode: ColoringMode,
     custom_gradient: Option<&Vec<(f32, [u8; 3])>>,
     mut raw_image: Mat2D<F>,
 ) -> RgbImage {
-    let &RenderCtx {
+    let &FrameParams {
         img_width,
         img_height,
         ..
-    } = render_ctx;
+    } = params;
 
     let mut output_image = RgbImage::new(img_width, img_height);
 
@@ -89,11 +89,14 @@ pub enum ColoringMode {
         map: MapValue,
     },
     MaxNorm {
+        #[serde(skip_serializing_if = "Option::is_none")]
         max: Option<F>,
         map: MapValue,
     },
     MinMaxNorm {
+        #[serde(skip_serializing_if = "Option::is_none")]
         min: Option<F>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         max: Option<F>,
         map: MapValue,
     },

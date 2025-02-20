@@ -1,18 +1,20 @@
-(
+Frame((
     img_width: 1920,
     img_height: 1080,
-    render: Frame(
-        zoom: 0.04,
-        center_x: 0,
-        center_y: 0.559,
-        fractal: Vshqwj,
-    ),
+
+    zoom: 0.04,
+    center_x: 0,
+    center_y: 0.559,
+    fractal: Vshqwj,
+
     max_iter: 620,
+
     coloring_mode: MaxNorm(
         max: Some(600),
         map: Powf(1.1),
     ),
     sampling: (level: Extreme, random_offsets: true),
+
     custom_gradient: Some(
         [
             (0, (255, 255, 255)),
@@ -23,4 +25,4 @@
             (1, (25, 20, 30)),
         ],
     ),
-)
+))

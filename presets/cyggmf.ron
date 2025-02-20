@@ -1,13 +1,14 @@
-(
+Frame((
     img_width: 1920,
     img_height: 1080,
-    render: Frame(
-        zoom: 0.000053,
-        center_x: -0.1159076,
-        center_y: -0.000022,
-        fractal: ThirdDegreeRecWithGrowingExponent,
-    ),
+
+    zoom: 0.000053,
+    center_x: -0.1159076,
+    center_y: -0.000022,
+    fractal: ThirdDegreeRecWithGrowingExponent,
+
     max_iter: 2000,
+
     coloring_mode: MinMaxNorm(
         min: Some(200),
         max: Some(750),
@@ -17,4 +18,4 @@
         level: Ultra,
         random_offsets: true,
     ),
-)
+))
