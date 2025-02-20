@@ -9,15 +9,15 @@ pub fn get_args_and_options() -> (Vec<String>, HashMap<String, Option<String>>) 
 
     let mut i = 0;
     while i < l {
-        let arg = raw_args[i].to_owned();
-        if arg.starts_with("--") {
+        let arg = raw_args[i].to_string();
+        if let Some(stripped) = arg.strip_prefix("--") {
             options.insert(
-                arg[2..].to_owned(),
+                stripped.to_string(),
                 raw_args.get(i + 1).map(|s| s.to_owned()),
             );
             i += 1;
-        } else if arg.starts_with("-") {
-            options.insert(arg[1..].to_owned(), None);
+        } else if let Some(stripped) = arg.strip_prefix("-") {
+            options.insert(stripped.to_string(), None);
         } else {
             args.push(arg);
         }

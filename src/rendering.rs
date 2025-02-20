@@ -1,44 +1,41 @@
-use std::{array, io::Write, sync::mpsc};
+use std::{array, sync::mpsc};
 
 use rayon::prelude::*;
 
 use crate::{
-    complexx::Complexx, fractal::Fractal, mat::Mat2D, progress::Progress,
-    sampling::map_points_with_offsets, RenderCtx, View, F, FX,
+    complexx::Complexx, fractal::Fractal, mat::Mat2D, params::FrameParams, progress::Progress,
+    sampling::map_points_with_offsets, View, F, FX,
 };
 
 pub fn render_raw_image(
-    fractal: Fractal,
-    view_params: &View,
-    rendering_ctx: &RenderCtx,
+    params: &FrameParams,
+    view: &View,
+    sampling_points: &[(F, F)],
     progress: Option<Progress>,
 ) -> Mat2D<F> {
-    let &RenderCtx {
+    let &FrameParams {
         img_width,
         img_height,
+
+        fractal,
 
         max_iter,
 
         sampling,
-        start,
         ..
-    } = rendering_ctx;
-
-    let sampling_points = &rendering_ctx.sampling_points;
+    } = params;
 
     let View {
         width,
         height,
         mut x_min,
         mut y_min,
-    } = view_params;
+    } = view;
 
     if matches!(fractal, Fractal::MoireTest) {
         x_min = 0.;
         y_min = 0.;
     }
-
-    let stdout = std::io::stdout();
 
     let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
 
@@ -98,20 +95,6 @@ pub fn render_raw_image(
 
             if let Some(progress) = &progress {
                 progress.incr();
-
-                if progress.get() % (progress.total / 100000 + 1) == 0 {
-                    stdout
-                        .lock()
-                        .write_all(
-                            format!(
-                                "\r {:.1}% - {:.1}s elapsed",
-                                progress.get_percent(),
-                                start.elapsed().as_secs_f32(),
-                            )
-                            .as_bytes(),
-                        )
-                        .unwrap();
-                }
             }
         });
 

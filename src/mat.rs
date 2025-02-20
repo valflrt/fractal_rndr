@@ -48,13 +48,13 @@ impl<T> Index<(usize, usize)> for Mat2D<T> {
 
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         self.get(index)
-            .expect(&format!("index {:?} out of bounds", index))
+            .unwrap_or_else(|| panic!("index {:?} out of bounds", index))
     }
 }
 impl<T> IndexMut<(usize, usize)> for Mat2D<T> {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
         self.get_mut(index)
-            .expect(&format!("index {:?} out of bounds", index))
+            .unwrap_or_else(|| panic!("index {:?} out of bounds", index))
     }
 }
 

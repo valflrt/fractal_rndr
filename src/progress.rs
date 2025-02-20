@@ -1,14 +1,18 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 
+#[derive(Debug, Clone)]
 pub struct Progress {
-    progress: AtomicUsize,
+    progress: Arc<AtomicUsize>,
     pub total: usize,
 }
 
 impl Progress {
     pub fn new(total: usize) -> Self {
         Progress {
-            progress: AtomicUsize::new(0),
+            progress: Arc::new(AtomicUsize::new(0)),
             total,
         }
     }
@@ -23,7 +27,8 @@ impl Progress {
     pub fn get(&self) -> usize {
         self.progress.load(Ordering::Relaxed)
     }
-    pub fn get_percent(&self) -> f32 {
-        100. * self.get() as f32 / self.total as f32
+    // Outputs progress in range (0,1)
+    pub fn get_progress(&self) -> f32 {
+        self.get() as f32 / self.total as f32
     }
 }

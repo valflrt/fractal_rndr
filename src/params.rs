@@ -5,100 +5,8 @@ use crate::{coloring::ColoringMode, fractal::Fractal, sampling::Sampling, F};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ParamsKind {
-    Frame {
-        img_width: u32,
-        img_height: u32,
-
-        zoom: F,
-        center_x: F,
-        center_y: F,
-        fractal: Fractal,
-
-        max_iter: u32,
-        coloring_mode: ColoringMode,
-        sampling: Sampling,
-
-        custom_gradient: Option<Vec<(f32, [u8; 3])>>,
-
-        dev_options: Option<DevOptions>,
-    },
-    Animation {
-        img_width: u32,
-        img_height: u32,
-
-        zoom: Vec<RenderStep>,
-        center_x: Vec<RenderStep>,
-        center_y: Vec<RenderStep>,
-        fractal: animation::Fractal,
-        duration: f32,
-        fps: f32,
-
-        max_iter: u32,
-        coloring_mode: ColoringMode,
-        sampling: Sampling,
-
-        custom_gradient: Option<Vec<(f32, [u8; 3])>>,
-
-        dev_options: Option<DevOptions>,
-    },
-}
-
-impl ParamsKind {
-    pub fn get_frame_params(&self, t: f32) -> FrameParams {
-        match self.to_owned() {
-            ParamsKind::Frame {
-                img_width,
-                img_height,
-                zoom,
-                center_x,
-                center_y,
-                fractal,
-                max_iter,
-                coloring_mode,
-                sampling,
-                custom_gradient,
-                dev_options,
-            } => FrameParams {
-                img_width,
-                img_height,
-                zoom,
-                center_x,
-                center_y,
-                fractal,
-                max_iter,
-                coloring_mode,
-                sampling,
-                custom_gradient,
-                dev_options,
-            },
-            ParamsKind::Animation {
-                img_width,
-                img_height,
-                zoom,
-                center_x,
-                center_y,
-                fractal,
-                max_iter,
-                coloring_mode,
-                sampling,
-                custom_gradient,
-                dev_options,
-                ..
-            } => FrameParams {
-                img_width: img_width,
-                img_height: img_height,
-                zoom: zoom[RenderStep::get_current_step_index(&zoom, t)].get_value(t),
-                center_x: center_x[RenderStep::get_current_step_index(&center_x, t)].get_value(t),
-                center_y: center_y[RenderStep::get_current_step_index(&center_y, t)].get_value(t),
-                fractal: fractal.get_fractal(t),
-                max_iter: max_iter,
-                coloring_mode: coloring_mode,
-                sampling: sampling,
-                custom_gradient: custom_gradient.to_owned(),
-                dev_options: dev_options,
-            },
-        }
-    }
+    Frame(FrameParams),
+    Animation(AnimationParams),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,11 +20,14 @@ pub struct FrameParams {
     pub fractal: Fractal,
 
     pub max_iter: u32,
+
     pub coloring_mode: ColoringMode,
     pub sampling: Sampling,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dev_options: Option<DevOptions>,
 }
 
@@ -129,21 +40,47 @@ pub struct AnimationParams {
     pub center_x: Vec<RenderStep>,
     pub center_y: Vec<RenderStep>,
     pub fractal: animation::Fractal,
+
+    pub max_iter: u32,
+
     pub duration: f32,
     pub fps: f32,
 
-    pub max_iter: u32,
     pub coloring_mode: ColoringMode,
     pub sampling: Sampling,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub dev_options: Option<DevOptions>,
+}
+
+impl AnimationParams {
+    pub fn get_frame_params(&self, t: f32) -> FrameParams {
+        FrameParams {
+            img_width: self.img_width,
+            img_height: self.img_height,
+            zoom: self.zoom[RenderStep::get_current_step_index(&self.zoom, t)].get_value(t),
+            center_x: self.center_x[RenderStep::get_current_step_index(&self.center_x, t)]
+                .get_value(t),
+            center_y: self.center_y[RenderStep::get_current_step_index(&self.center_y, t)]
+                .get_value(t),
+            fractal: self.fractal.get_fractal(t),
+            max_iter: self.max_iter,
+            coloring_mode: self.coloring_mode,
+            sampling: self.sampling,
+            custom_gradient: self.custom_gradient.to_owned(),
+            dev_options: self.dev_options,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DevOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub save_sampling_pattern: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub display_gradient: Option<bool>,
 }
 

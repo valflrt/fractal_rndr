@@ -1,16 +1,17 @@
-(
+Frame((
     img_width: 1920,
     img_height: 1080,
-    render: Frame(
-        zoom: 0.000005,
-        center_x: -0.0099789,
-        center_y: -0.0002448,
-        fractal: SecondDegreeRecWithGrowingExponent,
-    ),
+
+    zoom: 0.000005,
+    center_x: -0.0099789,
+    center_y: -0.0002448,
+    fractal: SecondDegreeRecWithGrowingExponent,
+
     max_iter: 110000,
+
     coloring_mode: MaxNorm(map: Powf(0.9)),
     sampling: (
         level: Ultra,
         random_offsets: true,
     ),
-)
+))

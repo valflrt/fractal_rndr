@@ -1,21 +1,23 @@
-(
+Animation((
     img_width: 1920,
     img_height: 1080,
-    render: Animation(
-        zoom: [Const(0, 5, 3)],
-        center_x: [Const(0, 5, 0.5)],
-        center_y: [Const(0, 5, 0)],
-        fractal: ComplexLogisticMapLike(
-            re: [
-                Smooth(0, 2.5, 0.52, 1),
-                Smooth(2.5, 5, 1, 1.8),
-            ],
-            im: [Const(0, 5, 0)],
-        ),
-        duration: 5,
-        fps: 30,
+
+    zoom: [Const(0, 5, 3)],
+    center_x: [Const(0, 5, 0.5)],
+    center_y: [Const(0, 5, 0)],
+    fractal: ComplexLogisticMapLike(
+        re: [
+            Smooth(0, 2.5, 0.52, 1),
+            Smooth(2.5, 5, 1, 1.8),
+        ],
+        im: [Const(0, 5, 0)],
     ),
+
     max_iter: 900,
+
+    duration: 5,
+    fps: 30,
+
     coloring_mode: MaxNorm(max: Some(800), map: Linear),
     sampling: (level: Ultra, random_offsets: true),
-)
+))
