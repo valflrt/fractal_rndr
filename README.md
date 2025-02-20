@@ -1,38 +1,46 @@
 # Fractal Renderer
 
-This is a program used to render fractals using a [RON](https://docs.rs/ron/latest/ron/) parameter file.
+This is a program used to render fractals using a [RON](https://docs.rs/ron/latest/ron/) parameter file. It also has a very simple gui for an easier navigation.
 
 ### Table of contents
 
 - [Fractal Renderer](#fractal-renderer)
+- [How to install](#how-to-install)
 - [How to use](#how-to-use)
 - [Preset renders](#preset-renders)
 - [Ideas](#ideas)
 - [Notes](#notes)
 
+# How to install
+
+Download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+
 # How to use
 
-First, download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
-
-Next, create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
+Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
-(
+Frame((
     img_width: 1920,
     img_height: 1080,
-    render: Frame(
-        zoom: 0.001,
-        center_x: 0.0097,
-        center_y: -0.01,
-        fractal: SecondDegreeRecWithGrowingExponent,
+
+    zoom: 0.000053,
+    center_x: -0.1159076,
+    center_y: -0.000022,
+    fractal: ThirdDegreeRecWithGrowingExponent,
+
+    max_iter: 2000,
+
+    coloring_mode: MinMaxNorm(
+        min: Some(200),
+        max: Some(750),
+        map: Linear,
     ),
-    max_iter: 100000,
-    coloring_mode: CumulativeHistogram(map: Powf(12)),
     sampling: (
         level: Ultra,
         random_offsets: true,
     ),
-)
+))
 ```
 
 Then, in order to render your fractal, run the following command:
@@ -44,17 +52,23 @@ Then, in order to render your fractal, run the following command:
 > [!NOTE]
 > Supported image formats are png and jpg (extension used to guess image format)
 
-Alternatively, if you have rust installed and downloaded this repository:
+> Alternatively, if you have rust installed and downloaded this repository:
+>
+> ```
+> cargo run -r -- fractal.ron fractal.png
+> ```
+
+To start the gui:
 
 ```
-cargo run -r -- fractal.ron fractal.png
+./fractal_renderer path/to/param_file.ron path/to/output_image.png --gui
 ```
 
 # Preset renders
 
 These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](./presets/).
 
-> The renders found in `presets/` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 
+> The renders found in `presets/` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ### [cyggmf.ron](./presets/cyggmf.ron)
 
