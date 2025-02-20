@@ -91,21 +91,11 @@ fn main() -> Result<()> {
                         ..
                     } = params;
 
-                    let sampling_points = generate_sampling_points(sampling.level);
-
-                    if let Some(DevOptions {
-                        save_sampling_pattern: Some(true),
-                        ..
-                    }) = params.dev_options
-                    {
-                        preview_sampling_points(&sampling_points)?;
-                    }
-
                     let view = View::new(img_width, img_height, zoom, center_x, center_y);
 
                     if options.contains_key("gui") {
                         let mut options = eframe::NativeOptions::default();
-                        let size = Some(vec2(850., 250.));
+                        let size = Some(vec2(850., 350.));
                         options.viewport.inner_size = size;
                         options.viewport.min_inner_size = size;
 
@@ -117,7 +107,6 @@ fn main() -> Result<()> {
                                     cc,
                                     params,
                                     view,
-                                    sampling_points,
                                     output_image_path,
                                     param_file_path,
                                 )))
@@ -125,6 +114,16 @@ fn main() -> Result<()> {
                         )
                         .unwrap();
                     } else {
+                        let sampling_points = generate_sampling_points(sampling.level);
+
+                        if let Some(DevOptions {
+                            save_sampling_pattern: Some(true),
+                            ..
+                        }) = params.dev_options
+                        {
+                            preview_sampling_points(&sampling_points)?;
+                        }
+
                         let progress = Progress::new((img_width * img_height) as usize);
 
                         let start = Instant::now();

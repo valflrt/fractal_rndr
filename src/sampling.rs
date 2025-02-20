@@ -27,7 +27,7 @@ pub enum SamplingLevel {
 
 pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(F, F)> {
     let n = match sampling_level {
-        SamplingLevel::Exploration => 5,
+        SamplingLevel::Exploration => 8,
         SamplingLevel::Low => 21,
         SamplingLevel::Medium => 34,
         SamplingLevel::High => 55,
