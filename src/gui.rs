@@ -5,7 +5,7 @@ use std::{
 };
 
 use eframe::{
-    egui::{self, Color32, DragValue, Image, ProgressBar, Slider, Vec2},
+    egui::{self, Button, Color32, DragValue, Image, ProgressBar, Slider, Vec2},
     App, CreationContext, Frame as EFrame,
 };
 use image::codecs::png::PngEncoder;
@@ -122,7 +122,8 @@ impl App for Gui {
                     }
                 });
                 c1.horizontal(|ui| {
-                    let btn = ui.button("render and save");
+                    let btn: egui::Response =
+                        ui.add_enabled(self.render_info.is_none(), Button::new("render and save"));
                     if btn.clicked() {
                         let (progress, handle) = self.render_and_save();
                         self.render_info = Some((handle, progress, Instant::now()));

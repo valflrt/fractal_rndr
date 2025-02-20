@@ -17,6 +17,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use eframe::egui::vec2;
 use gui::Gui;
 use params::{AnimationParams, FrameParams};
 use uni_path::PathBuf;
@@ -103,7 +104,11 @@ fn main() -> Result<()> {
                     let view = View::new(img_width, img_height, zoom, center_x, center_y);
 
                     if options.contains_key("gui") {
-                        let options = eframe::NativeOptions::default();
+                        let mut options = eframe::NativeOptions::default();
+                        let size = Some(vec2(850., 250.));
+                        options.viewport.inner_size = size;
+                        options.viewport.min_inner_size = size;
+
                         eframe::run_native(
                             "app",
                             options,
