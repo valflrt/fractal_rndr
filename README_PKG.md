@@ -7,9 +7,6 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 - [Fractal Renderer](#fractal-renderer)
 - [How to install](#how-to-install)
 - [How to use](#how-to-use)
-- [Preset renders](#preset-renders)
-- [Ideas](#ideas)
-- [Notes](#notes)
 
 # How to install
 
