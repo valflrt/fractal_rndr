@@ -13,7 +13,13 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 
 # How to install
 
-Download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+If you have cargo installed:
+
+```
+cargo install fractal_renderer
+```
+
+Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
 
 # How to use
 
