@@ -114,7 +114,7 @@ fn main() -> Result<()> {
                         options.viewport.min_inner_size = size;
 
                         eframe::run_native(
-                            "app",
+                            "fractal_renderer",
                             options,
                             Box::new(|cc| {
                                 Ok(Box::new(Gui::new(

@@ -10,8 +10,8 @@ Frame((
     max_iter: 600,
 
     coloring_mode: MinMaxNorm(
-        min: Some(325),
-        max: Some(480),
+        min: Custom(325),
+        max: Custom(480),
         map: Linear,
     ),
     sampling: (level: Ultra, random_offsets: true),

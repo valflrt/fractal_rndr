@@ -35,22 +35,9 @@ pub fn color_raw_image(
                 }
             }
         }
-        ColoringMode::MaxNorm { max, map } => {
-            let max = max.unwrap_or(max_v);
-
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let value = raw_image[(i, j)];
-
-                    let t = map.apply(value / max);
-
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
-                }
-            }
-        }
         ColoringMode::MinMaxNorm { min, max, map } => {
-            let min = min.unwrap_or(min_v);
-            let max = max.unwrap_or(max_v);
+            let min = min.unwrap_custom_or(min_v);
+            let max = max.unwrap_custom_or(max_v);
 
             for j in 0..img_height as usize {
                 for i in 0..img_width as usize {
@@ -88,19 +75,35 @@ pub enum ColoringMode {
     CumulativeHistogram {
         map: MapValue,
     },
-    MaxNorm {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        max: Option<F>,
-        map: MapValue,
-    },
     MinMaxNorm {
-        #[serde(skip_serializing_if = "Option::is_none")]
-        min: Option<F>,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        max: Option<F>,
+        #[serde(default)]
+        min: Extremum,
+        #[serde(default)]
+        max: Extremum,
         map: MapValue,
     },
     BlackAndWhite,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+pub enum Extremum {
+    #[default]
+    Auto,
+    Custom(F),
+}
+
+impl Extremum {
+    pub fn is_auto(&self) -> bool {
+        matches!(self, Extremum::Auto)
+    }
+
+    pub fn unwrap_custom_or(self, default: F) -> F {
+        if let Extremum::Custom(x) = self {
+            x
+        } else {
+            default
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]

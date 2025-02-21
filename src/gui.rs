@@ -13,7 +13,7 @@ use ron::ser::PrettyConfig;
 use uni_path::PathBuf;
 
 use crate::{
-    coloring::{color_raw_image, ColoringMode, MapValue},
+    coloring::{color_raw_image, ColoringMode, Extremum, MapValue},
     error::{ErrorKind, Result},
     params::{FrameParams, ParamsKind},
     progress::Progress,
@@ -124,16 +124,10 @@ impl App for Gui {
 
                     let mut selected_mode_i = match self.params.coloring_mode {
                         ColoringMode::CumulativeHistogram { .. } => 0,
-                        ColoringMode::MaxNorm { .. } => 1,
-                        ColoringMode::MinMaxNorm { .. } => 2,
-                        ColoringMode::BlackAndWhite { .. } => 3,
+                        ColoringMode::MinMaxNorm { .. } => 1,
+                        ColoringMode::BlackAndWhite { .. } => 2,
                     };
-                    const MODES: &[&str] = &[
-                        "CumulativeHistogram",
-                        "MaxNorm",
-                        "MinMaxNorm",
-                        "BlackAndWhite",
-                    ];
+                    const MODES: &[&str] = &["CumulativeHistogram", "MinMaxNorm", "BlackAndWhite"];
                     let res = ComboBox::from_id_salt("coloring_mode").show_index(
                         ui,
                         &mut selected_mode_i,
@@ -147,26 +141,13 @@ impl App for Gui {
                                 map: MapValue::Linear,
                             },
                             1 => {
-                                let init_max = if let ColoringMode::MaxNorm { max, .. } =
-                                    self.init_params.coloring_mode
-                                {
-                                    max
-                                } else {
-                                    None
-                                };
-                                ColoringMode::MaxNorm {
-                                    max: init_max,
-                                    map: MapValue::Linear,
-                                }
-                            }
-                            2 => {
                                 let (init_min, init_max) =
                                     if let ColoringMode::MinMaxNorm { min, max, .. } =
                                         self.init_params.coloring_mode
                                     {
                                         (min, max)
                                     } else {
-                                        (None, None)
+                                        (Extremum::Auto, Extremum::Auto)
                                     };
                                 ColoringMode::MinMaxNorm {
                                     min: init_min,
@@ -174,7 +155,7 @@ impl App for Gui {
                                     map: MapValue::Linear,
                                 }
                             }
-                            3 => ColoringMode::BlackAndWhite,
+                            2 => ColoringMode::BlackAndWhite,
                             _ => unreachable!(),
                         };
                         should_update_preview = true;
@@ -183,7 +164,6 @@ impl App for Gui {
 
                 match &mut self.params.coloring_mode {
                     ColoringMode::CumulativeHistogram { map }
-                    | ColoringMode::MaxNorm { map, .. }
                     | ColoringMode::MinMaxNorm { map, .. } => {
                         c1.horizontal(|ui| {
                             ui.label("map value: ");
@@ -222,33 +202,6 @@ impl App for Gui {
                     _ => (),
                 }
 
-                if let ColoringMode::MaxNorm { max, .. } = &mut self.params.coloring_mode {
-                    let init_max =
-                        if let ColoringMode::MaxNorm { max, .. } = self.init_params.coloring_mode {
-                            max
-                        } else {
-                            None
-                        };
-
-                    c1.horizontal(|ui| {
-                        ui.label("max: ");
-
-                        let mut auto = max.is_none();
-                        let res = ui.checkbox(&mut auto, "auto");
-                        if res.changed() {
-                            *max = (!auto).then_some(init_max.unwrap_or(self.params.max_iter as F));
-                            should_update_preview = true;
-                        }
-
-                        if let Some(max) = max {
-                            let res = ui.add(Slider::new(max, 0. ..=self.params.max_iter as F));
-                            if res.changed() {
-                                should_update_preview = true;
-                            }
-                        }
-                    });
-                }
-
                 if let ColoringMode::MinMaxNorm { min, max, .. } = &mut self.params.coloring_mode {
                     let (init_min, init_max) =
                         if let ColoringMode::MinMaxNorm { min, max, .. } =
@@ -256,20 +209,24 @@ impl App for Gui {
                         {
                             (min, max)
                         } else {
-                            (None, None)
+                            (Extremum::Auto, Extremum::Auto)
                         };
 
                     c1.horizontal(|ui| {
                         ui.label("min: ");
 
-                        let mut auto = min.is_none();
+                        let mut auto = min.is_auto();
                         let res = ui.checkbox(&mut auto, "auto");
                         if res.changed() {
-                            *min = (!auto).then_some(init_min.unwrap_or(0.));
+                            *min = if auto {
+                                Extremum::Auto
+                            } else {
+                                Extremum::Custom(init_min.unwrap_custom_or(0.))
+                            };
                             should_update_preview = true;
                         }
 
-                        if let Some(min) = min {
+                        if let Extremum::Custom(min) = min {
                             let res = ui.add(Slider::new(min, 0. ..=self.params.max_iter as F));
                             if res.changed() {
                                 should_update_preview = true;
@@ -279,14 +236,20 @@ impl App for Gui {
                     c1.horizontal(|ui| {
                         ui.label("max: ");
 
-                        let mut auto = max.is_none();
+                        let mut auto = max.is_auto();
                         let res = ui.checkbox(&mut auto, "auto");
                         if res.changed() {
-                            *max = (!auto).then_some(init_max.unwrap_or(self.params.max_iter as F));
+                            *max = if auto {
+                                Extremum::Auto
+                            } else {
+                                Extremum::Custom(
+                                    init_max.unwrap_custom_or(self.params.max_iter as F),
+                                )
+                            };
                             should_update_preview = true;
                         }
 
-                        if let Some(max) = max {
+                        if let Extremum::Custom(max) = max {
                             let res = ui.add(Slider::new(max, 0. ..=self.params.max_iter as F));
                             if res.changed() {
                                 should_update_preview = true;

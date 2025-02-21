@@ -11,7 +11,7 @@ pub enum ParamsKind {
 
 impl Default for ParamsKind {
     fn default() -> Self {
-        ParamsKind::Frame(ron::from_str(presets::CYGGMF).unwrap())
+        ron::from_str(presets::CYGGMF).unwrap()
     }
 }
 

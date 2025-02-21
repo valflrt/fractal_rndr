@@ -18,6 +18,6 @@ Animation((
     duration: 5,
     fps: 30,
 
-    coloring_mode: MaxNorm(max: Some(800), map: Linear),
+    coloring_mode: MaxNorm(max: Custom(800), map: Linear),
     sampling: (level: Ultra, random_offsets: true),
 ))

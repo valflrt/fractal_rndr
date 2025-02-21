@@ -10,8 +10,8 @@ Frame((
     max_iter: 2000,
 
     coloring_mode: MinMaxNorm(
-        min: Some(200),
-        max: Some(750),
+        min: Custom(200),
+        max: Custom(750),
         map: Linear,
     ),
     sampling: (

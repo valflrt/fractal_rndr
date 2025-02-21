@@ -10,7 +10,7 @@ Frame((
     max_iter: 1010,
 
     coloring_mode: MaxNorm(
-        max: Some(1000),
+        max: Custom(1000),
         map: Powf(0.9),
     ),
     sampling: (level: Extreme3, random_offsets: true),

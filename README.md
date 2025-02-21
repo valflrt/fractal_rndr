@@ -17,7 +17,7 @@ Download the latest executable from the [releases tab](https://github.com/valflr
 
 # How to use
 
-Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
+Optional: Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
 Frame((
@@ -32,8 +32,8 @@ Frame((
     max_iter: 2000,
 
     coloring_mode: MinMaxNorm(
-        min: Some(200),
-        max: Some(750),
+        min: Custom(200),
+        max: Custom(750),
         map: Linear,
     ),
     sampling: (
@@ -43,26 +43,35 @@ Frame((
 ))
 ```
 
-Then, in order to render your fractal, run the following command:
-
-```
-./fractal_renderer path/to/param_file.ron path/to/output_image.png
-```
-
 > [!NOTE]
-> Supported image formats are png and jpg (extension used to guess image format)
+> If the parameter file doesn't exist, it will be created automatically with default values.
 
-> Alternatively, if you have rust installed and downloaded this repository:
->
-> ```
-> cargo run -r -- fractal.ron fractal.png
-> ```
+Then, either ...
 
-To start the gui:
+- ... render the fractal:
 
-```
-./fractal_renderer path/to/param_file.ron path/to/output_image.png --gui
-```
+  ```
+  ./fractal_renderer path/to/param_file.ron path/to/output_image.png
+  ```
+
+  > [!NOTE]
+  > Supported image formats are png and jpg (extension used to guess image format)
+
+  > Alternatively, if you have rust installed and downloaded this repository:
+  >
+  > ```
+  > cargo run -r -- fractal.ron fractal.png
+  > ```
+
+- ... start the gui:
+
+  ```
+  ./fractal_renderer path/to/param_file.ron path/to/output_image.png --gui
+  ```
+
+  The app looks like this:
+
+  ![gui](./img/gui.png)
 
 # Preset renders
 
