@@ -6,7 +6,7 @@ license-file = "LICENSE"
 edition = "2021"
 
 readme = "README_PKG.md"
-exclude = ["presets"]
+exclude = ["presets/*.png"]
 
 [dependencies]
 eframe = "0.31.0"
