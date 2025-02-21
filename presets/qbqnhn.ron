@@ -6,11 +6,11 @@ Animation((
     center_x: [Const(0, 5, 0.5)],
     center_y: [Const(0, 5, 0)],
     fractal: ComplexLogisticMapLike(
-        re: [
+        a_re: [
             Smooth(0, 2.5, 0.52, 1),
             Smooth(2.5, 5, 1, 1.8),
         ],
-        im: [Const(0, 5, 0)],
+        a_im: [Const(0, 5, 0)],
     ),
 
     max_iter: 900,

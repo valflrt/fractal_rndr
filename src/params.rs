@@ -214,8 +214,8 @@ pub mod animation {
 
                 Self::ComplexLogisticMapLike { re, im } => {
                     crate::fractal::Fractal::ComplexLogisticMapLike {
-                        re: re[RenderStep::get_current_step_index(re, t)].get_value(t),
-                        im: im[RenderStep::get_current_step_index(im, t)].get_value(t),
+                        a_re: re[RenderStep::get_current_step_index(re, t)].get_value(t),
+                        a_im: im[RenderStep::get_current_step_index(im, t)].get_value(t),
                     }
                 }
             }

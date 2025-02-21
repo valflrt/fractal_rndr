@@ -15,12 +15,15 @@ use uni_path::PathBuf;
 use crate::{
     coloring::{color_raw_image, ColoringMode, Extremum, MapValue},
     error::{ErrorKind, Result},
+    fractal::Fractal,
     params::{FrameParams, ParamsKind},
     progress::Progress,
     rendering::render_raw_image,
     sampling::{generate_sampling_points, Sampling, SamplingLevel},
     View, F,
 };
+
+const DEFAULT_ZOOM: F = 5.;
 
 pub struct Gui {
     params: FrameParams,
@@ -74,14 +77,210 @@ impl App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut EFrame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.columns_const(|[c1, c2]| {
-                const SPACE_SIZE: f32 = 12.;
+                const SPACE_SIZE: f32 = 8.;
+
+                let mut should_update_preview = false;
 
                 // First column
 
+                c1.heading("Fractal");
+                c1.separator();
+                c1.horizontal(|ui| {
+                    ui.label("fractal: ");
+
+                    let mut selected_fractal_i = match self.params.fractal {
+                        Fractal::Mandelbrot => 0,
+                        Fractal::MandelbrotCustomExp { .. } => 1,
+                        Fractal::SecondDegreeRecWithGrowingExponent => 2,
+                        Fractal::SecondDegreeRecWithGrowingExponentParam { .. } => 3,
+                        Fractal::SecondDegreeRecAlternating1WithGrowingExponent => 4,
+                        Fractal::ThirdDegreeRecWithGrowingExponent => 5,
+                        Fractal::NthDegreeRecWithGrowingExponent(_) => 6,
+                        Fractal::ThirdDegreeRecPairs => 7,
+                        Fractal::SecondDegreeThirtySevenBlend => 8,
+                        Fractal::ComplexLogisticMapLike { .. } => 9,
+                        Fractal::Vshqwj => 10,
+                        Fractal::Wmriho { .. } => 11,
+                        Fractal::Iigdzh { .. } => 12,
+                        Fractal::Fxdicq => 13,
+                        Fractal::Mjygzr => 14,
+                        _ => unimplemented!(), // Fractal::MoireTest => 15,
+                    };
+                    const MODES: &[&str] = &[
+                        "Mandelbrot",
+                        "MandelbrotCustomExp(exp)",
+                        "SecondDegreeRecWithGrowingExponent",
+                        "SecondDegreeRecWithGrowingExponentParam(a_re, a_im)",
+                        "SecondDegreeRecAlternating1WithGrowingExponent",
+                        "ThirdDegreeRecWithGrowingExponent",
+                        "NthDegreeRecWithGrowingExponent(n)",
+                        "ThirdDegreeRecPairs",
+                        "SecondDegreeThirtySevenBlend",
+                        "ComplexLogisticMapLike(a_re, a_im)",
+                        "Vshqwj",
+                        "Wmriho(a_re, a_im)",
+                        "Iigdzh(a_re, a_im)",
+                        "Fxdicq",
+                        "Mjygzr",
+                    ];
+                    let res = ComboBox::from_id_salt("fractal").show_index(
+                        ui,
+                        &mut selected_fractal_i,
+                        MODES.len(),
+                        |i| MODES[i],
+                    );
+
+                    if res.changed() {
+                        self.params.fractal = match selected_fractal_i {
+                            0 => Fractal::Mandelbrot,
+                            1 => Fractal::MandelbrotCustomExp {
+                                exp: if let Fractal::MandelbrotCustomExp { exp } =
+                                    self.init_params.fractal
+                                {
+                                    exp
+                                } else {
+                                    2.
+                                },
+                            },
+                            2 => Fractal::SecondDegreeRecWithGrowingExponent,
+                            3 => {
+                                let (a_re, a_im) =
+                                    if let Fractal::SecondDegreeRecWithGrowingExponentParam {
+                                        a_re,
+                                        a_im,
+                                    } = self.init_params.fractal
+                                    {
+                                        (a_re, a_im)
+                                    } else {
+                                        (1., 0.)
+                                    };
+                                Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im }
+                            }
+                            4 => Fractal::SecondDegreeRecAlternating1WithGrowingExponent,
+                            5 => Fractal::ThirdDegreeRecWithGrowingExponent,
+                            6 => Fractal::NthDegreeRecWithGrowingExponent(
+                                if let Fractal::NthDegreeRecWithGrowingExponent(n) =
+                                    self.init_params.fractal
+                                {
+                                    n
+                                } else {
+                                    4
+                                },
+                            ),
+                            7 => Fractal::ThirdDegreeRecPairs,
+                            8 => Fractal::SecondDegreeThirtySevenBlend,
+                            9 => {
+                                let (a_re, a_im) =
+                                    if let Fractal::ComplexLogisticMapLike { a_re, a_im } =
+                                        self.init_params.fractal
+                                    {
+                                        (a_re, a_im)
+                                    } else {
+                                        (1., 0.)
+                                    };
+                                Fractal::ComplexLogisticMapLike { a_re, a_im }
+                            }
+                            10 => Fractal::Vshqwj,
+                            11 => {
+                                let (a_re, a_im) = if let Fractal::Wmriho { a_re, a_im } =
+                                    self.init_params.fractal
+                                {
+                                    (a_re, a_im)
+                                } else {
+                                    (0., 0.)
+                                };
+                                Fractal::Wmriho { a_re, a_im }
+                            }
+                            12 => {
+                                let (a_re, a_im) = if let Fractal::Iigdzh { a_re, a_im } =
+                                    self.init_params.fractal
+                                {
+                                    (a_re, a_im)
+                                } else {
+                                    (0., 0.)
+                                };
+                                Fractal::Iigdzh { a_re, a_im }
+                            }
+                            13 => Fractal::Fxdicq,
+                            14 => Fractal::Mjygzr,
+                            _ => unreachable!(),
+                        };
+
+                        // Reset view
+                        self.params.center_x = 0.;
+                        self.params.center_y = 0.;
+                        self.params.zoom = DEFAULT_ZOOM;
+
+                        should_update_preview = true;
+                    }
+                });
+
+                {
+                    if let Fractal::MandelbrotCustomExp { exp } = &mut self.params.fractal {
+                        c1.horizontal(|ui| {
+                            ui.label("exp: ");
+                            let res = ui.add(Slider::new(exp, 0.001..=20.));
+                            if res.changed() {
+                                should_update_preview = true;
+                            }
+                        });
+                    }
+
+                    if let Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im }
+                    | Fractal::ComplexLogisticMapLike { a_re, a_im }
+                    | Fractal::Wmriho { a_re, a_im }
+                    | Fractal::Iigdzh { a_re, a_im } = &mut self.params.fractal
+                    {
+                        c1.scope(|ui| {
+                            ui.spacing_mut().slider_width = 250.;
+                            const FRACTAL_PARAM_RANGE: F = 5.;
+
+                            ui.horizontal(|ui| {
+                                ui.label("a_re: ");
+                                let res = ui.add(Slider::new(
+                                    a_re,
+                                    -FRACTAL_PARAM_RANGE..=FRACTAL_PARAM_RANGE,
+                                ));
+                                if res.changed() {
+                                    should_update_preview = true;
+                                }
+                            });
+                            ui.horizontal(|ui| {
+                                ui.label("a_im: ");
+                                let res = ui.add(Slider::new(
+                                    a_im,
+                                    -FRACTAL_PARAM_RANGE..=FRACTAL_PARAM_RANGE,
+                                ));
+                                if res.changed() {
+                                    should_update_preview = true;
+                                }
+                            });
+                        });
+                    }
+
+                    if let Fractal::NthDegreeRecWithGrowingExponent(n) = &mut self.params.fractal {
+                        c1.horizontal(|ui| {
+                            ui.label("n: ");
+                            let res = ui.add(Slider::new(n, 2..=20));
+                            if res.changed() {
+                                should_update_preview = true;
+                            }
+                        });
+                    }
+                }
+
+                c1.horizontal(|ui| {
+                    ui.label("max_iter: ");
+                    let res = ui
+                        .add(Slider::new(&mut self.params.max_iter, 10..=200000).logarithmic(true));
+                    if res.changed() {
+                        should_update_preview = true;
+                    }
+                });
+
+                c1.add_space(SPACE_SIZE);
                 c1.heading("Controls");
                 c1.separator();
-
-                let mut should_update_preview = false;
 
                 c1.scope(|ui| {
                     ui.spacing_mut().slider_width = 250.;

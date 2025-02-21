@@ -14,7 +14,7 @@ pub enum Fractal {
     NthDegreeRecWithGrowingExponent(usize),
     ThirdDegreeRecPairs,
     SecondDegreeThirtySevenBlend,
-    ComplexLogisticMapLike { re: F, im: F },
+    ComplexLogisticMapLike { a_re: F, a_im: F },
 
     // This is where I started lacking inspiration for names...
     Vshqwj,
@@ -254,7 +254,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::ComplexLogisticMapLike { re, im } => {
+            &Fractal::ComplexLogisticMapLike { a_re: re, a_im: im } => {
                 const BAILOUT: F = 50.;
                 let bailout_mask = FX::splat(BAILOUT);
 

@@ -9,11 +9,11 @@ Animation((
     center_x: [Const(0, 8, 0)],
     center_y: [Const(0, 8, 0)],
     fractal: ComplexLogisticMapLike(
-        re: [
+        a_re: [
             Smooth(0, 2, 1, -0.2),
             Smooth(2, 8, -0.2, 1),
         ],
-        im: [
+        a_im: [
             Smooth(0, 6, -2, 0.5),
             Smooth(6, 8, 0.5, -2),
         ],
