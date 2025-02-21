@@ -2,8 +2,11 @@
 name = "fractal_renderer"
 authors = ["valflrt"]
 version = "0.1.6"
-license = "MIT"
+license-file = "LICENSE"
 edition = "2021"
+
+readme = ["README_PKG.md"]
+exclude = ["presets"]
 
 [dependencies]
 eframe = "0.31.0"
