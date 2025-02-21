@@ -17,7 +17,7 @@ Download the latest executable from the [releases tab](https://github.com/valflr
 
 # How to use
 
-Optional: Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
+Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
 Frame((
