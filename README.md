@@ -54,9 +54,6 @@ Then, either ...
   ./fractal_renderer path/to/param_file.ron path/to/output_image.png
   ```
 
-  > [!NOTE]
-  > Supported image formats are png and jpg (extension used to guess image format)
-
   > Alternatively, if you have rust installed and downloaded this repository:
   >
   > ```
@@ -72,6 +69,9 @@ Then, either ...
   The app looks like this:
 
   ![gui](./img/gui.png)
+
+> [!NOTE]
+> Supported image formats are png and jpg (the extension is used to guess the format)
 
 # Preset renders
 
