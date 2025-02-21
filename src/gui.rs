@@ -427,7 +427,7 @@ impl Gui {
 
     fn save_parameter_file(&self) {
         fs::write(
-            self.param_file_path.to_str(),
+            self.param_file_path.as_str(),
             ron::ser::to_string_pretty(
                 &ParamsKind::Frame(self.params.clone()),
                 PrettyConfig::default(),

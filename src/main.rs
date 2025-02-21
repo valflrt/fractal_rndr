@@ -6,6 +6,8 @@ mod fractal;
 mod gui;
 mod mat;
 mod params;
+#[allow(dead_code)]
+mod presets;
 mod progress;
 mod rendering;
 mod sampling;
@@ -20,6 +22,7 @@ use std::{
 use eframe::egui::vec2;
 use gui::Gui;
 use params::{AnimationParams, FrameParams};
+use ron::ser::PrettyConfig;
 use uni_path::PathBuf;
 
 use crate::{
@@ -66,11 +69,22 @@ fn main() -> Result<()> {
             let (param_file_path, output_image_path) =
                 (PathBuf::from(&args[1]), PathBuf::from(&args[2]));
 
-            let params = ron::from_str::<ParamsKind>(
-                &fs::read_to_string(param_file_path.as_str())
-                    .map_err(ErrorKind::ReadParameterFile)?,
-            )
-            .map_err(ErrorKind::DecodeParameterFile)?;
+            let params = if fs::exists(param_file_path.as_str()).unwrap() {
+                ron::from_str::<ParamsKind>(
+                    &fs::read_to_string(param_file_path.as_str())
+                        .map_err(ErrorKind::ReadParameterFile)?,
+                )
+                .map_err(ErrorKind::DecodeParameterFile)?
+            } else {
+                let params = ParamsKind::default();
+                fs::write(
+                    param_file_path.as_str(),
+                    ron::ser::to_string_pretty(&params, PrettyConfig::default())
+                        .map_err(ErrorKind::EncodeParameterFile)?,
+                )
+                .map_err(ErrorKind::WriteParameterFile)?;
+                params
+            };
 
             // println!(
             //     "{}",

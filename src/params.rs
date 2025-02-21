@@ -1,12 +1,18 @@
 use animation::RenderStep;
 use serde::{Deserialize, Serialize};
 
-use crate::{coloring::ColoringMode, fractal::Fractal, sampling::Sampling, F};
+use crate::{coloring::ColoringMode, fractal::Fractal, presets, sampling::Sampling, F};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ParamsKind {
     Frame(FrameParams),
     Animation(AnimationParams),
+}
+
+impl Default for ParamsKind {
+    fn default() -> Self {
+        ParamsKind::Frame(ron::from_str(presets::CYGGMF).unwrap())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
