@@ -1,0 +1,21 @@
+Frame((
+    img_width: 1920,
+    img_height: 1080,
+    zoom: 0.003,
+    center_x: -0.43175,
+    center_y: 0.0079,
+    fractal: SecondDegreeRecWithGrowingExponentParam(
+        a_re: 0.9951,
+        a_im: 0.0,
+    ),
+    max_iter: 5500,
+    coloring_mode: MinMaxNorm(
+        min: Custom(60.0),
+        max: Custom(2000.0),
+        map: Linear,
+    ),
+    sampling: (
+        level: Ultra,
+        random_offsets: true,
+    ),
+))
