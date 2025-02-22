@@ -1,12 +1,13 @@
 [package]
 name = "fractal_renderer"
-authors = ["valflrt"]
 version = "0.1.6"
-license-file = "LICENSE"
+description = "A tiny fractal renderer that features several coloring modes, anti-aliasing and a gui."
+homepage = "https://github.com/valflrt/fractal_renderer"
+authors = ["valflrt"]
 edition = "2021"
-
+license-file = "LICENSE"
 readme = "README_PKG.md"
-exclude = ["presets/*.png"]
+exclude = ["/presets/*.png", "/presets/*.mp4"]
 
 [dependencies]
 eframe = "0.31.0"
