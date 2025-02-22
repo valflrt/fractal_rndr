@@ -1134,7 +1134,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fractal_renderer"
+name = "fractal_rdr"
 version = "0.1.6"
 dependencies = [
  "eframe",

@@ -1,8 +1,8 @@
 [package]
-name = "fractal_renderer"
+name = "fractal_rdr"
 version = "0.1.6"
 description = "A tiny fractal renderer that features several coloring modes, anti-aliasing and a gui."
-homepage = "https://github.com/valflrt/fractal_renderer"
+homepage = "https://github.com/valflrt/fractal_rdr"
 authors = ["valflrt"]
 edition = "2021"
 license-file = "LICENSE"
