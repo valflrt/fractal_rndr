@@ -17,7 +17,7 @@ use crate::{
     error::{ErrorKind, Result},
     fractal::Fractal,
     params::{FrameParams, ParamsKind},
-    presets::{PRESETS, PRESET_NAMES},
+    presets::PRESETS,
     progress::Progress,
     rendering::render_raw_image,
     sampling::{generate_sampling_points, Sampling, SamplingLevel},
@@ -39,7 +39,7 @@ pub struct Gui {
     preview_id: u128,
 
     render_info: Option<(JoinHandle<Result<()>>, Progress, Instant)>,
-    elapsed: Option<(f32, Instant)>,
+    message: Option<(String, Instant)>,
 }
 
 impl Gui {
@@ -67,7 +67,7 @@ impl Gui {
             preview_id: 0,
 
             render_info: None,
-            elapsed: None,
+            message: None,
         };
 
         slf.update_preview();
@@ -469,8 +469,12 @@ impl App for Gui {
                             self.revert_edits();
                             self.update_preview();
                         }
-                        if ui.button("write parameter file").clicked() {
-                            self.save_parameter_file();
+                        if ui.button("save parameter file").clicked() {
+                            self.notify(if self.save_parameter_file().is_ok() {
+                                "saved"
+                            } else {
+                                "failed to save parameter file"
+                            });
                         }
                         ui.menu_button("load preset", |ui| {
                             ScrollArea::vertical()
@@ -479,11 +483,12 @@ impl App for Gui {
                                 .show(ui, |ui| {
                                     for p in 0..PRESETS.len() {
                                         if let ParamsKind::Frame(params) =
-                                            ron::from_str(PRESETS[p]).unwrap()
+                                            ron::from_str(PRESETS[p].1).unwrap()
                                         {
-                                            if ui.button(PRESET_NAMES[p]).clicked() {
+                                            if ui.button(PRESETS[p].0).clicked() {
                                                 self.params = params;
                                                 should_update_preview = true;
+                                                self.notify(format!("loaded {}", PRESETS[p].0));
                                                 ui.close_menu();
                                             };
                                         }
@@ -601,7 +606,7 @@ impl App for Gui {
             ui.with_layout(
                 egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
                 |ui| {
-                    if let Some((handle, progress, start)) = &mut self.render_info {
+                    if let Some((handle, progress, start)) = &self.render_info {
                         let progress_bar = ProgressBar::new(progress.get_progress())
                             .desired_height(4.)
                             .desired_width(96.)
@@ -611,15 +616,15 @@ impl App for Gui {
                         ctx.request_repaint();
 
                         if handle.is_finished() {
-                            self.elapsed = Some((start.elapsed().as_secs_f32(), Instant::now()));
+                            self.notify(format!("{:.1}s elapsed", start.elapsed().as_secs_f32()));
                             self.render_info = None;
                         }
                     } else {
-                        if let Some((elapsed, start)) = &self.elapsed {
-                            const ELAPSED_DISPLAY_TIME: Duration = Duration::from_secs(8);
-                            ui.label(format!("{:.1}s elapsed", elapsed));
-                            if start.elapsed() > ELAPSED_DISPLAY_TIME {
-                                self.elapsed = None
+                        if let Some((text, start)) = &self.message {
+                            const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(8);
+                            ui.label(text);
+                            if start.elapsed() > MESSAGE_DISPLAY_TIME {
+                                self.message = None
                             }
                         }
                     }
@@ -635,23 +640,25 @@ impl App for Gui {
 }
 
 impl Gui {
+    fn notify<S: ToString>(&mut self, msg: S) {
+        self.message = Some((msg.to_string(), Instant::now()));
+    }
+
     fn revert_edits(&mut self) {
         self.params = self.init_params.clone();
         self.update_view();
     }
 
-    fn save_parameter_file(&self) {
+    fn save_parameter_file(&self) -> Result<()> {
         fs::write(
             self.param_file_path.as_str(),
             ron::ser::to_string_pretty(
                 &ParamsKind::Frame(self.params.clone()),
                 PrettyConfig::default(),
             )
-            .map_err(ErrorKind::EncodeParameterFile)
-            .unwrap(),
+            .map_err(ErrorKind::EncodeParameterFile)?,
         )
         .map_err(ErrorKind::WriteParameterFile)
-        .unwrap();
     }
 
     fn render_and_save(&mut self) -> (Progress, JoinHandle<Result<()>>) {
