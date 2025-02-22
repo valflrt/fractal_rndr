@@ -16,7 +16,7 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 If you have cargo installed:
 
 ```
-cargo install fractal_rndrr
+cargo install fractal_rndr
 ```
 
 Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_rndr/releases/latest).
