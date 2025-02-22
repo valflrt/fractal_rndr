@@ -1,6 +1,6 @@
 [package]
 name = "fractal_rndr"
-version = "0.2.0"
+version = "0.2.1"
 description = "A tiny fractal renderer that features several coloring modes, anti-aliasing and a gui."
 homepage = "https://github.com/valflrt/fractal_rndr"
 authors = ["valflrt"]
