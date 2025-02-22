@@ -166,8 +166,8 @@ pub mod animation {
         Mjygzr,
 
         ComplexLogisticMapLike {
-            re: Vec<RenderStep>,
-            im: Vec<RenderStep>,
+            a_re: Vec<RenderStep>,
+            a_im: Vec<RenderStep>,
         },
     }
 
@@ -212,10 +212,10 @@ pub mod animation {
                 },
                 Self::Mjygzr => crate::fractal::Fractal::Mjygzr,
 
-                Self::ComplexLogisticMapLike { re, im } => {
+                Self::ComplexLogisticMapLike { a_re, a_im } => {
                     crate::fractal::Fractal::ComplexLogisticMapLike {
-                        a_re: re[RenderStep::get_current_step_index(re, t)].get_value(t),
-                        a_im: im[RenderStep::get_current_step_index(im, t)].get_value(t),
+                        a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
+                        a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
                     }
                 }
             }

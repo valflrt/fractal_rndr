@@ -10,6 +10,7 @@ pub enum ErrorKind {
     DecodeParameterFile(SpannedError),
     EncodeParameterFile(ron::Error),
     SaveImage(image::ImageError),
+    StartGui,
 }
 
 impl Debug for ErrorKind {
@@ -29,6 +30,9 @@ impl Debug for ErrorKind {
             }
             ErrorKind::SaveImage(e) => {
                 writeln!(f, "Failed to save image: {}", e)
+            }
+            ErrorKind::StartGui => {
+                writeln!(f, "Failed to start gui")
             }
         }
     }

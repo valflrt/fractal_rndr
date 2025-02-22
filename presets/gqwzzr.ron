@@ -23,6 +23,6 @@ Animation((
 
     max_iter: 800,
 
-    coloring_mode: MaxNorm(max: Custom(400), map: Linear),
+    coloring_mode: MinMaxNorm(min: Custom(0), max: Custom(400), map: Linear),
     sampling: (level: High, random_offsets: true),
 ))

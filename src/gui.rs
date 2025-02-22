@@ -1,11 +1,11 @@
 use std::{
     fs,
     thread::{self, JoinHandle},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use eframe::{
-    egui::{self, Color32, ComboBox, DragValue, Image, ProgressBar, Slider, Vec2},
+    egui::{self, Color32, ComboBox, DragValue, Image, ProgressBar, ScrollArea, Slider, Vec2},
     App, CreationContext, Frame as EFrame,
 };
 use image::codecs::png::PngEncoder;
@@ -17,6 +17,7 @@ use crate::{
     error::{ErrorKind, Result},
     fractal::Fractal,
     params::{FrameParams, ParamsKind},
+    presets::{PRESETS, PRESET_NAMES},
     progress::Progress,
     rendering::render_raw_image,
     sampling::{generate_sampling_points, Sampling, SamplingLevel},
@@ -38,6 +39,7 @@ pub struct Gui {
     preview_id: u128,
 
     render_info: Option<(JoinHandle<Result<()>>, Progress, Instant)>,
+    elapsed: Option<(f32, Instant)>,
 }
 
 impl Gui {
@@ -65,6 +67,7 @@ impl Gui {
             preview_id: 0,
 
             render_info: None,
+            elapsed: None,
         };
 
         slf.update_preview();
@@ -78,16 +81,16 @@ impl App for Gui {
         let mut should_update_preview = false;
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            const SPACE_SIZE: f32 = 8.;
             ui.spacing_mut().slider_width = 150.;
 
             ui.add_enabled_ui(self.render_info.is_none(), |ui| {
                 ui.columns_const(|[c1, c2]| {
-                    const SPACE_SIZE: f32 = 8.;
-
                     // First column
 
                     c1.heading("Fractal");
                     c1.separator();
+
                     c1.horizontal(|ui| {
                         ui.label("fractal:");
 
@@ -469,6 +472,24 @@ impl App for Gui {
                         if ui.button("write parameter file").clicked() {
                             self.save_parameter_file();
                         }
+                        ui.menu_button("load preset", |ui| {
+                            ScrollArea::vertical()
+                                .max_width(200.)
+                                .max_height(100.)
+                                .show(ui, |ui| {
+                                    for p in 0..PRESETS.len() {
+                                        if let ParamsKind::Frame(params) =
+                                            ron::from_str(PRESETS[p]).unwrap()
+                                        {
+                                            if ui.button(PRESET_NAMES[p]).clicked() {
+                                                self.params = params;
+                                                should_update_preview = true;
+                                                ui.close_menu();
+                                            };
+                                        }
+                                    }
+                                })
+                        });
                     });
 
                     // Second column
@@ -549,24 +570,6 @@ impl App for Gui {
                             let (progress, handle) = self.render_and_save();
                             self.render_info = Some((handle, progress, Instant::now()));
                         };
-                        if let Some((handle, progress, start)) = &self.render_info {
-                            let progress_bar = ProgressBar::new(progress.get_progress())
-                                .desired_height(4.)
-                                .desired_width(64.)
-                                .corner_radius(0.)
-                                .fill(Color32::WHITE);
-                            ui.add(progress_bar);
-                            ui.label(format!(
-                                "{:.0}%  –  {:.1}s",
-                                100. * progress.get_progress(),
-                                start.elapsed().as_secs_f32()
-                            ));
-                            ctx.request_repaint();
-
-                            if handle.is_finished() {
-                                self.render_info = None;
-                            }
-                        }
                     });
 
                     c2.add_space(SPACE_SIZE);
@@ -592,6 +595,36 @@ impl App for Gui {
                     }
                 });
             });
+
+            ui.add_space(SPACE_SIZE);
+
+            ui.with_layout(
+                egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
+                |ui| {
+                    if let Some((handle, progress, start)) = &mut self.render_info {
+                        let progress_bar = ProgressBar::new(progress.get_progress())
+                            .desired_height(4.)
+                            .desired_width(96.)
+                            .corner_radius(0.)
+                            .fill(Color32::WHITE);
+                        ui.add(progress_bar);
+                        ctx.request_repaint();
+
+                        if handle.is_finished() {
+                            self.elapsed = Some((start.elapsed().as_secs_f32(), Instant::now()));
+                            self.render_info = None;
+                        }
+                    } else {
+                        if let Some((elapsed, start)) = &self.elapsed {
+                            const ELAPSED_DISPLAY_TIME: Duration = Duration::from_secs(8);
+                            ui.label(format!("{:.1}s elapsed", elapsed));
+                            if start.elapsed() > ELAPSED_DISPLAY_TIME {
+                                self.elapsed = None
+                            }
+                        }
+                    }
+                },
+            );
         });
 
         if should_update_preview {

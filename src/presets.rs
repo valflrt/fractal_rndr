@@ -29,3 +29,15 @@ pub const WZTPFT: &str = include_str!("../presets/wztpft.ron");
 pub const XVEBHD: &str = include_str!("../presets/xvebhd.ron");
 pub const ZTKHKY: &str = include_str!("../presets/ztkhky.ron");
 pub const ZXKREW: &str = include_str!("../presets/zxkrew.ron");
+
+pub const PRESETS: &[&str] = &[
+    AJWRKX, CKVJJJ, CYGGMF, DATGDV, DMGTYZ, DQQBRM, DVZRJN, EBIDXR, ECWFWB, EFHHGK, ERBEAP, GQWZZR,
+    HDIHEC, HPTMYM, IABPPP, IDKZRG, JTCTZJ, MAXJEY, MEGDWU, MZFYJE, NMYFTC, PHGZBZ, QBQNHN, QRBCWF,
+    QUHUAP, UKHBRP, UNJRYJ, WZTPFT, XVEBHD, ZTKHKY, ZXKREW,
+];
+pub const PRESET_NAMES: &[&str] = &[
+    "ajwrkx", "ckvjjj", "cyggmf", "datgdv", "dmgtyz", "dqqbrm", "dvzrjn", "ebidxr", "ecwfwb",
+    "efhhgk", "erbeap", "gqwzzr", "hdihec", "hptmym", "iabppp", "idkzrg", "jtctzj", "maxjey",
+    "megdwu", "mzfyje", "nmyftc", "phgzbz", "qbqnhn", "qrbcwf", "quhuap", "ukhbrp", "unjryj",
+    "wztpft", "xvebhd", "ztkhky", "zxkrew",
+];

@@ -9,7 +9,7 @@ Frame((
 
     max_iter: 20000,
 
-    coloring_mode: MaxNorm(map: Linear),
+    coloring_mode: MinMaxNorm(min: Custom(0), map: Linear),
     sampling: (
         level: Ultra,
         random_offsets: true,
