@@ -20,7 +20,7 @@ Otherwise, you can download the latest executable from the [releases tab](https:
 
 # How to use
 
-Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
+Create a RON parameter file with the following structure (see [parameter file reference](/REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
 Frame((
@@ -54,7 +54,7 @@ Then, either ...
 - ... render the fractal:
 
   ```
-  ./fractal_rndr path/to/param_file.ron path/to/output_image.png
+  fractal_rndr path/to/param_file.ron path/to/output_image.png
   ```
 
   > Alternatively, if you have rust installed and downloaded this repository:
@@ -63,10 +63,10 @@ Then, either ...
   > cargo run -r -- fractal.ron fractal.png
   > ```
 
-- ... start the gui:
+- ... start the gui using the `--gui` option:
 
   ```
-  ./fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
+  fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
   ```
 
   The app looks like this:

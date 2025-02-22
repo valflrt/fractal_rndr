@@ -66,7 +66,7 @@ Then, either ...
   > cargo run -r -- fractal.ron fractal.png
   > ```
 
-- ... start the gui:
+- ... start the gui using the `--gui` option:
 
   ```
   fractal_rndr path/to/param_file.ron path/to/output_image.png --gui

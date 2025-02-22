@@ -621,10 +621,10 @@ impl App for Gui {
                         }
                     } else {
                         if let Some((text, start)) = &self.message {
-                            const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(8);
+                            const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
                             ui.label(text);
                             if start.elapsed() > MESSAGE_DISPLAY_TIME {
-                                self.message = None
+                                self.message = None;
                             }
                         }
                     }
