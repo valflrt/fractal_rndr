@@ -46,7 +46,7 @@ Frame((
 ))
 ```
 
-> [!NOTE]
+> Note:
 > If the parameter file doesn't exist, it will be created automatically with default values.
 
 Then, either ...
@@ -71,7 +71,7 @@ Then, either ...
 
   The app looks like this:
 
-  ![gui](/img/gui.png)
+  ![gui](./img/gui.png)
 
-> [!NOTE]
+> Note:
 > Supported image formats are png and jpg (the extension is used to guess the format)
