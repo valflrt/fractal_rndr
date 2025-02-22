@@ -16,10 +16,10 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 If you have cargo installed:
 
 ```
-cargo install fractal_renderer
+cargo install fractal_rdr
 ```
 
-Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_renderer/releases/latest).
+Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_rdr/releases/latest).
 
 # How to use
 
@@ -57,7 +57,7 @@ Then, either ...
 - ... render the fractal:
 
   ```
-  ./fractal_renderer path/to/param_file.ron path/to/output_image.png
+  ./fractal_rdr path/to/param_file.ron path/to/output_image.png
   ```
 
   > Alternatively, if you have rust installed and downloaded this repository:
@@ -69,7 +69,7 @@ Then, either ...
 - ... start the gui:
 
   ```
-  ./fractal_renderer path/to/param_file.ron path/to/output_image.png --gui
+  ./fractal_rdr path/to/param_file.ron path/to/output_image.png --gui
   ```
 
   The app looks like this:

@@ -114,7 +114,7 @@ fn main() -> Result<()> {
                         options.viewport.min_inner_size = size;
 
                         eframe::run_native(
-                            "fractal_renderer",
+                            "fractal renderer",
                             options,
                             Box::new(|cc| {
                                 Ok(Box::new(Gui::new(
@@ -346,8 +346,8 @@ fn main() -> Result<()> {
         }
         _ => {
             println!("This is a fractal renderer.");
-            println!("Usage: fractal_renderer <param file path>.json <output image path>.png");
-            println!("More information: https://gh.valflrt.dev/fractal_renderer");
+            println!("Usage: fractal_rdr <param file path>.json <output image path>.png");
+            println!("More information: https://gh.valflrt.dev/fractal_rdr");
         }
     }
 

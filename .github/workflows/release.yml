@@ -23,7 +23,7 @@ jobs:
           rust-version: stable
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
-          bin: fractal_renderer
+          bin: fractal_rdr
           tar: unix
           zip: windows
           token: ${{ secrets.GITHUB_TOKEN }}
