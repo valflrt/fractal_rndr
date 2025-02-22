@@ -109,7 +109,7 @@ fn main() -> Result<()> {
 
                     if options.contains_key("gui") {
                         let mut options = eframe::NativeOptions::default();
-                        let size = Some(vec2(850., 400.));
+                        let size = Some(vec2(900., 440.));
                         options.viewport.inner_size = size;
                         options.viewport.min_inner_size = size;
 
@@ -346,8 +346,8 @@ fn main() -> Result<()> {
         }
         _ => {
             println!("This is a fractal renderer.");
-            println!("Usage: fractal_rdr <param file path>.json <output image path>.png");
-            println!("More information: https://gh.valflrt.dev/fractal_rdr");
+            println!("Usage: fractal_rndr <param file path>.json <output image path>.png");
+            println!("More information: https://gh.valflrt.dev/fractal_rndr");
         }
     }
 

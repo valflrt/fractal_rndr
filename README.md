@@ -16,14 +16,14 @@ This is a program used to render fractals using a [RON](https://docs.rs/ron/late
 If you have cargo installed:
 
 ```
-cargo install fractal_rdr
+cargo install fractal_rndrr
 ```
 
-Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_rdr/releases/latest).
+Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_rndr/releases/latest).
 
 # How to use
 
-Create a RON parameter file with the following structure (see [parameter file reference](./REFERENCE.md) and [preset renders](#preset-renders)):
+Create a RON parameter file with the following structure (see [parameter file reference](/REFERENCE.md) and [preset renders](#preset-renders)):
 
 ```rust
 Frame((
@@ -57,7 +57,7 @@ Then, either ...
 - ... render the fractal:
 
   ```
-  ./fractal_rdr path/to/param_file.ron path/to/output_image.png
+  fractal_rndr path/to/param_file.ron path/to/output_image.png
   ```
 
   > Alternatively, if you have rust installed and downloaded this repository:
@@ -69,117 +69,117 @@ Then, either ...
 - ... start the gui:
 
   ```
-  ./fractal_rdr path/to/param_file.ron path/to/output_image.png --gui
+  fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
   ```
 
   The app looks like this:
 
-  ![gui](./img/gui.png)
+  ![gui](/img/gui.png)
 
 > [!NOTE]
 > Supported image formats are png and jpg (the extension is used to guess the format)
 
 # Preset renders
 
-These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](./presets/).
+These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](/presets/).
 
 > The renders found in `presets/` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
-### [cyggmf.ron](./presets/cyggmf.ron)
+### [cyggmf.ron](/presets/cyggmf.ron)
 
 > Fractal: `ThirdDegreeRecWithGrowingExponent`
 
-![cyggmf.png](./presets/cyggmf.png)
+![cyggmf.png](/presets/cyggmf.png)
 
-### [ukhbrp.ron](./presets/ukhbrp.ron)
-
-> Fractal: `ThirdDegreeRecWithGrowingExponent`
-
-![ukhbrp.png](./presets/ukhbrp.png)
-
-### [ebidxr.ron](./presets/ebidxr.ron)
+### [ukhbrp.ron](/presets/ukhbrp.ron)
 
 > Fractal: `ThirdDegreeRecWithGrowingExponent`
 
-![ebidxr.png](./presets/ebidxr.png)
+![ukhbrp.png](/presets/ukhbrp.png)
 
-### [mzfyje.ron](./presets/mzfyje.ron)
+### [ebidxr.ron](/presets/ebidxr.ron)
+
+> Fractal: `ThirdDegreeRecWithGrowingExponent`
+
+![ebidxr.png](/presets/ebidxr.png)
+
+### [mzfyje.ron](/presets/mzfyje.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
 
-![mzfyje.png](./presets/mzfyje.png)
+![mzfyje.png](/presets/mzfyje.png)
 
-### [ecwfwb.ron](./presets/ecwfwb.ron)
+### [ecwfwb.ron](/presets/ecwfwb.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponentParam`
 
 https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
-### [xvebhd.ron](./presets/xvebhd.ron)
+### [xvebhd.ron](/presets/xvebhd.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
 
-![xvebhd.png](./presets/xvebhd.png)
+![xvebhd.png](/presets/xvebhd.png)
 
-### [quhuap.ron](./presets/quhuap.ron)
+### [quhuap.ron](/presets/quhuap.ron)
 
 > Fractal: `Iigdzh`
 
-![quhuap.png](./presets/quhuap.png)
+![quhuap.png](/presets/quhuap.png)
 
-### [iabppp.ron](./presets/iabppp.ron)
+### [iabppp.ron](/presets/iabppp.ron)
 
 > Fractal: `Mandelbrot`
 
-![iabppp.png](./presets/iabppp.png)
+![iabppp.png](/presets/iabppp.png)
 
-### [ajwrkx.ron](./presets/ajwrkx.ron)
+### [ajwrkx.ron](/presets/ajwrkx.ron)
 
 > Fractal: `Mjygzr`
 
-![ajwrkx.png](./presets/ajwrkx.png)
+![ajwrkx.png](/presets/ajwrkx.png)
 
-### [wztpft.ron](./presets/wztpft.ron)
+### [wztpft.ron](/presets/wztpft.ron)
 
 > Fractal: `Vshqwj`
 
-![wztpft.png](./presets/wztpft.png)
+![wztpft.png](/presets/wztpft.png)
 
-### [dvzrjn.ron](./presets/dvzrjn.ron)
+### [dvzrjn.ron](/presets/dvzrjn.ron)
 
 > Fractal: `Iigdzh`
 
-![dvzrjn.png](./presets/dvzrjn.png)
+![dvzrjn.png](/presets/dvzrjn.png)
 
-### [ckvjjj.ron](./presets/ckvjjj.ron)
+### [ckvjjj.ron](/presets/ckvjjj.ron)
 
 > Fractal: `SecondDegreeThirtySevenBlend`
 
-![ckvjjj.png](./presets/ckvjjj.png)
+![ckvjjj.png](/presets/ckvjjj.png)
 
-### [phgzbz.ron](./presets/phgzbz.ron)
+### [phgzbz.ron](/presets/phgzbz.ron)
 
 > Fractal: `Wmriho(a_re: -0.1, a_im: 0)`
 
-![phgzbz.png](./presets/phgzbz.png)
+![phgzbz.png](/presets/phgzbz.png)
 
-### [gqwzzr.ron](./presets/gqwzzr.ron)
+### [gqwzzr.ron](/presets/gqwzzr.ron)
 
 > Fractal: `ComplexLogisticMapLike`
 
 https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
-### [dmgtyz.ron](./presets/dmgtyz.ron)
+### [dmgtyz.ron](/presets/dmgtyz.ron)
 
 > Fractal: `SecondDegreeRecAlternating1WithGrowingExponent`
 
-![dmgtyz.png](./presets/dmgtyz.png)
+![dmgtyz.png](/presets/dmgtyz.png)
 
-### [datgdv.ron](./presets/datgdv.ron)
+### [datgdv.ron](/presets/datgdv.ron)
 
 > Fractal: `SecondDegreeRecWithGrowingExponent`
 
-![datgdv.png](./presets/datgdv.png)
+![datgdv.png](/presets/datgdv.png)
 
 # Ideas
 
