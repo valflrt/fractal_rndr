@@ -5,7 +5,7 @@ description = "A tiny fractal renderer that features several coloring modes, ant
 homepage = "https://github.com/valflrt/fractal_rdr"
 authors = ["valflrt"]
 edition = "2021"
-license-file = "LICENSE"
+license = "MIT"
 readme = "README_PKG.md"
 exclude = ["/presets/*.png", "/presets/*.mp4"]
 
