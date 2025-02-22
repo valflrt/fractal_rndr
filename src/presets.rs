@@ -1,3 +1,4 @@
+pub const AACMCG: &str = include_str!("../presets/aacmcg.ron");
 pub const AJWRKX: &str = include_str!("../presets/ajwrkx.ron");
 pub const CKVJJJ: &str = include_str!("../presets/ckvjjj.ron");
 pub const CYGGMF: &str = include_str!("../presets/cyggmf.ron");
@@ -31,6 +32,7 @@ pub const ZTKHKY: &str = include_str!("../presets/ztkhky.ron");
 pub const ZXKREW: &str = include_str!("../presets/zxkrew.ron");
 
 pub const PRESETS: &[(&str, &str)] = &[
+    ("aacmcg", AACMCG),
     ("ajwrkx", AJWRKX),
     ("ckvjjj", CKVJJJ),
     ("cyggmf", CYGGMF),
