@@ -70,12 +70,6 @@ Then, either ...
   fractal_rndr path/to/param_file.ron path/to/output_image.png
   ```
 
-  > Alternatively, if you have rust installed and downloaded this repository:
-  >
-  > ```
-  > cargo run -r -- fractal.ron fractal.png
-  > ```
-
 > [!NOTE]
 > Supported image formats are png and jpg (the extension is used to guess the format)
 
