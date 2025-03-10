@@ -54,7 +54,17 @@ Frame((
 
 Then, either ...
 
-- ... render the fractal:
+- ... start the gui using the `--gui` option:
+
+  ```
+  fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
+  ```
+
+  The app looks like this:
+
+  ![gui](/img/gui.png)
+
+- ... render the fractal directly:
 
   ```
   fractal_rndr path/to/param_file.ron path/to/output_image.png
@@ -65,16 +75,6 @@ Then, either ...
   > ```
   > cargo run -r -- fractal.ron fractal.png
   > ```
-
-- ... start the gui using the `--gui` option:
-
-  ```
-  fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
-  ```
-
-  The app looks like this:
-
-  ![gui](/img/gui.png)
 
 > [!NOTE]
 > Supported image formats are png and jpg (the extension is used to guess the format)
