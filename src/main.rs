@@ -395,7 +395,7 @@ struct View {
     height: F,
     cx: F,
     cy: F,
-    rotate: Option<F>,
+    rotate: F,
 }
 
 impl View {
@@ -409,19 +409,12 @@ impl View {
     ) -> View {
         let aspect_ratio = img_width as F / img_height as F;
 
-        let width = zoom;
-        let height = width / aspect_ratio;
-        // let x_min = center_x - width / 2.;
-        // // make center_y negative to match complex number representation
-        // // (in which the imaginary axis is pointing upward)
-        // let y_min = -center_y - height / 2.;
-
         View {
-            width,
-            height,
+            width: zoom,
+            height: zoom / aspect_ratio,
             cx: center_x,
             cy: -center_y,
-            rotate,
+            rotate: rotate.unwrap_or(0.),
         }
     }
 }

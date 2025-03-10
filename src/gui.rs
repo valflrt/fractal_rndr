@@ -314,18 +314,20 @@ impl App for Gui {
                                 should_update_preview = true;
                             }
                         });
-                    }
 
-                    c1.horizontal(|ui| {
-                        ui.label("rotate:");
-                        let mut rotate = self.params.rotate.unwrap_or(0.);
-                        const TAU: F = 6.283185307179586;
-                        let res = ui.add(DragValue::new(&mut rotate).speed(0.1).range(0. ..=TAU));
-                        if res.changed() {
-                            self.params.rotate = Some(rotate);
-                            should_update_preview = true;
-                        }
-                    });
+                        let rotate = self.view.rotate;
+                        c1.horizontal(|ui| {
+                            ui.label("rotate:");
+                            let mut rotate = rotate;
+                            const TAU: F = 6.283185307179586;
+                            let res =
+                                ui.add(DragValue::new(&mut rotate).speed(0.1).range(-TAU..=TAU));
+                            if res.changed() {
+                                self.params.rotate = Some(rotate);
+                                should_update_preview = true;
+                            }
+                        });
+                    }
 
                     c1.add_space(SPACE_SIZE);
                     c1.heading("Coloring");

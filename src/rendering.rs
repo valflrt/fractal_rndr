@@ -89,9 +89,7 @@ pub fn render_raw_image(
                     let iter = {
                         let c = Complexx::splat(cx, cy);
                         fractal.sample(
-                            (Complexx { re, im } - c)
-                                * Complexx::from_polar_splat(1., rotate.unwrap_or(0.))
-                                + c,
+                            (Complexx { re, im } - c) * Complexx::from_polar_splat(1., rotate) + c,
                             max_iter,
                         )
                     };
