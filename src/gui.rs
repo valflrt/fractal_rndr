@@ -110,7 +110,8 @@ impl App for Gui {
                             Fractal::Iigdzh { .. } => 12,
                             Fractal::Fxdicq => 13,
                             Fractal::Mjygzr => 14,
-                            _ => unimplemented!(), // Fractal::MoireTest => 15,
+                            Fractal::Zqcqvm => 15,
+                            _ => unimplemented!(),
                         };
                         const MODES: &[&str] = &[
                             "Mandelbrot",
@@ -128,6 +129,7 @@ impl App for Gui {
                             "Iigdzh(a_re, a_im)",
                             "Fxdicq",
                             "Mjygzr",
+                            "Zqcqvm",
                         ];
                         let res = ComboBox::from_id_salt("fractal").show_index(
                             ui,
@@ -209,6 +211,7 @@ impl App for Gui {
                                 }
                                 13 => Fractal::Fxdicq,
                                 14 => Fractal::Mjygzr,
+                                15 => Fractal::Zqcqvm,
                                 _ => unreachable!(),
                             };
 
@@ -312,6 +315,17 @@ impl App for Gui {
                             }
                         });
                     }
+
+                    c1.horizontal(|ui| {
+                        ui.label("rotate:");
+                        let mut rotate = self.params.rotate.unwrap_or(0.);
+                        const TAU: F = 6.283185307179586;
+                        let res = ui.add(DragValue::new(&mut rotate).speed(0.1).range(0. ..=TAU));
+                        if res.changed() {
+                            self.params.rotate = Some(rotate);
+                            should_update_preview = true;
+                        }
+                    });
 
                     c1.add_space(SPACE_SIZE);
                     c1.heading("Coloring");
@@ -609,7 +623,7 @@ impl App for Gui {
                     if let Some((handle, progress, start)) = &self.render_info {
                         let progress_bar = ProgressBar::new(progress.get_progress())
                             .desired_height(4.)
-                            .desired_width(96.)
+                            .desired_width(128.)
                             .corner_radius(0.)
                             .fill(Color32::WHITE);
                         ui.add(progress_bar);
@@ -693,12 +707,13 @@ impl Gui {
             img_width,
             img_height,
             zoom,
+            rotate,
             center_x,
             center_y,
             ..
         } = self.params;
 
-        self.view = View::new(img_width, img_height, zoom, center_x, center_y);
+        self.view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
     }
 
     fn update_preview(&mut self) {

@@ -23,6 +23,7 @@ pub struct FrameParams {
     pub zoom: F,
     pub center_x: F,
     pub center_y: F,
+    pub rotate: Option<F>,
     pub fractal: Fractal,
 
     pub max_iter: u32,
@@ -45,6 +46,7 @@ pub struct AnimationParams {
     pub zoom: Vec<RenderStep>,
     pub center_x: Vec<RenderStep>,
     pub center_y: Vec<RenderStep>,
+    pub rotate: Option<Vec<RenderStep>>,
     pub fractal: animation::Fractal,
 
     pub max_iter: u32,
@@ -72,6 +74,10 @@ impl AnimationParams {
                 .get_value(t),
             center_y: self.center_y[RenderStep::get_current_step_index(&self.center_y, t)]
                 .get_value(t),
+            rotate: self
+                .rotate
+                .clone()
+                .map(|v| v[RenderStep::get_current_step_index(&v, t)].get_value(t)),
             fractal: self.fractal.get_fractal(t),
             max_iter: self.max_iter,
             coloring_mode: self.coloring_mode,

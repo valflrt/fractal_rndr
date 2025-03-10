@@ -44,6 +44,13 @@ impl Complexx {
             im: r * theta.sin(),
         }
     }
+    #[inline]
+    pub fn from_polar_splat(r: F, theta: F) -> Complexx {
+        Complexx {
+            re: FX::splat(r * theta.cos()),
+            im: FX::splat(r * theta.sin()),
+        }
+    }
 
     #[inline(always)]
     pub fn norm_sqr(&self) -> FX {

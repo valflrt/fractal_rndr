@@ -25,16 +25,18 @@ pub fn render_raw_image(
         ..
     } = params;
 
-    let View {
+    let &View {
         width,
         height,
-        mut x_min,
-        mut y_min,
+        mut cx,
+        mut cy,
+        rotate,
+        ..
     } = view;
 
     if matches!(fractal, Fractal::MoireTest) {
-        x_min = 0.;
-        y_min = 0.;
+        cx = 0.;
+        cy = 0.;
     }
 
     let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
@@ -77,14 +79,22 @@ pub fn render_raw_image(
                         // but as we use simd this is acceptable (the cost is the
                         // same whether it is computed along with the others or not).
                         let (dx, _) = d[i % l];
-                        x_min + width * (x + 0.5 + dx) / img_width as F
+                        cx + 0.5 * width * ((x + 0.5 + dx) / img_width as F - 0.5)
                     }));
                     let im = FX::from(array::from_fn(|i| {
                         let (_, dy) = d[i % l];
-                        y_min + height * (y + 0.5 + dy) / img_height as F
+                        cy + 0.5 * height * ((y + 0.5 + dy) / img_height as F - 0.5)
                     }));
 
-                    let iter = fractal.sample(Complexx { re, im }, max_iter);
+                    let iter = {
+                        let c = Complexx::splat(cx, cy);
+                        fractal.sample(
+                            (Complexx { re, im } - c)
+                                * Complexx::from_polar_splat(1., rotate.unwrap_or(0.))
+                                + c,
+                            max_iter,
+                        )
+                    };
 
                     (0..l).map(move |i| iter[i])
                 })

@@ -22,6 +22,7 @@ pub enum Fractal {
     Iigdzh { a_re: F, a_im: F },
     Fxdicq,
     Mjygzr,
+    Zqcqvm,
 
     MoireTest,
 }
@@ -405,6 +406,29 @@ impl Fractal {
                     }
 
                     let new_z = z1 * z1 * c + z0 + c;
+                    z0 = z1;
+                    z1 = new_z;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                (iter, z1)
+            }
+            Fractal::Zqcqvm => {
+                const BAILOUT: F = 5.;
+                let bailout_mask = FX::splat(BAILOUT);
+
+                let mut z0 = Complexx::zeros();
+                let mut z1 = Complexx::zeros();
+
+                let mut iter = FX::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z1.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+
+                    let new_z = z1 + z0 + c;
                     z0 = z1;
                     z1 = new_z;
 

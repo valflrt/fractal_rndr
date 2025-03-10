@@ -127,12 +127,13 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
         zoom,
         center_x,
         center_y,
+        rotate,
 
         sampling,
         ..
     } = params;
 
-    let view = View::new(img_width, img_height, zoom, center_x, center_y);
+    let view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
 
     let sampling_points = generate_sampling_points(sampling.level);
 
@@ -237,10 +238,11 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
             zoom,
             center_x,
             center_y,
+            rotate,
             ..
         } = params;
 
-        let view = View::new(img_width, img_height, zoom, center_x, center_y);
+        let view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
 
         let progress = Progress::new((img_width * img_height) as usize);
 
@@ -360,6 +362,7 @@ fn start_gui(
         zoom,
         center_x,
         center_y,
+        rotate,
         ..
     } = params;
 
@@ -375,7 +378,7 @@ fn start_gui(
             Ok(Box::new(Gui::new(
                 cc,
                 params,
-                View::new(img_width, img_height, zoom, center_x, center_y),
+                View::new(img_width, img_height, zoom, center_x, center_y, rotate),
                 output_image_path,
                 param_file_path,
             )))
@@ -390,26 +393,35 @@ fn start_gui(
 struct View {
     width: F,
     height: F,
-    x_min: F,
-    y_min: F,
+    cx: F,
+    cy: F,
+    rotate: Option<F>,
 }
 
 impl View {
-    pub fn new(img_width: u32, img_height: u32, zoom: F, center_x: F, center_y: F) -> View {
+    pub fn new(
+        img_width: u32,
+        img_height: u32,
+        zoom: F,
+        center_x: F,
+        center_y: F,
+        rotate: Option<F>,
+    ) -> View {
         let aspect_ratio = img_width as F / img_height as F;
 
         let width = zoom;
         let height = width / aspect_ratio;
-        let x_min = center_x - width / 2.;
-        // make center_y negative to match complex number representation
-        // (in which the imaginary axis is pointing upward)
-        let y_min = -center_y - height / 2.;
+        // let x_min = center_x - width / 2.;
+        // // make center_y negative to match complex number representation
+        // // (in which the imaginary axis is pointing upward)
+        // let y_min = -center_y - height / 2.;
 
         View {
             width,
             height,
-            x_min,
-            y_min,
+            cx: center_x,
+            cy: -center_y,
+            rotate,
         }
     }
 }
