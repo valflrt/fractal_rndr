@@ -36,7 +36,7 @@ This is what the app looks like:
 
 ![gui](/img/gui.png)
 
-If there is parameter file doesn't exist, the app will start with a preset fractal. You can save the parameter file anytime by clicking the corresponding button.
+If there is no parameter file, the app will start with a preset fractal. You can save the parameter file anytime by clicking the corresponding button.
 
 Enjoy !
 
