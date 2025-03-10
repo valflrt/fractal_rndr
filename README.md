@@ -91,17 +91,23 @@ These are preset renders I like, you can access their parameter files by clickin
 
 ![cyggmf.png](/presets/cyggmf.png)
 
+### [iabppp.ron](/presets/iabppp.ron)
+
+> Fractal: `Mandelbrot`
+
+![iabppp.png](/presets/iabppp.png)
+
 ### [ukhbrp.ron](/presets/ukhbrp.ron)
 
 > Fractal: `ThirdDegreeRecWithGrowingExponent`
 
 ![ukhbrp.png](/presets/ukhbrp.png)
 
-### [ebidxr.ron](/presets/ebidxr.ron)
+### [ffayuk.ron](/presets/ffayuk.ron)
 
-> Fractal: `ThirdDegreeRecWithGrowingExponent`
+> Fractal: `SecondDegreeRecWithGrowingExponent`
 
-![ebidxr.png](/presets/ebidxr.png)
+![ffayuk.png](/presets/ffayuk.png)
 
 ### [mzfyje.ron](/presets/mzfyje.ron)
 
@@ -127,11 +133,11 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ![quhuap.png](/presets/quhuap.png)
 
-### [iabppp.ron](/presets/iabppp.ron)
+### [ebidxr.ron](/presets/ebidxr.ron)
 
-> Fractal: `Mandelbrot`
+> Fractal: `ThirdDegreeRecWithGrowingExponent`
 
-![iabppp.png](/presets/iabppp.png)
+![ebidxr.png](/presets/ebidxr.png)
 
 ### [ajwrkx.ron](/presets/ajwrkx.ron)
 
