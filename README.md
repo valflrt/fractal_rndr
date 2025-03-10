@@ -23,55 +23,22 @@ Otherwise, you can download the latest executable from the [releases tab](https:
 
 # How to use
 
-Create a RON parameter file with the following structure (see [parameter file reference](/REFERENCE.md) and [preset renders](#preset-renders)):
+Start the app using:
 
-```rust
-Frame((
-    img_width: 1920,
-    img_height: 1080,
-
-    zoom: 0.000053,
-    center_x: -0.1159076,
-    center_y: -0.000022,
-    fractal: ThirdDegreeRecWithGrowingExponent,
-
-    max_iter: 2000,
-
-    coloring_mode: MinMaxNorm(
-        min: Custom(200),
-        max: Custom(750),
-        map: Linear,
-    ),
-    sampling: (
-        level: Ultra,
-        random_offsets: true,
-    ),
-))
+```
+fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
 ```
 
 > [!NOTE]
-> If the parameter file doesn't exist, it will be created automatically with default values.
-
-Then, either ...
-
-- ... start the gui using the `--gui` option:
-
-  ```
-  fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
-  ```
-
-  The app looks like this:
-
-  ![gui](/img/gui.png)
-
-- ... render the fractal directly:
-
-  ```
-  fractal_rndr path/to/param_file.ron path/to/output_image.png
-  ```
-
-> [!NOTE]
 > Supported image formats are png and jpg (the extension is used to guess the format)
+
+This is what the app looks like:
+
+![gui](/img/gui.png)
+
+If there is parameter file doesn't exist, the app will start with a preset fractal. You can save the parameter file anytime by clicking the corresponding button.
+
+Enjoy !
 
 # Preset renders
 
