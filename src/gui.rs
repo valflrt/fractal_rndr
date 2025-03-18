@@ -1,4 +1,5 @@
 use std::{
+    f64::consts::TAU,
     fs,
     thread::{self, JoinHandle},
     time::{Duration, Instant},
@@ -319,9 +320,11 @@ impl App for Gui {
                         c1.horizontal(|ui| {
                             ui.label("rotate:");
                             let mut rotate = rotate;
-                            const TAU: F = 6.283185307179586;
-                            let res =
-                                ui.add(DragValue::new(&mut rotate).speed(0.1).range(-TAU..=TAU));
+                            let res = ui.add(
+                                DragValue::new(&mut rotate)
+                                    .speed(0.1)
+                                    .range(-TAU as F..=TAU as F),
+                            );
                             if res.changed() {
                                 self.params.rotate = Some(rotate);
                                 should_update_preview = true;
@@ -497,14 +500,14 @@ impl App for Gui {
                                 .max_width(200.)
                                 .max_height(100.)
                                 .show(ui, |ui| {
-                                    for p in 0..PRESETS.len() {
+                                    for p in PRESETS {
                                         if let ParamsKind::Frame(params) =
-                                            ron::from_str(PRESETS[p].1).unwrap()
+                                            ron::from_str(p.1).unwrap()
                                         {
-                                            if ui.button(PRESETS[p].0).clicked() {
+                                            if ui.button(p.0).clicked() {
                                                 self.params = params;
                                                 should_update_preview = true;
-                                                self.notify(format!("loaded {}", PRESETS[p].0));
+                                                self.notify(format!("loaded {}", p.0));
                                                 ui.close_menu();
                                             };
                                         }
@@ -635,13 +638,11 @@ impl App for Gui {
                             self.notify(format!("{:.1}s elapsed", start.elapsed().as_secs_f32()));
                             self.render_info = None;
                         }
-                    } else {
-                        if let Some((text, start)) = &self.message {
-                            const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
-                            ui.label(text);
-                            if start.elapsed() > MESSAGE_DISPLAY_TIME {
-                                self.message = None;
-                            }
+                    } else if let Some((text, start)) = &self.message {
+                        const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
+                        ui.label(text);
+                        if start.elapsed() > MESSAGE_DISPLAY_TIME {
+                            self.message = None;
                         }
                     }
                 },
@@ -649,6 +650,7 @@ impl App for Gui {
         });
 
         if should_update_preview {
+            self.round_floats();
             self.update_view();
             self.update_preview();
         }
@@ -702,6 +704,22 @@ impl Gui {
                     .map_err(ErrorKind::SaveImage)
             }),
         )
+    }
+
+    fn round_floats(&mut self) {
+        fn truncate_to_significant_digits(value: F, digits: usize) -> F {
+            if value.is_subnormal() {
+                return value;
+            }
+            let factor = (10. as F).powi(digits as i32 - value.abs().log10().floor() as i32 - 1);
+            (value * factor).round() / factor
+        }
+
+        self.params.zoom = truncate_to_significant_digits(self.params.zoom, 4);
+
+        if let Some(rotate) = self.params.rotate.as_mut() {
+            *rotate = truncate_to_significant_digits(*rotate, 3);
+        }
     }
 
     fn update_view(&mut self) {

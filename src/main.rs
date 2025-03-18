@@ -26,7 +26,6 @@ use ron::ser::PrettyConfig;
 use uni_path::PathBuf;
 
 use crate::{
-    cli::get_args_and_options,
     coloring::{color_mapping, color_raw_image},
     error::{ErrorKind, Result},
     params::{DevOptions, ParamsKind},
@@ -62,7 +61,7 @@ pub struct RenderCtx {
 }
 
 fn main() -> Result<()> {
-    let (args, options) = get_args_and_options();
+    let (args, options) = cli::parse();
 
     match args.len() {
         3 => {
