@@ -21,8 +21,8 @@ use crate::{
     presets::PRESETS,
     progress::Progress,
     rendering::render_raw_image,
-    sampling::{generate_sampling_points, Sampling, SamplingLevel},
-    View, F,
+    sampling::generate_sampling_points,
+    View, F, SAMPLE_MUL,
 };
 
 const DEFAULT_ZOOM: F = 5.;
@@ -112,7 +112,6 @@ impl App for Gui {
                             Fractal::Fxdicq => 13,
                             Fractal::Mjygzr => 14,
                             Fractal::Zqcqvm => 15,
-                            _ => unimplemented!(),
                         };
                         const MODES: &[&str] = &[
                             "Mandelbrot",
@@ -448,7 +447,7 @@ impl App for Gui {
                             }
 
                             if let Extremum::Custom(min) = min {
-                                let res = ui.add(Slider::new(min, 0. ..=self.params.max_iter as F));
+                                let res = ui.add(DragValue::new(min));
                                 if res.changed() {
                                     should_update_preview = true;
                                 }
@@ -463,15 +462,13 @@ impl App for Gui {
                                 *max = if auto {
                                     Extremum::Auto
                                 } else {
-                                    Extremum::Custom(
-                                        init_max.unwrap_custom_or(self.params.max_iter as F),
-                                    )
+                                    Extremum::Custom(init_max.unwrap_custom_or(1.))
                                 };
                                 should_update_preview = true;
                             }
 
                             if let Extremum::Custom(max) = max {
-                                let res = ui.add(Slider::new(max, 0. ..=self.params.max_iter as F));
+                                let res = ui.add(DragValue::new(max));
                                 if res.changed() {
                                     should_update_preview = true;
                                 }
@@ -537,54 +534,6 @@ impl App for Gui {
 
                         if res1.changed() || res2.changed() {
                             should_update_preview = true;
-                        }
-                    });
-
-                    c2.horizontal(|ui| {
-                        ui.label("sampling level:");
-
-                        let mut selected_sampling_level_i = match self.params.sampling.level {
-                            SamplingLevel::Exploration => 0,
-                            SamplingLevel::Low => 1,
-                            SamplingLevel::Medium => 2,
-                            SamplingLevel::High => 3,
-                            SamplingLevel::Ultra => 4,
-                            SamplingLevel::Extreme => 5,
-                            SamplingLevel::Extreme1 => 6,
-                            SamplingLevel::Extreme2 => 7,
-                            SamplingLevel::Extreme3 => 8,
-                        };
-                        const SAMPLING_LEVEL: &[&str] = &[
-                            "Exploration",
-                            "Low",
-                            "Medium",
-                            "High",
-                            "Ultra",
-                            "Extreme",
-                            "Extreme1",
-                            "Extreme2",
-                            "Extreme3",
-                        ];
-                        let res = ComboBox::from_id_salt("sampling_level").show_index(
-                            ui,
-                            &mut selected_sampling_level_i,
-                            SAMPLING_LEVEL.len(),
-                            |i| SAMPLING_LEVEL[i],
-                        );
-
-                        if res.changed() {
-                            self.params.sampling.level = match selected_sampling_level_i {
-                                0 => SamplingLevel::Exploration,
-                                1 => SamplingLevel::Low,
-                                2 => SamplingLevel::Medium,
-                                3 => SamplingLevel::High,
-                                4 => SamplingLevel::Ultra,
-                                5 => SamplingLevel::Extreme,
-                                6 => SamplingLevel::Extreme1,
-                                7 => SamplingLevel::Extreme2,
-                                8 => SamplingLevel::Extreme3,
-                                _ => unimplemented!(),
-                            }
                         }
                     });
 
@@ -680,17 +629,19 @@ impl Gui {
     }
 
     fn render_and_save(&mut self) -> (Progress, JoinHandle<Result<()>>) {
-        let progress = Progress::new((self.params.img_width * self.params.img_height) as usize);
+        let sampling_points = generate_sampling_points(
+            SAMPLE_MUL * (self.params.img_width * self.params.img_height) as usize,
+        );
+        let progress = Progress::new(sampling_points.len());
 
         let params_clone = self.params.clone();
         let view = self.view;
-        let sampling_points_clone = generate_sampling_points(self.params.sampling.level);
         let output_image_path_clone = self.output_image_path.clone();
         (
             progress.clone(),
             thread::spawn(move || {
                 let raw_image =
-                    render_raw_image(&params_clone, &view, &sampling_points_clone, Some(progress));
+                    render_raw_image(&params_clone, &view, &sampling_points, Some(progress));
 
                 let output_image = color_raw_image(
                     &params_clone,
@@ -754,14 +705,12 @@ impl Gui {
         let preview_params = FrameParams {
             img_width: preview_width,
             img_height: preview_height,
-            sampling: Sampling {
-                level: crate::sampling::SamplingLevel::Exploration,
-                random_offsets: true,
-            },
             ..self.params.clone()
         };
 
-        let sampling_points = generate_sampling_points(preview_params.sampling.level);
+        let sampling_points = generate_sampling_points(
+            SAMPLE_MUL * (preview_params.img_width * preview_params.img_height) as usize,
+        );
 
         let raw_image = render_raw_image(&preview_params, &self.view, &sampling_points, None);
 

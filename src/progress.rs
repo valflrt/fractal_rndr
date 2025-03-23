@@ -17,11 +17,11 @@ impl Progress {
         }
     }
 
-    pub fn incr(&self) {
+    pub fn add(&self, n: usize) {
         // Using atomic::Ordering::Relaxed because we don't really
         // care about the order `progress` is updated. As long as it
         // is updated it should be fine :>
-        self.progress.fetch_add(1, Ordering::Relaxed);
+        self.progress.fetch_add(n, Ordering::Relaxed);
     }
 
     pub fn get(&self) -> usize {

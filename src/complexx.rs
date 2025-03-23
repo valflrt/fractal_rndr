@@ -1,6 +1,14 @@
-use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+use std::{
+    array,
+    ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
+};
 
 use crate::{F, FX};
+
+#[cfg(feature = "force_f32")]
+pub const SIZE: usize = 8;
+#[cfg(not(feature = "force_f32"))]
+pub const SIZE: usize = 4;
 
 /// A simd complex type. It holds 4 complex numbers and performs
 /// calculations on them at once.
@@ -83,6 +91,13 @@ impl Complexx {
     //     let (r, theta) = self.to_polar();
     //     Complex4::from_polar(r.pow_FX(exp), theta * exp)
     // }
+
+    pub fn to_array(self) -> [(F, F); SIZE] {
+        let re = self.re.to_array();
+        let im = self.im.to_array();
+
+        array::from_fn(|i| (re[i], im[i]))
+    }
 }
 
 impl Add for Complexx {

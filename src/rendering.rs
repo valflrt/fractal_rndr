@@ -3,8 +3,11 @@ use std::{array, sync::mpsc};
 use rayon::prelude::*;
 
 use crate::{
-    complexx::Complexx, fractal::Fractal, mat::Mat2D, params::FrameParams, progress::Progress,
-    sampling::map_points_with_offsets, View, F, FX,
+    complexx::{self, Complexx},
+    mat::Mat2D,
+    params::FrameParams,
+    progress::Progress,
+    View, F, FX,
 };
 
 pub fn render_raw_image(
@@ -20,94 +23,68 @@ pub fn render_raw_image(
         fractal,
 
         max_iter,
-
-        sampling,
         ..
     } = params;
 
     let &View {
         width,
         height,
-        mut cx,
-        mut cy,
+        cx,
+        cy,
         rotate,
         ..
     } = view;
 
-    if matches!(fractal, Fractal::MoireTest) {
-        cx = 0.;
-        cy = 0.;
-    }
-
     let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
 
-    let rng = fastrand::Rng::new();
-    let (tx, rx) = mpsc::channel();
-    (0..img_height)
-        .flat_map(|j| (0..img_width).map(move |i| (i, j)))
-        .par_bridge()
-        .for_each_with((tx, rng), |(s, rng), (i, j)| {
-            let x = i as F;
-            let y = j as F;
+    for chunk in sampling_points.chunks(2048) {
+        let (tx, rx) = mpsc::channel();
+        chunk
+            .chunks(complexx::SIZE)
+            .par_bridge()
+            .for_each_with(tx, |s, d| {
+                let l = d.len();
 
-            let (offset_x, offset_y) = if sampling.random_offsets {
-                #[cfg(feature = "force_f32")]
-                let v = (rng.f32(), rng.f32());
-                #[cfg(not(feature = "force_f32"))]
-                let v = (rng.f64(), rng.f64());
+                const SCALE: F = 4.;
+                // Here we use `i % l` to avoid out of bounds error (when i < 4).
+                // When `i < 4`, the modulo operation will repeat the sample
+                // but as we use simd this is acceptable (the cost is the
+                // same whether it is computed along with the others or not).
+                let re = FX::from(array::from_fn(|i| d[i % l].0 * SCALE));
+                let im = FX::from(array::from_fn(|i| d[i % l].1 * SCALE));
 
-                v
-            } else {
-                (0., 0.)
-            };
-            let sampling_points = sampling_points
-                .iter()
-                .map(|&(dx, dy)| map_points_with_offsets(dx, dy, offset_x, offset_y))
-                .collect::<Vec<_>>();
+                let values = {
+                    let c = Complexx::splat(cx, cy);
+                    fractal.sample(
+                        (Complexx { re, im } - c) * Complexx::from_polar_splat(1., rotate) + c,
+                        max_iter,
+                    )
+                };
 
-            #[cfg(feature = "force_f32")]
-            const CHUNK_SIZE: usize = 8;
-            #[cfg(not(feature = "force_f32"))]
-            const CHUNK_SIZE: usize = 4;
-            let value = sampling_points
-                .chunks(CHUNK_SIZE)
-                .flat_map(|d| {
-                    let l = d.len();
-                    let re = FX::from(array::from_fn(|i| {
-                        // Here we use `i % l` to avoid out of bounds error (when i < 4).
-                        // When `i < 4`, the modulo operation will repeat the sample
-                        // but as we use simd this is acceptable (the cost is the
-                        // same whether it is computed along with the others or not).
-                        let (dx, _) = d[i % l];
-                        cx + 0.5 * width * ((x + 0.5 + dx) / img_width as F - 0.5)
-                    }));
-                    let im = FX::from(array::from_fn(|i| {
-                        let (_, dy) = d[i % l];
-                        cy + 0.5 * height * ((y + 0.5 + dy) / img_height as F - 0.5)
-                    }));
+                for v in values {
+                    for i in 0..l {
+                        let (re, im) = v[i];
 
-                    let iter = {
-                        let c = Complexx::splat(cx, cy);
-                        fractal.sample(
-                            (Complexx { re, im } - c) * Complexx::from_polar_splat(1., rotate) + c,
-                            max_iter,
-                        )
-                    };
+                        let (re, im) = (-im, re);
 
-                    (0..l).map(move |i| iter[i])
-                })
-                .sum::<F>()
-                / sampling_points.len() as F;
+                        let i = (2. * (re - cx) / width + 0.5) * img_width as F;
+                        let j = (2. * (im - cy) / height + 0.5) * img_height as F;
 
-            s.send(((i, j), value)).unwrap();
+                        if (0. ..img_width as F).contains(&i) && (0. ..img_height as F).contains(&j)
+                        {
+                            s.send((i as usize, j as usize)).unwrap();
+                        }
+                    }
+                }
 
-            if let Some(progress) = &progress {
-                progress.incr();
-            }
-        });
+                if let Some(progress) = &progress {
+                    progress.add(4);
+                }
+            });
 
-    for ((i, j), sample) in rx {
-        raw_image[(i as usize, j as usize)] = sample;
+        for (i, j) in rx {
+            raw_image[(i as usize, j as usize)] += 1.;
+        }
     }
 
     raw_image

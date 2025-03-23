@@ -31,8 +31,7 @@ use crate::{
     params::{DevOptions, ParamsKind},
     progress::Progress,
     rendering::render_raw_image,
-    sampling::preview_sampling_points,
-    sampling::{generate_sampling_points, Sampling},
+    sampling::generate_sampling_points,
 };
 
 #[cfg(feature = "force_f32")]
@@ -56,9 +55,10 @@ pub struct RenderCtx {
 
     pub max_iter: u32,
 
-    pub sampling: Sampling,
     pub sampling_points: Vec<(F, F)>,
 }
+
+const SAMPLE_MUL: usize = 40;
 
 fn main() -> Result<()> {
     let (args, options) = cli::parse();
@@ -127,24 +127,14 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
         center_x,
         center_y,
         rotate,
-
-        sampling,
         ..
     } = params;
 
     let view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
 
-    let sampling_points = generate_sampling_points(sampling.level);
+    let sampling_points = generate_sampling_points(SAMPLE_MUL * (img_width * img_height) as usize);
 
-    if let Some(DevOptions {
-        save_sampling_pattern: Some(true),
-        ..
-    }) = params.dev_options
-    {
-        preview_sampling_points(&sampling_points)?;
-    }
-
-    let progress = Progress::new((img_width * img_height) as usize);
+    let progress = Progress::new(sampling_points.len());
 
     let start = Instant::now();
 
@@ -210,8 +200,8 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
 
 fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Result<()> {
     let AnimationParams {
-        sampling,
-
+        img_width,
+        img_height,
         duration,
         fps,
         ..
@@ -222,7 +212,7 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
     println!("frame count: {}", frame_count);
     println!();
 
-    let sampling_points = generate_sampling_points(sampling.level);
+    let sampling_points = generate_sampling_points(SAMPLE_MUL * (img_width * img_height) as usize);
 
     let global_start = Instant::now();
 
@@ -243,7 +233,7 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
 
         let view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
 
-        let progress = Progress::new((img_width * img_height) as usize);
+        let progress = Progress::new(sampling_points.len());
 
         let start = Instant::now();
 

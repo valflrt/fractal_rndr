@@ -1,7 +1,7 @@
 use animation::RenderStep;
 use serde::{Deserialize, Serialize};
 
-use crate::{coloring::ColoringMode, fractal::Fractal, presets, sampling::Sampling, F};
+use crate::{coloring::ColoringMode, fractal::Fractal, presets, F};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ParamsKind {
@@ -11,7 +11,7 @@ pub enum ParamsKind {
 
 impl Default for ParamsKind {
     fn default() -> Self {
-        ron::from_str(presets::CYGGMF).unwrap()
+        ron::from_str(presets::FFYQBY).unwrap()
     }
 }
 
@@ -29,7 +29,6 @@ pub struct FrameParams {
     pub max_iter: u32,
 
     pub coloring_mode: ColoringMode,
-    pub sampling: Sampling,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
@@ -55,7 +54,6 @@ pub struct AnimationParams {
     pub fps: f32,
 
     pub coloring_mode: ColoringMode,
-    pub sampling: Sampling,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
@@ -81,7 +79,6 @@ impl AnimationParams {
             fractal: self.fractal.get_fractal(t),
             max_iter: self.max_iter,
             coloring_mode: self.coloring_mode,
-            sampling: self.sampling,
             custom_gradient: self.custom_gradient.to_owned(),
             dev_options: self.dev_options,
         }
