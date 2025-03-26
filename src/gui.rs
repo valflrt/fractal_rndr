@@ -9,7 +9,7 @@ use eframe::{
     egui::{self, Color32, ComboBox, DragValue, Image, ProgressBar, ScrollArea, Slider, Vec2},
     App, CreationContext, Frame as EFrame,
 };
-use image::codecs::png::PngEncoder;
+use image::{codecs::png::PngEncoder, RgbImage};
 use ron::ser::PrettyConfig;
 use uni_path::PathBuf;
 
@@ -38,6 +38,8 @@ pub struct Gui {
     preview_bytes: Option<Vec<u8>>,
     preview_size: Option<Vec2>,
     preview_id: u128,
+    preview_render_handle: Option<JoinHandle<RgbImage>>,
+    should_render_preview: bool,
 
     render_info: Option<(JoinHandle<Result<()>>, Progress, Instant)>,
     message: Option<(String, Instant)>,
@@ -55,7 +57,7 @@ impl Gui {
     ) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
-        let mut slf = Gui {
+        Gui {
             init_params: params.clone(),
             params,
             view,
@@ -66,21 +68,17 @@ impl Gui {
             preview_bytes: None,
             preview_size: None,
             preview_id: 0,
+            preview_render_handle: None,
+            should_render_preview: true,
 
             render_info: None,
             message: None,
-        };
-
-        slf.update_preview();
-
-        slf
+        }
     }
 }
 
 impl App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut EFrame) {
-        let mut should_update_preview = false;
-
         egui::CentralPanel::default().show(ctx, |ui| {
             const SPACE_SIZE: f32 = 8.;
             ui.spacing_mut().slider_width = 150.;
@@ -220,7 +218,7 @@ impl App for Gui {
                             self.params.center_y = 0.;
                             self.params.zoom = DEFAULT_ZOOM;
 
-                            should_update_preview = true;
+                            self.should_render_preview = true;
                         }
                     });
 
@@ -233,7 +231,7 @@ impl App for Gui {
                                 let res =
                                     ui.add(DragValue::new(exp).speed(SPEED).range(0.001..=20.));
                                 if res.changed() {
-                                    should_update_preview = true;
+                                    self.should_render_preview = true;
                                 }
                             });
                         }
@@ -250,7 +248,7 @@ impl App for Gui {
                                 let res2 = ui.add(DragValue::new(a_im).speed(SPEED));
 
                                 if res1.changed() || res2.changed() {
-                                    should_update_preview = true;
+                                    self.should_render_preview = true;
                                 }
                             });
                         }
@@ -262,7 +260,7 @@ impl App for Gui {
                                 ui.label("n:");
                                 let res = ui.add(Slider::new(n, 2..=20));
                                 if res.changed() {
-                                    should_update_preview = true;
+                                    self.should_render_preview = true;
                                 }
                             });
                         }
@@ -274,7 +272,7 @@ impl App for Gui {
                             Slider::new(&mut self.params.max_iter, 10..=200000).logarithmic(true),
                         );
                         if res.changed() {
-                            should_update_preview = true;
+                            self.should_render_preview = true;
                         }
                     });
 
@@ -291,7 +289,7 @@ impl App for Gui {
                                     .logarithmic(true),
                             );
                             if res.changed() {
-                                should_update_preview = true;
+                                self.should_render_preview = true;
                             }
                         });
                     });
@@ -303,7 +301,7 @@ impl App for Gui {
                             let res =
                                 ui.add(DragValue::new(&mut self.params.center_x).speed(0.01 * z));
                             if res.changed() {
-                                should_update_preview = true;
+                                self.should_render_preview = true;
                             }
                         });
                         c1.horizontal(|ui| {
@@ -311,7 +309,7 @@ impl App for Gui {
                             let res =
                                 ui.add(DragValue::new(&mut self.params.center_y).speed(0.01 * z));
                             if res.changed() {
-                                should_update_preview = true;
+                                self.should_render_preview = true;
                             }
                         });
 
@@ -326,7 +324,7 @@ impl App for Gui {
                             );
                             if res.changed() {
                                 self.params.rotate = Some(rotate);
-                                should_update_preview = true;
+                                self.should_render_preview = true;
                             }
                         });
                     }
@@ -375,7 +373,7 @@ impl App for Gui {
                                 2 => ColoringMode::BlackAndWhite,
                                 _ => unreachable!(),
                             };
-                            should_update_preview = true;
+                            self.should_render_preview = true;
                         }
                     });
 
@@ -405,14 +403,14 @@ impl App for Gui {
                                         2 => MapValue::Powf(1.),
                                         _ => unimplemented!(),
                                     };
-                                    should_update_preview = true;
+                                    self.should_render_preview = true;
                                 }
 
                                 if let MapValue::Powf(exp) = map {
                                     let res =
                                         ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
                                     if res.changed() {
-                                        should_update_preview = true;
+                                        self.should_render_preview = true;
                                     }
                                 }
                             });
@@ -443,13 +441,13 @@ impl App for Gui {
                                 } else {
                                     Extremum::Custom(init_min.unwrap_custom_or(0.))
                                 };
-                                should_update_preview = true;
+                                self.should_render_preview = true;
                             }
 
                             if let Extremum::Custom(min) = min {
                                 let res = ui.add(DragValue::new(min));
                                 if res.changed() {
-                                    should_update_preview = true;
+                                    self.should_render_preview = true;
                                 }
                             }
                         });
@@ -464,13 +462,13 @@ impl App for Gui {
                                 } else {
                                     Extremum::Custom(init_max.unwrap_custom_or(1.))
                                 };
-                                should_update_preview = true;
+                                self.should_render_preview = true;
                             }
 
                             if let Extremum::Custom(max) = max {
                                 let res = ui.add(DragValue::new(max));
                                 if res.changed() {
-                                    should_update_preview = true;
+                                    self.should_render_preview = true;
                                 }
                             }
                         });
@@ -483,7 +481,7 @@ impl App for Gui {
                     c1.horizontal(|ui| {
                         if ui.button("revert all edits").clicked() {
                             self.revert_edits();
-                            self.update_preview();
+                            self.render_preview();
                         }
                         if ui.button("save parameter file").clicked() {
                             self.notify(if self.save_parameter_file().is_ok() {
@@ -503,7 +501,7 @@ impl App for Gui {
                                         {
                                             if ui.button(p.0).clicked() {
                                                 self.params = params;
-                                                should_update_preview = true;
+                                                self.should_render_preview = true;
                                                 self.notify(format!("loaded {}", p.0));
                                                 ui.close_menu();
                                             };
@@ -533,7 +531,7 @@ impl App for Gui {
                         );
 
                         if res1.changed() || res2.changed() {
-                            should_update_preview = true;
+                            self.should_render_preview = true;
                         }
                     });
 
@@ -549,22 +547,28 @@ impl App for Gui {
                     c2.heading("Preview");
                     c2.separator();
 
-                    if let Some(preview_bytes) = &self.preview_bytes {
-                        if let Some(preview_size) = self.preview_size {
-                            let d = 0.5 * (Gui::PREVIEW_SIZE as f32 - preview_size.y);
-                            c2.add_space(d);
-                            c2.add_sized(
-                                preview_size,
-                                Image::from_bytes(
-                                    "bytes://fractal_preview".to_string()
-                                        + &self.preview_id.to_string(),
-                                    preview_bytes.to_owned(),
-                                )
-                                .maintain_aspect_ratio(true)
-                                .corner_radius(2),
-                            );
-                            c2.add_space(d);
+                    if self.preview_render_handle.is_none() {
+                        if let Some(preview_bytes) = &self.preview_bytes {
+                            if let Some(preview_size) = self.preview_size {
+                                let d = 0.5 * (c2.available_height() - preview_size.y);
+                                c2.add_space(d);
+                                c2.add_sized(
+                                    preview_size,
+                                    Image::from_bytes(
+                                        "bytes://fractal_preview".to_string()
+                                            + &self.preview_id.to_string(),
+                                        preview_bytes.to_owned(),
+                                    )
+                                    .maintain_aspect_ratio(true)
+                                    .corner_radius(2),
+                                );
+                                c2.add_space(d);
+                            }
                         }
+                    } else {
+                        c2.centered_and_justified(|ui| {
+                            ui.spinner();
+                        });
                     }
                 });
             });
@@ -598,10 +602,29 @@ impl App for Gui {
             );
         });
 
-        if should_update_preview {
+        if self.should_render_preview {
             self.round_floats();
             self.update_view();
-            self.update_preview();
+
+            if self.preview_render_handle.is_none() {
+                self.render_preview();
+                self.should_render_preview = false;
+            }
+        }
+
+        if let Some(handle) = self.preview_render_handle.as_ref() {
+            if handle.is_finished() {
+                let handle = self.preview_render_handle.take().unwrap();
+                if let Ok(output_image) = handle.join() {
+                    let mut buf = Vec::new();
+                    output_image
+                        .write_with_encoder(PngEncoder::new(&mut buf))
+                        .unwrap();
+
+                    self.preview_id += 1;
+                    self.preview_bytes = Some(buf);
+                }
+            }
         }
     }
 }
@@ -687,7 +710,7 @@ impl Gui {
         self.view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
     }
 
-    fn update_preview(&mut self) {
+    fn render_preview(&mut self) {
         let (preview_width, preview_height) = if self.params.img_width > self.params.img_height {
             (
                 Gui::PREVIEW_SIZE,
@@ -712,21 +735,18 @@ impl Gui {
             SAMPLE_MUL * (preview_params.img_width * preview_params.img_height) as usize,
         );
 
-        let raw_image = render_raw_image(&preview_params, &self.view, &sampling_points, None);
+        let view = self.view;
+        self.preview_render_handle = Some(thread::spawn(move || {
+            let raw_image = render_raw_image(&preview_params, &view, &sampling_points, None);
 
-        let output_image = color_raw_image(
-            &preview_params,
-            preview_params.coloring_mode,
-            preview_params.custom_gradient.as_ref(),
-            raw_image,
-        );
+            let output_image = color_raw_image(
+                &preview_params,
+                preview_params.coloring_mode,
+                preview_params.custom_gradient.as_ref(),
+                raw_image,
+            );
 
-        let mut buf = Vec::new();
-        output_image
-            .write_with_encoder(PngEncoder::new(&mut buf))
-            .unwrap();
-
-        self.preview_id += 1;
-        self.preview_bytes = Some(buf);
+            output_image
+        }));
     }
 }

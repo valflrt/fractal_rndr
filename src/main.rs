@@ -58,7 +58,7 @@ pub struct RenderCtx {
     pub sampling_points: Vec<(F, F)>,
 }
 
-const SAMPLE_MUL: usize = 40;
+const SAMPLE_MUL: usize = 30;
 
 fn main() -> Result<()> {
     let (args, options) = cli::parse();

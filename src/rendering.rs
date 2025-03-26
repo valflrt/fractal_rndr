@@ -37,7 +37,7 @@ pub fn render_raw_image(
 
     let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
 
-    for chunk in sampling_points.chunks(2048) {
+    for chunk in sampling_points.chunks(1024) {
         let (tx, rx) = mpsc::channel();
         chunk
             .chunks(complexx::SIZE)
@@ -45,13 +45,30 @@ pub fn render_raw_image(
             .for_each_with(tx, |s, d| {
                 let l = d.len();
 
-                const SCALE: F = 4.;
                 // Here we use `i % l` to avoid out of bounds error (when i < 4).
                 // When `i < 4`, the modulo operation will repeat the sample
                 // but as we use simd this is acceptable (the cost is the
                 // same whether it is computed along with the others or not).
-                let re = FX::from(array::from_fn(|i| d[i % l].0 * SCALE));
-                let im = FX::from(array::from_fn(|i| d[i % l].1 * SCALE));
+
+                const SCALE: F = 2.;
+                const R_OFFSET: F = 0.0001;
+                const THETA_OFFSET: F = 0.0001;
+                let re = FX::from(array::from_fn(|i| {
+                    let (r, theta) = d[i % l];
+                    let (r, theta) = (
+                        r + R_OFFSET * (2. * fastrand::f64() - 1.),
+                        theta + THETA_OFFSET * (2. * fastrand::f64() - 1.),
+                    );
+                    r * SCALE * theta.cos()
+                }));
+                let im = FX::from(array::from_fn(|i| {
+                    let (r, theta) = d[i % l];
+                    let (r, theta) = (
+                        r + R_OFFSET * (2. * fastrand::f64() - 1.),
+                        theta + THETA_OFFSET * (2. * fastrand::f64() - 1.),
+                    );
+                    r * SCALE * theta.sin()
+                }));
 
                 let values = {
                     let c = Complexx::splat(cx, cy);

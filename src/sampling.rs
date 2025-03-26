@@ -1,3 +1,5 @@
+use std::f64::consts::TAU;
+
 use crate::F;
 
 pub fn generate_sampling_points(n: usize) -> Vec<(F, F)> {
@@ -11,6 +13,10 @@ pub fn generate_sampling_points(n: usize) -> Vec<(F, F)> {
                 (i as F + EPS) / ((n - 1) as F + 2. * EPS),
             )
         })
-        .map(|(x, y)| (2. * x - 1., 2. * y - 1.))
+        .map(|(x, y)| {
+            let r = y.sqrt();
+            let theta = (TAU as F) * x;
+            (r, theta)
+        })
         .collect::<Vec<_>>()
 }
