@@ -547,29 +547,31 @@ impl App for Gui {
                     c2.heading("Preview");
                     c2.separator();
 
-                    if self.preview_render_handle.is_none() {
-                        if let Some(preview_bytes) = &self.preview_bytes {
-                            if let Some(preview_size) = self.preview_size {
-                                let d = 0.5 * (c2.available_height() - preview_size.y);
-                                c2.add_space(d);
-                                c2.add_sized(
-                                    preview_size,
-                                    Image::from_bytes(
-                                        "bytes://fractal_preview".to_string()
-                                            + &self.preview_id.to_string(),
-                                        preview_bytes.to_owned(),
-                                    )
-                                    .maintain_aspect_ratio(true)
-                                    .corner_radius(2),
-                                );
-                                c2.add_space(d);
+                    c2.allocate_ui(c2.available_size() - 32. * Vec2::Y, |ui| {
+                        if self.preview_render_handle.is_none() {
+                            if let Some(preview_bytes) = &self.preview_bytes {
+                                if let Some(preview_size) = self.preview_size {
+                                    let d = 0.5 * (ui.available_height() - preview_size.y);
+                                    ui.add_space(d);
+                                    ui.add_sized(
+                                        preview_size,
+                                        Image::from_bytes(
+                                            "bytes://fractal_preview".to_string()
+                                                + &self.preview_id.to_string(),
+                                            preview_bytes.to_owned(),
+                                        )
+                                        .maintain_aspect_ratio(true)
+                                        .corner_radius(2),
+                                    );
+                                    ui.add_space(d);
+                                }
                             }
+                        } else {
+                            ui.centered_and_justified(|ui| {
+                                ui.spinner();
+                            });
                         }
-                    } else {
-                        c2.centered_and_justified(|ui| {
-                            ui.spinner();
-                        });
-                    }
+                    });
                 });
             });
 

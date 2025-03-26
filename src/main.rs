@@ -356,9 +356,10 @@ fn start_gui(
     } = params;
 
     let mut options = eframe::NativeOptions::default();
-    let size = Some(vec2(900., 440.));
+    let size = Some(vec2(900., 450.));
     options.viewport.inner_size = size;
     options.viewport.min_inner_size = size;
+    options.viewport.resizable = Some(false);
 
     eframe::run_native(
         "fractal renderer",
