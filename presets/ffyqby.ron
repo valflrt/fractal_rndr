@@ -9,7 +9,7 @@ Frame((
     max_iter: 120,
     coloring_mode: MinMaxNorm(
         min: Custom(0.0),
-        max: Custom(5000.0),
-        map: Linear,
+        max: Custom(18500.0),
+        map: Powf(0.9),
     ),
 ))
