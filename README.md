@@ -12,10 +12,10 @@ These are preset renders I like, you can access their parameter files by clickin
 
 > Fractal: `Mandelbrot`
 
-![ffyqby.png](/presets/ffyqby.png)
+![ffyqby.png](presets/ffyqby.png)
 
 ### [ipnudq.ron](/presets/ipnudq.ron)
 
 > Fractal: `ComplexLogisticMapLike(a_re: -0.55, a_im: 1.0)`
 
-![ipnudq.png](/presets/ipnudq.png)
+![ipnudq.png](presets/ipnudq.png)
