@@ -24,6 +24,7 @@ pub const PHGZBZ: &str = include_str!("../presets/phgzbz.ron");
 pub const QBQNHN: &str = include_str!("../presets/qbqnhn.ron");
 pub const QRBCWF: &str = include_str!("../presets/qrbcwf.ron");
 pub const QUHUAP: &str = include_str!("../presets/quhuap.ron");
+pub const TXKTFJ: &str = include_str!("../presets/txktfj.ron");
 pub const UKHBRP: &str = include_str!("../presets/ukhbrp.ron");
 pub const UNJRYJ: &str = include_str!("../presets/unjryj.ron");
 pub const WZTPFT: &str = include_str!("../presets/wztpft.ron");
@@ -58,6 +59,7 @@ pub const PRESETS: &[(&str, &str)] = &[
     ("qbqnhn", QBQNHN),
     ("qrbcwf", QRBCWF),
     ("quhuap", QUHUAP),
+    ("txktfj", TXKTFJ),
     ("ukhbrp", UKHBRP),
     ("unjryj", UNJRYJ),
     ("wztpft", WZTPFT),

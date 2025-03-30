@@ -99,25 +99,27 @@ impl App for Gui {
                             Fractal::Mandelbrot => 0,
                             Fractal::MandelbrotCustomExp { .. } => 1,
                             Fractal::SecondDegreeRecWithGrowingExponent => 2,
-                            Fractal::SecondDegreeRecWithGrowingExponentParam { .. } => 3,
-                            Fractal::SecondDegreeRecAlternating1WithGrowingExponent => 4,
-                            Fractal::ThirdDegreeRecWithGrowingExponent => 5,
-                            Fractal::NthDegreeRecWithGrowingExponent(_) => 6,
-                            Fractal::ThirdDegreeRecPairs => 7,
-                            Fractal::SecondDegreeThirtySevenBlend => 8,
-                            Fractal::ComplexLogisticMapLike { .. } => 9,
-                            Fractal::Vshqwj => 10,
-                            Fractal::Wmriho { .. } => 11,
-                            Fractal::Iigdzh { .. } => 12,
-                            Fractal::Fxdicq => 13,
-                            Fractal::Mjygzr => 14,
-                            Fractal::Zqcqvm => 15,
+                            Fractal::SecondDegreeRecWithGrowingCustomExponent { .. } => 3,
+                            Fractal::SecondDegreeRecWithGrowingExponentParam { .. } => 4,
+                            Fractal::SecondDegreeRecAlternating1WithGrowingExponent => 5,
+                            Fractal::ThirdDegreeRecWithGrowingExponent => 6,
+                            Fractal::NthDegreeRecWithGrowingExponent(_) => 7,
+                            Fractal::ThirdDegreeRecPairs => 8,
+                            Fractal::SecondDegreeThirtySevenBlend => 9,
+                            Fractal::ComplexLogisticMapLike { .. } => 10,
+                            Fractal::Vshqwj => 11,
+                            Fractal::Wmriho { .. } => 12,
+                            Fractal::Iigdzh { .. } => 13,
+                            Fractal::Fxdicq => 14,
+                            Fractal::Mjygzr => 15,
+                            Fractal::Zqcqvm => 16,
                             _ => unimplemented!(),
                         };
                         const MODES: &[&str] = &[
                             "Mandelbrot",
                             "MandelbrotCustomExp(exp)",
                             "SecondDegreeRecWithGrowingExponent",
+                            "SecondDegreeRecWithGrowingCustomExponent(exp)",
                             "SecondDegreeRecWithGrowingExponentParam(a_re, a_im)",
                             "SecondDegreeRecAlternating1WithGrowingExponent",
                             "ThirdDegreeRecWithGrowingExponent",
@@ -152,7 +154,18 @@ impl App for Gui {
                                     },
                                 },
                                 2 => Fractal::SecondDegreeRecWithGrowingExponent,
-                                3 => {
+                                3 => Fractal::SecondDegreeRecWithGrowingCustomExponent {
+                                    exp:
+                                        if let Fractal::SecondDegreeRecWithGrowingCustomExponent {
+                                            exp,
+                                        } = self.init_params.fractal
+                                        {
+                                            exp
+                                        } else {
+                                            2
+                                        },
+                                },
+                                4 => {
                                     let (a_re, a_im) =
                                         if let Fractal::SecondDegreeRecWithGrowingExponentParam {
                                             a_re,
@@ -165,9 +178,9 @@ impl App for Gui {
                                         };
                                     Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im }
                                 }
-                                4 => Fractal::SecondDegreeRecAlternating1WithGrowingExponent,
-                                5 => Fractal::ThirdDegreeRecWithGrowingExponent,
-                                6 => Fractal::NthDegreeRecWithGrowingExponent(
+                                5 => Fractal::SecondDegreeRecAlternating1WithGrowingExponent,
+                                6 => Fractal::ThirdDegreeRecWithGrowingExponent,
+                                7 => Fractal::NthDegreeRecWithGrowingExponent(
                                     if let Fractal::NthDegreeRecWithGrowingExponent(n) =
                                         self.init_params.fractal
                                     {
@@ -176,9 +189,9 @@ impl App for Gui {
                                         4
                                     },
                                 ),
-                                7 => Fractal::ThirdDegreeRecPairs,
-                                8 => Fractal::SecondDegreeThirtySevenBlend,
-                                9 => {
+                                8 => Fractal::ThirdDegreeRecPairs,
+                                9 => Fractal::SecondDegreeThirtySevenBlend,
+                                10 => {
                                     let (a_re, a_im) =
                                         if let Fractal::ComplexLogisticMapLike { a_re, a_im } =
                                             self.init_params.fractal
@@ -189,8 +202,8 @@ impl App for Gui {
                                         };
                                     Fractal::ComplexLogisticMapLike { a_re, a_im }
                                 }
-                                10 => Fractal::Vshqwj,
-                                11 => {
+                                11 => Fractal::Vshqwj,
+                                12 => {
                                     let (a_re, a_im) = if let Fractal::Wmriho { a_re, a_im } =
                                         self.init_params.fractal
                                     {
@@ -200,7 +213,7 @@ impl App for Gui {
                                     };
                                     Fractal::Wmriho { a_re, a_im }
                                 }
-                                12 => {
+                                13 => {
                                     let (a_re, a_im) = if let Fractal::Iigdzh { a_re, a_im } =
                                         self.init_params.fractal
                                     {
@@ -210,9 +223,9 @@ impl App for Gui {
                                     };
                                     Fractal::Iigdzh { a_re, a_im }
                                 }
-                                13 => Fractal::Fxdicq,
-                                14 => Fractal::Mjygzr,
-                                15 => Fractal::Zqcqvm,
+                                14 => Fractal::Fxdicq,
+                                15 => Fractal::Mjygzr,
+                                16 => Fractal::Zqcqvm,
                                 _ => unreachable!(),
                             };
 
@@ -233,6 +246,18 @@ impl App for Gui {
                                 ui.label("exp:");
                                 let res =
                                     ui.add(DragValue::new(exp).speed(SPEED).range(0.001..=20.));
+                                if res.changed() {
+                                    should_update_preview = true;
+                                }
+                            });
+                        }
+
+                        if let Fractal::SecondDegreeRecWithGrowingCustomExponent { exp } =
+                            &mut self.params.fractal
+                        {
+                            c1.horizontal(|ui| {
+                                ui.label("exp:");
+                                let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
                                 if res.changed() {
                                     should_update_preview = true;
                                 }

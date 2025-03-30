@@ -69,7 +69,23 @@ impl Complexx {
 
     #[inline]
     pub fn powu(&self, n: usize) -> Complexx {
-        (0..n).fold(*self, |acc, _| acc * acc)
+        if n == 0 {
+            return Complexx::splat(1.0, 0.0);
+        }
+
+        let mut result = Complexx::splat(1.0, 0.0);
+        let mut base = *self;
+
+        let mut exp = n;
+        while exp > 0 {
+            if exp % 2 == 1 {
+                result = result * base;
+            }
+            base = base * base;
+            exp /= 2;
+        }
+
+        result
     }
 
     #[inline]
