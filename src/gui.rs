@@ -514,11 +514,12 @@ impl App for Gui {
                             self.update_preview();
                         }
                         if ui.button("save parameter file").clicked() {
-                            self.notify(if self.save_parameter_file().is_ok() {
+                            let msg = if self.save_parameter_file().is_ok() {
                                 "saved"
                             } else {
                                 "failed to save parameter file"
-                            });
+                            };
+                            self.notify(msg);
                         }
                         ui.menu_button("load preset", |ui| {
                             ScrollArea::vertical()
@@ -692,7 +693,8 @@ impl Gui {
         self.update_view();
     }
 
-    fn save_parameter_file(&self) -> Result<()> {
+    fn save_parameter_file(&mut self) -> Result<()> {
+        self.init_params = self.params.clone();
         fs::write(
             self.param_file_path.as_str(),
             ron::ser::to_string_pretty(
