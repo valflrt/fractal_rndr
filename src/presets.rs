@@ -28,6 +28,7 @@ pub const TXKTFJ: &str = include_str!("../presets/txktfj.ron");
 pub const UKHBRP: &str = include_str!("../presets/ukhbrp.ron");
 pub const UNJRYJ: &str = include_str!("../presets/unjryj.ron");
 pub const WZTPFT: &str = include_str!("../presets/wztpft.ron");
+pub const XEZZPC: &str = include_str!("../presets/xezzpc.ron");
 pub const XVEBHD: &str = include_str!("../presets/xvebhd.ron");
 pub const ZTKHKY: &str = include_str!("../presets/ztkhky.ron");
 pub const ZXKREW: &str = include_str!("../presets/zxkrew.ron");
@@ -63,6 +64,7 @@ pub const PRESETS: &[(&str, &str)] = &[
     ("ukhbrp", UKHBRP),
     ("unjryj", UNJRYJ),
     ("wztpft", WZTPFT),
+    ("xezzpc", XEZZPC),
     ("xvebhd", XVEBHD),
     ("ztkhky", ZTKHKY),
     ("zxkrew", ZXKREW),
