@@ -345,10 +345,13 @@ impl App for Gui {
                         c1.horizontal(|ui| {
                             ui.label("rotate:");
                             let mut rotate = rotate;
-                            let res = ui
-                                .add(DragValue::new(&mut rotate).speed(0.1).range(0. ..=TAU as F));
+                            let res = ui.add(
+                                DragValue::new(&mut rotate)
+                                    .speed(0.01)
+                                    .range(0. ..=TAU as F),
+                            );
                             if res.changed() {
-                                self.params.rotate = Some(rotate);
+                                self.params.rotate = if rotate > 0. { Some(rotate) } else { None };
                                 should_update_preview = true;
                             }
                         });
