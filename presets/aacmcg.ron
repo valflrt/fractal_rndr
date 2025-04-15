@@ -4,7 +4,7 @@ Frame((
     zoom: 0.0041,
     center_x: -0.4465,
     center_y: 0.02315,
-    fractal: SecondDegreeRecWithGrowingExponentParam(
+    fractal: SDRGEParam(
         a_re: 0.9955,
         a_im: 0.0,
     ),

@@ -5,7 +5,7 @@ Animation((
     zoom: [Const(0, 4, 0.001)],
     center_x: [Const(0, 4, 0.0097)],
     center_y: [Const(0, 4, -0.01)],
-    fractal: SecondDegreeRecWithGrowingExponentParam(
+    fractal: SDRGEParam(
         a_re: [
             Smooth(0, 1, 0.9999, 1.0001),
             Smooth(1, 4, 1.0001,0.9999),

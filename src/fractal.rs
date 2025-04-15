@@ -3,27 +3,46 @@ use wide::CmpLe;
 
 use crate::{complexx::Complexx, F, FX};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Fractal {
     Mandelbrot,
-    MandelbrotCustomExp { exp: F },
-    SecondDegreeRecWithGrowingExponent,
-    SecondDegreeRecWithGrowingCustomExponent { exp: usize },
-    SecondDegreeRecWithGrowingExponentParam { a_re: F, a_im: F },
-    SecondDegreeRecAlternating1WithGrowingExponent,
-    ThirdDegreeRecWithGrowingExponent,
-    NthDegreeRecWithGrowingExponent(usize),
+    MandelbrotCustomExp {
+        exp: F,
+    },
+    /// Second Degree Recursive sequence with Growing Exponent
+    SDRGE,
+    SDRGECustomExp {
+        exp: F,
+    },
+    SDRGEParam {
+        a_re: F,
+        a_im: F,
+    },
+    /// Second degree recursive alternating sequence with growing exponent
+    SDRAGE,
+    /// Third Degree Recursive sequence with Growing Exponent
+    TDRGE,
+    /// Nth Degree Recursive sequence with Growing Exponent
+    NthDRGE(usize),
     ThirdDegreeRecPairs,
     SecondDegreeThirtySevenBlend,
-    ComplexLogisticMapLike { a_re: F, a_im: F },
+    ComplexLogisticMapLike {
+        a_re: F,
+        a_im: F,
+    },
 
     // This is where I started lacking inspiration for names...
     Vshqwj,
-    Wmriho { a_re: F, a_im: F },
-    Iigdzh { a_re: F, a_im: F },
+    Wmriho {
+        a_re: F,
+        a_im: F,
+    },
+    Iigdzh {
+        a_re: F,
+        a_im: F,
+    },
     Fxdicq,
     Mjygzr,
-    Zqcqvm,
 
     MoireTest,
 }
@@ -79,7 +98,7 @@ impl Fractal {
 
                 (iter, z)
             }
-            Fractal::SecondDegreeRecWithGrowingExponent => {
+            Fractal::SDRGE => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -102,7 +121,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SecondDegreeRecWithGrowingCustomExponent { exp } => {
+            &Fractal::SDRGECustomExp { exp } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -116,7 +135,7 @@ impl Fractal {
                         break;
                     }
 
-                    let new_z1 = z1.powu(exp) + z0 + c;
+                    let new_z1 = z1.powf(exp) + z0 + c;
                     z0 = z1;
                     z1 = new_z1;
 
@@ -125,7 +144,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im } => {
+            &Fractal::SDRGEParam { a_re, a_im } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -150,7 +169,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::SecondDegreeRecAlternating1WithGrowingExponent => {
+            Fractal::SDRAGE => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -173,7 +192,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::ThirdDegreeRecWithGrowingExponent => {
+            Fractal::TDRGE => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -197,7 +216,7 @@ impl Fractal {
 
                 (iter, z2)
             }
-            Fractal::NthDegreeRecWithGrowingExponent(n) => {
+            Fractal::NthDRGE(n) => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -430,29 +449,6 @@ impl Fractal {
                     }
 
                     let new_z = z1 * z1 * c + z0 + c;
-                    z0 = z1;
-                    z1 = new_z;
-
-                    iter += undiverged_mask.blend(one, zero);
-                }
-
-                (iter, z1)
-            }
-            Fractal::Zqcqvm => {
-                const BAILOUT: F = 5.;
-                let bailout_mask = FX::splat(BAILOUT);
-
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-
-                let mut iter = FX::splat(0.);
-                for _ in 0..max_iter {
-                    let undiverged_mask = z1.norm_sqr().cmp_le(bailout_mask);
-                    if !undiverged_mask.any() {
-                        break;
-                    }
-
-                    let new_z = z1 + z0 + c;
                     z0 = z1;
                     z1 = new_z;
 

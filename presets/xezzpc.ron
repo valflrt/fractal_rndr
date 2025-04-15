@@ -5,7 +5,7 @@ Frame((
     center_x: 0.00151553,
     center_y: 0.0085431,
     rotate: Some(5.9),
-    fractal: SecondDegreeRecWithGrowingCustomExponent(
+    fractal: SDRGECustomExp(
         exp: 8,
     ),
     max_iter: 4000,

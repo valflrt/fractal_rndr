@@ -15,6 +15,7 @@ impl Default for ParamsKind {
     }
 }
 
+/// Hello world this is a very very very very very very very very very very very very very very very very very very long comment
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrameParams {
     pub img_width: u32,
@@ -149,13 +150,13 @@ pub mod animation {
         MandelbrotCustomExp {
             exp: Vec<RenderStep>,
         },
-        SecondDegreeRecWithGrowingExponent,
-        SecondDegreeRecWithGrowingExponentParam {
+        SDRGE,
+        SDRGEParam {
             a_re: Vec<RenderStep>,
             a_im: Vec<RenderStep>,
         },
-        SecondDegreeRecAlternating1WithGrowingExponent,
-        ThirdDegreeRecWithGrowingExponent,
+        SDRAGE,
+        TDRGE,
         NthDegreeRecWithGrowingExponent(usize),
         ThirdDegreeRecPairs,
         SecondDegreeThirtySevenBlend,
@@ -184,24 +185,14 @@ pub mod animation {
                 Self::MandelbrotCustomExp { exp } => crate::fractal::Fractal::MandelbrotCustomExp {
                     exp: exp[RenderStep::get_current_step_index(exp, t)].get_value(t),
                 },
-                Self::SecondDegreeRecWithGrowingExponent => {
-                    crate::fractal::Fractal::SecondDegreeRecWithGrowingExponent
-                }
-                Self::SecondDegreeRecWithGrowingExponentParam { a_re, a_im } => {
-                    crate::fractal::Fractal::SecondDegreeRecWithGrowingExponentParam {
-                        a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
-                        a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
-                    }
-                }
-                Self::SecondDegreeRecAlternating1WithGrowingExponent => {
-                    crate::fractal::Fractal::SecondDegreeRecAlternating1WithGrowingExponent
-                }
-                Self::ThirdDegreeRecWithGrowingExponent => {
-                    crate::fractal::Fractal::ThirdDegreeRecWithGrowingExponent
-                }
-                &Self::NthDegreeRecWithGrowingExponent(n) => {
-                    crate::fractal::Fractal::NthDegreeRecWithGrowingExponent(n)
-                }
+                Self::SDRGE => crate::fractal::Fractal::SDRGE,
+                Self::SDRGEParam { a_re, a_im } => crate::fractal::Fractal::SDRGEParam {
+                    a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
+                    a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
+                },
+                Self::SDRAGE => crate::fractal::Fractal::SDRAGE,
+                Self::TDRGE => crate::fractal::Fractal::TDRGE,
+                &Self::NthDegreeRecWithGrowingExponent(n) => crate::fractal::Fractal::NthDRGE(n),
                 Self::ThirdDegreeRecPairs => crate::fractal::Fractal::ThirdDegreeRecPairs,
                 Self::SecondDegreeThirtySevenBlend => {
                     crate::fractal::Fractal::SecondDegreeThirtySevenBlend

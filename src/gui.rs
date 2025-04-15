@@ -11,6 +11,7 @@ use eframe::{
 };
 use image::codecs::png::PngEncoder;
 use ron::ser::PrettyConfig;
+use serde::Serialize;
 use uni_path::PathBuf;
 
 use crate::{
@@ -38,6 +39,7 @@ pub struct Gui {
     preview_bytes: Option<Vec<u8>>,
     preview_size: Option<Vec2>,
     preview_id: u128,
+    should_update_preview: bool,
 
     render_info: Option<(JoinHandle<Result<()>>, Progress, Instant)>,
     message: Option<(String, Instant)>,
@@ -55,7 +57,7 @@ impl Gui {
     ) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
-        let mut slf = Gui {
+        Gui {
             init_params: params.clone(),
             params,
             view,
@@ -66,21 +68,16 @@ impl Gui {
             preview_bytes: None,
             preview_size: None,
             preview_id: 0,
+            should_update_preview: true,
 
             render_info: None,
             message: None,
-        };
-
-        slf.update_preview();
-
-        slf
+        }
     }
 }
 
 impl App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut EFrame) {
-        let mut should_update_preview = false;
-
         egui::CentralPanel::default().show(ctx, |ui| {
             const SPACE_SIZE: f32 = 8.;
             ui.spacing_mut().slider_width = 150.;
@@ -95,204 +92,21 @@ impl App for Gui {
                     c1.horizontal(|ui| {
                         ui.label("fractal:");
 
-                        let mut selected_fractal_i = match self.params.fractal {
-                            Fractal::Mandelbrot => 0,
-                            Fractal::MandelbrotCustomExp { .. } => 1,
-                            Fractal::SecondDegreeRecWithGrowingExponent => 2,
-                            Fractal::SecondDegreeRecWithGrowingCustomExponent { .. } => 3,
-                            Fractal::SecondDegreeRecWithGrowingExponentParam { .. } => 4,
-                            Fractal::SecondDegreeRecAlternating1WithGrowingExponent => 5,
-                            Fractal::ThirdDegreeRecWithGrowingExponent => 6,
-                            Fractal::NthDegreeRecWithGrowingExponent(_) => 7,
-                            Fractal::ThirdDegreeRecPairs => 8,
-                            Fractal::SecondDegreeThirtySevenBlend => 9,
-                            Fractal::ComplexLogisticMapLike { .. } => 10,
-                            Fractal::Vshqwj => 11,
-                            Fractal::Wmriho { .. } => 12,
-                            Fractal::Iigdzh { .. } => 13,
-                            Fractal::Fxdicq => 14,
-                            Fractal::Mjygzr => 15,
-                            Fractal::Zqcqvm => 16,
-                            _ => unimplemented!(),
-                        };
-                        const MODES: &[&str] = &[
-                            "Mandelbrot",
-                            "MandelbrotCustomExp(exp)",
-                            "SecondDegreeRecWithGrowingExponent",
-                            "SecondDegreeRecWithGrowingCustomExponent(exp)",
-                            "SecondDegreeRecWithGrowingExponentParam(a_re, a_im)",
-                            "SecondDegreeRecAlternating1WithGrowingExponent",
-                            "ThirdDegreeRecWithGrowingExponent",
-                            "NthDegreeRecWithGrowingExponent(n)",
-                            "ThirdDegreeRecPairs",
-                            "SecondDegreeThirtySevenBlend",
-                            "ComplexLogisticMapLike(a_re, a_im)",
-                            "Vshqwj",
-                            "Wmriho(a_re, a_im)",
-                            "Iigdzh(a_re, a_im)",
-                            "Fxdicq",
-                            "Mjygzr",
-                            "Zqcqvm",
-                        ];
-                        let res = ComboBox::from_id_salt("fractal").show_index(
-                            ui,
-                            &mut selected_fractal_i,
-                            MODES.len(),
-                            |i| MODES[i],
-                        );
+                        let res = ComboBox::from_id_salt("fractal")
+                            .selected_text(Self::format_label_ron(&self.params.fractal))
+                            .show_ui(ui, |ui| self.combobox_fractal_selection(ui));
 
-                        if res.changed() {
-                            self.params.fractal = match selected_fractal_i {
-                                0 => Fractal::Mandelbrot,
-                                1 => Fractal::MandelbrotCustomExp {
-                                    exp: if let Fractal::MandelbrotCustomExp { exp } =
-                                        self.init_params.fractal
-                                    {
-                                        exp
-                                    } else {
-                                        2.
-                                    },
-                                },
-                                2 => Fractal::SecondDegreeRecWithGrowingExponent,
-                                3 => Fractal::SecondDegreeRecWithGrowingCustomExponent {
-                                    exp:
-                                        if let Fractal::SecondDegreeRecWithGrowingCustomExponent {
-                                            exp,
-                                        } = self.init_params.fractal
-                                        {
-                                            exp
-                                        } else {
-                                            2
-                                        },
-                                },
-                                4 => {
-                                    let (a_re, a_im) =
-                                        if let Fractal::SecondDegreeRecWithGrowingExponentParam {
-                                            a_re,
-                                            a_im,
-                                        } = self.init_params.fractal
-                                        {
-                                            (a_re, a_im)
-                                        } else {
-                                            (1., 0.)
-                                        };
-                                    Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im }
-                                }
-                                5 => Fractal::SecondDegreeRecAlternating1WithGrowingExponent,
-                                6 => Fractal::ThirdDegreeRecWithGrowingExponent,
-                                7 => Fractal::NthDegreeRecWithGrowingExponent(
-                                    if let Fractal::NthDegreeRecWithGrowingExponent(n) =
-                                        self.init_params.fractal
-                                    {
-                                        n
-                                    } else {
-                                        4
-                                    },
-                                ),
-                                8 => Fractal::ThirdDegreeRecPairs,
-                                9 => Fractal::SecondDegreeThirtySevenBlend,
-                                10 => {
-                                    let (a_re, a_im) =
-                                        if let Fractal::ComplexLogisticMapLike { a_re, a_im } =
-                                            self.init_params.fractal
-                                        {
-                                            (a_re, a_im)
-                                        } else {
-                                            (1., 0.)
-                                        };
-                                    Fractal::ComplexLogisticMapLike { a_re, a_im }
-                                }
-                                11 => Fractal::Vshqwj,
-                                12 => {
-                                    let (a_re, a_im) = if let Fractal::Wmriho { a_re, a_im } =
-                                        self.init_params.fractal
-                                    {
-                                        (a_re, a_im)
-                                    } else {
-                                        (0., 0.)
-                                    };
-                                    Fractal::Wmriho { a_re, a_im }
-                                }
-                                13 => {
-                                    let (a_re, a_im) = if let Fractal::Iigdzh { a_re, a_im } =
-                                        self.init_params.fractal
-                                    {
-                                        (a_re, a_im)
-                                    } else {
-                                        (0., 0.)
-                                    };
-                                    Fractal::Iigdzh { a_re, a_im }
-                                }
-                                14 => Fractal::Fxdicq,
-                                15 => Fractal::Mjygzr,
-                                16 => Fractal::Zqcqvm,
-                                _ => unreachable!(),
-                            };
-
+                        if res.inner.unwrap_or(false) {
                             // Reset view
                             self.params.center_x = 0.;
                             self.params.center_y = 0.;
                             self.params.zoom = DEFAULT_ZOOM;
 
-                            should_update_preview = true;
+                            self.should_update_preview = true;
                         }
                     });
 
-                    {
-                        const SPEED: f64 = 0.0001;
-
-                        if let Fractal::MandelbrotCustomExp { exp } = &mut self.params.fractal {
-                            c1.horizontal(|ui| {
-                                ui.label("exp:");
-                                let res =
-                                    ui.add(DragValue::new(exp).speed(SPEED).range(0.001..=20.));
-                                if res.changed() {
-                                    should_update_preview = true;
-                                }
-                            });
-                        }
-
-                        if let Fractal::SecondDegreeRecWithGrowingCustomExponent { exp } =
-                            &mut self.params.fractal
-                        {
-                            c1.horizontal(|ui| {
-                                ui.label("exp:");
-                                let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
-                                if res.changed() {
-                                    should_update_preview = true;
-                                }
-                            });
-                        }
-
-                        if let Fractal::SecondDegreeRecWithGrowingExponentParam { a_re, a_im }
-                        | Fractal::ComplexLogisticMapLike { a_re, a_im }
-                        | Fractal::Wmriho { a_re, a_im }
-                        | Fractal::Iigdzh { a_re, a_im } = &mut self.params.fractal
-                        {
-                            c1.horizontal(|ui| {
-                                ui.label("a_re:");
-                                let res1 = ui.add(DragValue::new(a_re).speed(SPEED));
-                                ui.label("a_im:");
-                                let res2 = ui.add(DragValue::new(a_im).speed(SPEED));
-
-                                if res1.changed() || res2.changed() {
-                                    should_update_preview = true;
-                                }
-                            });
-                        }
-
-                        if let Fractal::NthDegreeRecWithGrowingExponent(n) =
-                            &mut self.params.fractal
-                        {
-                            c1.horizontal(|ui| {
-                                ui.label("n:");
-                                let res = ui.add(Slider::new(n, 2..=20));
-                                if res.changed() {
-                                    should_update_preview = true;
-                                }
-                            });
-                        }
-                    }
+                    self.fractal_parameters(c1);
 
                     c1.horizontal(|ui| {
                         ui.label("max_iter:");
@@ -300,7 +114,7 @@ impl App for Gui {
                             Slider::new(&mut self.params.max_iter, 10..=200000).logarithmic(true),
                         );
                         if res.changed() {
-                            should_update_preview = true;
+                            self.should_update_preview = true;
                         }
                     });
 
@@ -309,7 +123,7 @@ impl App for Gui {
                     c1.separator();
 
                     c1.scope(|ui| {
-                        ui.spacing_mut().slider_width = 250.;
+                        ui.spacing_mut().slider_width = 300.;
                         ui.horizontal(|ui| {
                             ui.label("zoom:");
                             let res = ui.add(
@@ -317,27 +131,27 @@ impl App for Gui {
                                     .logarithmic(true),
                             );
                             if res.changed() {
-                                should_update_preview = true;
+                                self.should_update_preview = true;
                             }
                         });
                     });
 
                     {
-                        let z = self.params.zoom;
+                        let speed = 0.005 * self.params.zoom;
                         c1.horizontal(|ui| {
                             ui.label("re:");
                             let res =
-                                ui.add(DragValue::new(&mut self.params.center_x).speed(0.01 * z));
+                                ui.add(DragValue::new(&mut self.params.center_x).speed(speed));
                             if res.changed() {
-                                should_update_preview = true;
+                                self.should_update_preview = true;
                             }
                         });
                         c1.horizontal(|ui| {
                             ui.label("im:");
                             let res =
-                                ui.add(DragValue::new(&mut self.params.center_y).speed(0.01 * z));
+                                ui.add(DragValue::new(&mut self.params.center_y).speed(speed));
                             if res.changed() {
-                                should_update_preview = true;
+                                self.should_update_preview = true;
                             }
                         });
 
@@ -352,7 +166,7 @@ impl App for Gui {
                             );
                             if res.changed() {
                                 self.params.rotate = if rotate > 0. { Some(rotate) } else { None };
-                                should_update_preview = true;
+                                self.should_update_preview = true;
                             }
                         });
                     }
@@ -364,100 +178,87 @@ impl App for Gui {
                     c1.horizontal(|ui| {
                         ui.label("coloring mode:");
 
-                        let mut selected_mode_i = match self.params.coloring_mode {
-                            ColoringMode::CumulativeHistogram { .. } => 0,
-                            ColoringMode::MinMaxNorm { .. } => 1,
-                            ColoringMode::BlackAndWhite { .. } => 2,
-                        };
-                        const MODES: &[&str] =
-                            &["CumulativeHistogram", "MinMaxNorm", "BlackAndWhite"];
-                        let res = ComboBox::from_id_salt("coloring_mode").show_index(
-                            ui,
-                            &mut selected_mode_i,
-                            MODES.len(),
-                            |i| MODES[i],
-                        );
-
-                        if res.changed() {
-                            self.params.coloring_mode = match selected_mode_i {
-                                0 => ColoringMode::CumulativeHistogram {
-                                    map: MapValue::Linear,
-                                },
-                                1 => {
-                                    let (init_min, init_max) =
-                                        if let ColoringMode::MinMaxNorm { min, max, .. } =
-                                            self.init_params.coloring_mode
-                                        {
-                                            (min, max)
-                                        } else {
-                                            (Extremum::Auto, Extremum::Auto)
-                                        };
-                                    ColoringMode::MinMaxNorm {
-                                        min: init_min,
-                                        max: init_max,
+                        ComboBox::from_id_salt("coloring_mode")
+                            .selected_text(match self.params.coloring_mode {
+                                ColoringMode::CumulativeHistogram { .. } => "CumulativeHistogram",
+                                ColoringMode::MinMaxNorm { .. } => "MinMaxNorm",
+                            })
+                            .show_ui(ui, |ui| {
+                                let selected = matches!(
+                                    self.params.coloring_mode,
+                                    ColoringMode::CumulativeHistogram { .. }
+                                );
+                                if ui
+                                    .selectable_label(selected, "CumulativeHistogram")
+                                    .clicked()
+                                    && !selected
+                                {
+                                    self.params.coloring_mode = ColoringMode::CumulativeHistogram {
                                         map: MapValue::Linear,
-                                    }
-                                }
-                                2 => ColoringMode::BlackAndWhite,
-                                _ => unreachable!(),
-                            };
-                            should_update_preview = true;
-                        }
+                                    };
+                                    self.should_update_preview = true;
+                                };
+
+                                let selected = matches!(
+                                    self.params.coloring_mode,
+                                    ColoringMode::MinMaxNorm { .. }
+                                );
+                                if ui.selectable_label(selected, "MinMaxNorm").clicked()
+                                    && !selected
+                                {
+                                    self.params.coloring_mode = ColoringMode::MinMaxNorm {
+                                        min: Extremum::Auto,
+                                        max: Extremum::Auto,
+                                        map: MapValue::Linear,
+                                    };
+                                    self.should_update_preview = true;
+                                };
+                            });
                     });
 
-                    match &mut self.params.coloring_mode {
-                        ColoringMode::CumulativeHistogram { map }
-                        | ColoringMode::MinMaxNorm { map, .. } => {
-                            c1.horizontal(|ui| {
-                                ui.label("map value:");
+                    c1.horizontal(|ui| {
+                        ui.label("map value:");
 
-                                let mut selected_map_value_i = match map {
-                                    MapValue::Linear => 0,
-                                    MapValue::Squared => 1,
-                                    MapValue::Powf(_) => 2,
+                        let (ColoringMode::CumulativeHistogram { map }
+                        | ColoringMode::MinMaxNorm { map, .. }) = &mut self.params.coloring_mode;
+
+                        ComboBox::from_id_salt("map_value")
+                            .selected_text(match map {
+                                MapValue::Linear => "Linear",
+                                MapValue::Squared => "Squared",
+                                MapValue::Powf(_) => "Powf",
+                            })
+                            .show_ui(ui, |ui| {
+                                let selected = matches!(map, MapValue::Linear);
+                                if ui.selectable_label(selected, "Linear").clicked() && !selected {
+                                    *map = MapValue::Linear;
+                                    self.should_update_preview = true;
                                 };
-                                const MAP_VALUE: &[&str] = &["Linear", "Squared", "Powf"];
-                                let res = ComboBox::from_id_salt("map_value").show_index(
-                                    ui,
-                                    &mut selected_map_value_i,
-                                    MAP_VALUE.len(),
-                                    |i| MAP_VALUE[i],
-                                );
 
-                                if res.changed() {
-                                    *map = match selected_map_value_i {
-                                        0 => MapValue::Linear,
-                                        1 => MapValue::Squared,
-                                        2 => MapValue::Powf(1.),
-                                        _ => unimplemented!(),
-                                    };
-                                    should_update_preview = true;
-                                }
+                                let selected = matches!(map, MapValue::Squared);
+                                if ui.selectable_label(selected, "Squared").clicked() && !selected {
+                                    *map = MapValue::Squared;
+                                    self.should_update_preview = true;
+                                };
 
-                                if let MapValue::Powf(exp) = map {
-                                    let res =
-                                        ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
-                                    if res.changed() {
-                                        should_update_preview = true;
-                                    }
-                                }
+                                let selected = matches!(map, MapValue::Powf(_));
+                                if ui.selectable_label(selected, "Powf").clicked() && !selected {
+                                    *map = MapValue::Powf(1.);
+                                    self.should_update_preview = true;
+                                };
                             });
+
+                        if let MapValue::Powf(exp) = map {
+                            let res = ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
+                            if res.changed() {
+                                self.should_update_preview = true;
+                            }
                         }
-                        _ => (),
-                    }
+                    });
 
                     if let ColoringMode::MinMaxNorm { min, max, .. } =
                         &mut self.params.coloring_mode
                     {
-                        let (init_min, init_max) =
-                            if let ColoringMode::MinMaxNorm { min, max, .. } =
-                                self.init_params.coloring_mode
-                            {
-                                (min, max)
-                            } else {
-                                (Extremum::Auto, Extremum::Auto)
-                            };
-
                         c1.horizontal(|ui| {
                             ui.label("min:");
 
@@ -467,15 +268,15 @@ impl App for Gui {
                                 *min = if auto {
                                     Extremum::Auto
                                 } else {
-                                    Extremum::Custom(init_min.unwrap_custom_or(0.))
+                                    Extremum::Custom(0.)
                                 };
-                                should_update_preview = true;
+                                self.should_update_preview = true;
                             }
 
                             if let Extremum::Custom(min) = min {
                                 let res = ui.add(Slider::new(min, 0. ..=self.params.max_iter as F));
                                 if res.changed() {
-                                    should_update_preview = true;
+                                    self.should_update_preview = true;
                                 }
                             }
                         });
@@ -488,17 +289,15 @@ impl App for Gui {
                                 *max = if auto {
                                     Extremum::Auto
                                 } else {
-                                    Extremum::Custom(
-                                        init_max.unwrap_custom_or(self.params.max_iter as F),
-                                    )
+                                    Extremum::Custom(self.params.max_iter as F)
                                 };
-                                should_update_preview = true;
+                                self.should_update_preview = true;
                             }
 
                             if let Extremum::Custom(max) = max {
                                 let res = ui.add(Slider::new(max, 0. ..=self.params.max_iter as F));
                                 if res.changed() {
-                                    should_update_preview = true;
+                                    self.should_update_preview = true;
                                 }
                             }
                         });
@@ -532,7 +331,7 @@ impl App for Gui {
                                         {
                                             if ui.button(p.0).clicked() {
                                                 self.params = params;
-                                                should_update_preview = true;
+                                                self.should_update_preview = true;
                                                 self.notify(format!("loaded {}", p.0));
                                                 ui.close_menu();
                                             };
@@ -562,56 +361,62 @@ impl App for Gui {
                         );
 
                         if res1.changed() || res2.changed() {
-                            should_update_preview = true;
+                            self.should_update_preview = true;
                         }
                     });
 
                     c2.horizontal(|ui| {
                         ui.label("sampling level:");
 
-                        let mut selected_sampling_level_i = match self.params.sampling.level {
-                            SamplingLevel::Exploration => 0,
-                            SamplingLevel::Low => 1,
-                            SamplingLevel::Medium => 2,
-                            SamplingLevel::High => 3,
-                            SamplingLevel::Ultra => 4,
-                            SamplingLevel::Extreme => 5,
-                            SamplingLevel::Extreme1 => 6,
-                            SamplingLevel::Extreme2 => 7,
-                            SamplingLevel::Extreme3 => 8,
-                        };
-                        const SAMPLING_LEVEL: &[&str] = &[
-                            "Exploration",
-                            "Low",
-                            "Medium",
-                            "High",
-                            "Ultra",
-                            "Extreme",
-                            "Extreme1",
-                            "Extreme2",
-                            "Extreme3",
-                        ];
-                        let res = ComboBox::from_id_salt("sampling_level").show_index(
-                            ui,
-                            &mut selected_sampling_level_i,
-                            SAMPLING_LEVEL.len(),
-                            |i| SAMPLING_LEVEL[i],
-                        );
-
-                        if res.changed() {
-                            self.params.sampling.level = match selected_sampling_level_i {
-                                0 => SamplingLevel::Exploration,
-                                1 => SamplingLevel::Low,
-                                2 => SamplingLevel::Medium,
-                                3 => SamplingLevel::High,
-                                4 => SamplingLevel::Ultra,
-                                5 => SamplingLevel::Extreme,
-                                6 => SamplingLevel::Extreme1,
-                                7 => SamplingLevel::Extreme2,
-                                8 => SamplingLevel::Extreme3,
-                                _ => unimplemented!(),
-                            }
-                        }
+                        ComboBox::from_id_salt("sampling_level")
+                            .selected_text(Self::format_label_ron(&self.params.sampling.level))
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Exploration,
+                                    "Exploration",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Low,
+                                    "Low",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Medium,
+                                    "Medium",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::High,
+                                    "High",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Ultra,
+                                    "Ultra",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Extreme,
+                                    "Extreme",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Extreme1,
+                                    "Extreme1",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Extreme2,
+                                    "Extreme2",
+                                );
+                                ui.selectable_value(
+                                    &mut self.params.sampling.level,
+                                    SamplingLevel::Extreme3,
+                                    "Extreme3",
+                                );
+                            });
                     });
 
                     c2.horizontal(|ui| {
@@ -675,10 +480,11 @@ impl App for Gui {
             );
         });
 
-        if should_update_preview {
-            self.round_floats();
+        if self.should_update_preview {
             self.update_view();
             self.update_preview();
+
+            self.should_update_preview = false;
         }
     }
 }
@@ -731,22 +537,6 @@ impl Gui {
                     .map_err(ErrorKind::SaveImage)
             }),
         )
-    }
-
-    fn round_floats(&mut self) {
-        fn truncate_to_significant_digits(value: F, digits: usize) -> F {
-            if value.is_subnormal() {
-                return value;
-            }
-            let factor = (10. as F).powi(digits as i32 - value.abs().log10().floor() as i32 - 1);
-            (value * factor).round() / factor
-        }
-
-        self.params.zoom = truncate_to_significant_digits(self.params.zoom, 4);
-
-        if let Some(rotate) = self.params.rotate.as_mut() {
-            *rotate = truncate_to_significant_digits(*rotate, 3);
-        }
     }
 
     fn update_view(&mut self) {
@@ -806,5 +596,221 @@ impl Gui {
 
         self.preview_id += 1;
         self.preview_bytes = Some(buf);
+    }
+
+    // Gui display related stuff
+
+    fn format_label_ron(value: impl Serialize) -> String {
+        ron::to_string(&value)
+            .unwrap_or_default()
+            .replace(":", ": ")
+            .replace(",", ", ")
+    }
+
+    fn combobox_fractal_selection(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut should_reset_view = false;
+
+        let selected = matches!(self.params.fractal, Fractal::Mandelbrot);
+        if ui.selectable_label(selected, "Mandelbrot").clicked() && !selected {
+            self.params.fractal = Fractal::Mandelbrot;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::MandelbrotCustomExp { .. });
+        if ui
+            .selectable_label(selected, "MandelbrotCustomExp(exp)")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::MandelbrotCustomExp { exp: 2. };
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::SDRGE);
+        if ui
+            .selectable_label(selected, "SDRGE")
+            .on_hover_text("second degree recursive sequence with growing exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::SDRGE;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::SDRGECustomExp { .. });
+        if ui
+            .selectable_label(selected, "SDRGECustomExp(exp)")
+            .on_hover_text("second degree recursive sequence with growing custom exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::SDRGECustomExp { exp: 2. };
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::SDRGEParam { .. });
+        if ui
+            .selectable_label(selected, "SDRGEParam(a_re, a_im)")
+            .on_hover_text("parameterized second degree recursive sequence with growing exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::SDRGEParam { a_re: 1., a_im: 0. };
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::SDRAGE);
+        if ui
+            .selectable_label(selected, "SDRAGE")
+            .on_hover_text("second degree recursive alternating sequence with growing exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::SDRAGE;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::TDRGE);
+        if ui
+            .selectable_label(selected, "TDRGE")
+            .on_hover_text("third degree recursive sequence with growing exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::TDRGE;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::NthDRGE(_));
+        if ui
+            .selectable_label(selected, "NthDRGE(n)")
+            .on_hover_text("nth degree recursive sequence with growing exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::NthDRGE(4);
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::ThirdDegreeRecPairs);
+        if ui
+            .selectable_label(selected, "ThirdDegreeRecPairs")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::ThirdDegreeRecPairs;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::SecondDegreeThirtySevenBlend);
+        if ui
+            .selectable_label(selected, "SecondDegreeThirtySevenBlend")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::SecondDegreeThirtySevenBlend;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::ComplexLogisticMapLike { .. });
+        if ui
+            .selectable_label(selected, "ComplexLogisticMapLike(a_re, a_im)")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::ComplexLogisticMapLike { a_re: 1., a_im: 0. };
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::Vshqwj);
+        if ui.selectable_label(selected, "Vshqwj").clicked() && !selected {
+            self.params.fractal = Fractal::Vshqwj;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::Wmriho { .. });
+        if ui
+            .selectable_label(selected, "Wmriho(a_re, a_im)")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::Wmriho { a_re: 0., a_im: 0. };
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::Iigdzh { .. });
+        if ui
+            .selectable_label(selected, "Iigdzh(a_re, a_im)")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::Iigdzh { a_re: 0., a_im: 0. };
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::Fxdicq);
+        if ui.selectable_label(selected, "Fxdicq").clicked() && !selected {
+            self.params.fractal = Fractal::Fxdicq;
+            should_reset_view = true;
+        };
+
+        let selected = matches!(self.params.fractal, Fractal::Mjygzr);
+        if ui.selectable_label(selected, "Mjygzr").clicked() && !selected {
+            self.params.fractal = Fractal::Mjygzr;
+            should_reset_view = true;
+        };
+
+        should_reset_view
+    }
+
+    fn fractal_parameters(&mut self, ui: &mut egui::Ui) {
+        const SPEED: f64 = 0.0001;
+
+        if let Fractal::MandelbrotCustomExp { exp } = &mut self.params.fractal {
+            ui.horizontal(|ui| {
+                ui.label("exp:");
+                let res = ui.add(DragValue::new(exp).speed(SPEED).range(0.001..=20.));
+                if res.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+        }
+
+        if let Fractal::SDRGECustomExp { exp } = &mut self.params.fractal {
+            ui.horizontal(|ui| {
+                ui.label("exp:");
+                let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
+                if res.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+        }
+
+        if let Fractal::SDRGEParam { a_re, a_im }
+        | Fractal::ComplexLogisticMapLike { a_re, a_im }
+        | Fractal::Wmriho { a_re, a_im }
+        | Fractal::Iigdzh { a_re, a_im } = &mut self.params.fractal
+        {
+            ui.horizontal(|ui| {
+                ui.label("a_re:");
+                let res1 = ui.add(DragValue::new(a_re).speed(SPEED));
+                ui.label("a_im:");
+                let res2 = ui.add(DragValue::new(a_im).speed(SPEED));
+
+                if res1.changed() || res2.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+        }
+
+        if let Fractal::NthDRGE(n) = &mut self.params.fractal {
+            ui.horizontal(|ui| {
+                ui.label("n:");
+                let res = ui.add(Slider::new(n, 2..=20));
+                if res.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+        }
     }
 }

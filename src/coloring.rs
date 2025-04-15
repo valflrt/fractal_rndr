@@ -49,22 +49,6 @@ pub fn color_raw_image(
                 }
             }
         }
-        ColoringMode::BlackAndWhite => {
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let value = raw_image[(i, j)];
-                    output_image.put_pixel(
-                        i as u32,
-                        j as u32,
-                        if value >= 0.95 {
-                            Rgb([0, 0, 0])
-                        } else {
-                            Rgb([255, 255, 255])
-                        },
-                    );
-                }
-            }
-        }
     };
 
     output_image
@@ -82,7 +66,6 @@ pub enum ColoringMode {
         max: Extremum,
         map: MapValue,
     },
-    BlackAndWhite,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
@@ -124,7 +107,16 @@ impl MapValue {
     }
 }
 
-const DEFAULT_GRADIENT: [(f32, [u8; 3]); 8] = [
+const DEFAULT_GRADIENT: &[(f32, [u8; 3])] = &[
+    (0.0, [230, 230, 240]),
+    (0.2, [60, 50, 90]),
+    (0.3, [230, 180, 180]),
+    (0.4, [100, 100, 140]),
+    (0.5, [60, 60, 90]),
+    (1.0, [220, 210, 220]),
+];
+#[allow(dead_code)]
+const OLD_DEFAULT_GRADIENT: &[(f32, [u8; 3])] = &[
     (0., [20, 8, 30]),
     (0.1, [160, 30, 200]),
     (0.25, [20, 160, 230]),
