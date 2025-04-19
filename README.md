@@ -156,7 +156,7 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 # Ideas
 
-- use wgpu to perform calculations ? see [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Fhello_compute%2Fmod.rs) and especially [this](https://github.com/gfx-rs/wgpu/blob/trunk/examples%2Fsrc%2Frepeated_compute%2Fmod.rs)
+- use wgpu to perform calculations ? see [this](https://wgpu.rs/doc/src/wgpu_examples/repeated_compute/mod.rs.html#1-246)
 - use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
 - Make a new program using this one that is a purely gui program with progressive rendering
   - Progressive rendering ? Save a global `raw_image` and sample continuously from another thread to improve image quality
