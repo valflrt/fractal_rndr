@@ -150,14 +150,14 @@ pub mod animation {
         MandelbrotCustomExp {
             exp: Vec<RenderStep>,
         },
-        SDRGE,
-        SDRGEParam {
+        Sdrge,
+        SdrgeParam {
             a_re: Vec<RenderStep>,
             a_im: Vec<RenderStep>,
         },
-        SDRAGE,
-        TDRGE,
-        NthDegreeRecWithGrowingExponent(usize),
+        Sdrage,
+        Tdrge,
+        NthDrge(usize),
         ThirdDegreeRecPairs,
         SecondDegreeThirtySevenBlend,
 
@@ -185,14 +185,14 @@ pub mod animation {
                 Self::MandelbrotCustomExp { exp } => crate::fractal::Fractal::MandelbrotCustomExp {
                     exp: exp[RenderStep::get_current_step_index(exp, t)].get_value(t),
                 },
-                Self::SDRGE => crate::fractal::Fractal::SDRGE,
-                Self::SDRGEParam { a_re, a_im } => crate::fractal::Fractal::SDRGEParam {
+                Self::Sdrge => crate::fractal::Fractal::Sdrge,
+                Self::SdrgeParam { a_re, a_im } => crate::fractal::Fractal::SdrgeParam {
                     a_re: a_re[RenderStep::get_current_step_index(a_re, t)].get_value(t),
                     a_im: a_im[RenderStep::get_current_step_index(a_im, t)].get_value(t),
                 },
-                Self::SDRAGE => crate::fractal::Fractal::SDRAGE,
-                Self::TDRGE => crate::fractal::Fractal::TDRGE,
-                &Self::NthDegreeRecWithGrowingExponent(n) => crate::fractal::Fractal::NthDRGE(n),
+                Self::Sdrage => crate::fractal::Fractal::Sdrage,
+                Self::Tdrge => crate::fractal::Fractal::Tdrge,
+                &Self::NthDrge(n) => crate::fractal::Fractal::NthDrge(n),
                 Self::ThirdDegreeRecPairs => crate::fractal::Fractal::ThirdDegreeRecPairs,
                 Self::SecondDegreeThirtySevenBlend => {
                     crate::fractal::Fractal::SecondDegreeThirtySevenBlend

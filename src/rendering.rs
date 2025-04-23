@@ -4,18 +4,22 @@ use rayon::prelude::*;
 
 use crate::{
     complexx::Complexx, fractal::Fractal, mat::Mat2D, params::FrameParams, progress::Progress,
-    sampling::map_points_with_offsets, View, F, FX,
+    sampling::map_points_with_offsets, F, FX,
 };
 
 pub fn render_raw_image(
     params: &FrameParams,
-    view: &View,
     sampling_points: &[(F, F)],
     progress: Option<Progress>,
 ) -> Mat2D<F> {
     let &FrameParams {
         img_width,
         img_height,
+
+        zoom,
+        center_x,
+        center_y,
+        rotate,
 
         fractal,
 
@@ -25,19 +29,17 @@ pub fn render_raw_image(
         ..
     } = params;
 
-    let &View {
-        width,
-        height,
-        mut cx,
-        mut cy,
-        rotate,
-        ..
-    } = view;
+    let aspect_ratio = img_width as F / img_height as F;
 
-    if matches!(fractal, Fractal::MoireTest) {
-        cx = 0.;
-        cy = 0.;
-    }
+    let width = zoom;
+    let height = zoom / aspect_ratio;
+    let rotate = rotate.unwrap_or(0.);
+
+    let (cx, cy) = if matches!(fractal, Fractal::MoireTest) {
+        (0., 0.)
+    } else {
+        (center_x, -center_y)
+    };
 
     let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
 

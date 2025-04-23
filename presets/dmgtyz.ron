@@ -5,7 +5,7 @@ Frame((
     zoom: 0.046,
     center_x: -0.9858,
     center_y: 0.05195,
-    fractal: SDRAGE,
+    fractal: Sdrage,
 
     max_iter: 100000,
 

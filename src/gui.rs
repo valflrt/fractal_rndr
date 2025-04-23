@@ -23,7 +23,7 @@ use crate::{
     progress::Progress,
     rendering::render_raw_image,
     sampling::{generate_sampling_points, Sampling, SamplingLevel},
-    View, F,
+    F,
 };
 
 const DEFAULT_ZOOM: F = 5.;
@@ -31,10 +31,9 @@ const DEFAULT_ZOOM: F = 5.;
 pub struct Gui {
     params: FrameParams,
     init_params: FrameParams,
-    view: View,
 
-    output_image_path: PathBuf,
     param_file_path: PathBuf,
+    output_image_path: PathBuf,
 
     preview_bytes: Option<Vec<u8>>,
     preview_size: Option<Vec2>,
@@ -51,19 +50,17 @@ impl Gui {
     pub fn new(
         cc: &CreationContext,
         params: FrameParams,
-        view: View,
-        output_image_path: PathBuf,
         param_file_path: PathBuf,
+        output_image_path: PathBuf,
     ) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         Gui {
             init_params: params.clone(),
             params,
-            view,
 
-            output_image_path,
             param_file_path,
+            output_image_path,
 
             preview_bytes: None,
             preview_size: None,
@@ -93,8 +90,8 @@ impl App for Gui {
                         ui.label("fractal:");
 
                         let res = ComboBox::from_id_salt("fractal")
-                            .selected_text(Self::format_label_ron(&self.params.fractal))
-                            .show_ui(ui, |ui| self.combobox_fractal_selection(ui));
+                            .selected_text(Self::format_label_ron(self.params.fractal))
+                            .show_ui(ui, |ui| self.show_combobox_fractal(ui));
 
                         if res.inner.unwrap_or(false) {
                             // Reset view
@@ -106,7 +103,7 @@ impl App for Gui {
                         }
                     });
 
-                    self.fractal_parameters(c1);
+                    self.show_fractal_parameters(c1);
 
                     c1.horizontal(|ui| {
                         ui.label("max_iter:");
@@ -137,7 +134,7 @@ impl App for Gui {
                     });
 
                     {
-                        let speed = 0.005 * self.params.zoom;
+                        let speed = 0.001 * self.params.zoom;
                         c1.horizontal(|ui| {
                             ui.label("re:");
                             let res =
@@ -155,10 +152,9 @@ impl App for Gui {
                             }
                         });
 
-                        let rotate = self.view.rotate;
                         c1.horizontal(|ui| {
                             ui.label("rotate:");
-                            let mut rotate = rotate;
+                            let mut rotate = self.params.rotate.unwrap_or(0.);
                             let res = ui.add(
                                 DragValue::new(&mut rotate)
                                     .speed(0.01)
@@ -369,60 +365,16 @@ impl App for Gui {
                         ui.label("sampling level:");
 
                         ComboBox::from_id_salt("sampling_level")
-                            .selected_text(Self::format_label_ron(&self.params.sampling.level))
+                            .selected_text(Self::format_label_ron(self.params.sampling.level))
                             .show_ui(ui, |ui| {
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Exploration,
-                                    "Exploration",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Low,
-                                    "Low",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Medium,
-                                    "Medium",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::High,
-                                    "High",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Ultra,
-                                    "Ultra",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Extreme,
-                                    "Extreme",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Extreme1,
-                                    "Extreme1",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Extreme2,
-                                    "Extreme2",
-                                );
-                                ui.selectable_value(
-                                    &mut self.params.sampling.level,
-                                    SamplingLevel::Extreme3,
-                                    "Extreme3",
-                                );
+                                self.show_combobox_sampling_level(ui);
                             });
                     });
 
                     c2.horizontal(|ui| {
                         let res = ui.button("render and save image");
                         if res.clicked() {
-                            let (progress, handle) = self.render_and_save();
+                            let (progress, handle) = self.render_and_save().unwrap();
                             self.render_info = Some((handle, progress, Instant::now()));
                         };
                     });
@@ -481,7 +433,6 @@ impl App for Gui {
         });
 
         if self.should_update_preview {
-            self.update_view();
             self.update_preview();
 
             self.should_update_preview = false;
@@ -496,7 +447,6 @@ impl Gui {
 
     fn revert_edits(&mut self) {
         self.params = self.init_params.clone();
-        self.update_view();
     }
 
     fn save_parameter_file(&mut self) -> Result<()> {
@@ -512,18 +462,17 @@ impl Gui {
         .map_err(ErrorKind::WriteParameterFile)
     }
 
-    fn render_and_save(&mut self) -> (Progress, JoinHandle<Result<()>>) {
+    fn render_and_save(&mut self) -> Option<(Progress, JoinHandle<Result<()>>)> {
         let progress = Progress::new((self.params.img_width * self.params.img_height) as usize);
 
         let params_clone = self.params.clone();
-        let view = self.view;
         let sampling_points_clone = generate_sampling_points(self.params.sampling.level);
         let output_image_path_clone = self.output_image_path.clone();
-        (
+        Some((
             progress.clone(),
             thread::spawn(move || {
                 let raw_image =
-                    render_raw_image(&params_clone, &view, &sampling_points_clone, Some(progress));
+                    render_raw_image(&params_clone, &sampling_points_clone, Some(progress));
 
                 let output_image = color_raw_image(
                     &params_clone,
@@ -536,21 +485,7 @@ impl Gui {
                     .save(output_image_path_clone.as_str())
                     .map_err(ErrorKind::SaveImage)
             }),
-        )
-    }
-
-    fn update_view(&mut self) {
-        let FrameParams {
-            img_width,
-            img_height,
-            zoom,
-            rotate,
-            center_x,
-            center_y,
-            ..
-        } = self.params;
-
-        self.view = View::new(img_width, img_height, zoom, center_x, center_y, rotate);
+        ))
     }
 
     fn update_preview(&mut self) {
@@ -580,7 +515,7 @@ impl Gui {
 
         let sampling_points = generate_sampling_points(preview_params.sampling.level);
 
-        let raw_image = render_raw_image(&preview_params, &self.view, &sampling_points, None);
+        let raw_image = render_raw_image(&preview_params, &sampling_points, None);
 
         let output_image = color_raw_image(
             &preview_params,
@@ -607,7 +542,7 @@ impl Gui {
             .replace(",", ", ")
     }
 
-    fn combobox_fractal_selection(&mut self, ui: &mut egui::Ui) -> bool {
+    fn show_combobox_fractal(&mut self, ui: &mut egui::Ui) -> bool {
         let mut should_reset_view = false;
 
         let selected = matches!(self.params.fractal, Fractal::Mandelbrot);
@@ -626,69 +561,69 @@ impl Gui {
             should_reset_view = true;
         };
 
-        let selected = matches!(self.params.fractal, Fractal::SDRGE);
+        let selected = matches!(self.params.fractal, Fractal::Sdrge);
         if ui
-            .selectable_label(selected, "SDRGE")
+            .selectable_label(selected, "Sdrge")
             .on_hover_text("second degree recursive sequence with growing exponent")
             .clicked()
             && !selected
         {
-            self.params.fractal = Fractal::SDRGE;
+            self.params.fractal = Fractal::Sdrge;
             should_reset_view = true;
         };
 
-        let selected = matches!(self.params.fractal, Fractal::SDRGECustomExp { .. });
+        let selected = matches!(self.params.fractal, Fractal::SdrgeCustomExp { .. });
         if ui
-            .selectable_label(selected, "SDRGECustomExp(exp)")
+            .selectable_label(selected, "SdrgeCustomExp(exp)")
             .on_hover_text("second degree recursive sequence with growing custom exponent")
             .clicked()
             && !selected
         {
-            self.params.fractal = Fractal::SDRGECustomExp { exp: 2. };
+            self.params.fractal = Fractal::SdrgeCustomExp { exp: 2. };
             should_reset_view = true;
         };
 
-        let selected = matches!(self.params.fractal, Fractal::SDRGEParam { .. });
+        let selected = matches!(self.params.fractal, Fractal::SdrgeParam { .. });
         if ui
-            .selectable_label(selected, "SDRGEParam(a_re, a_im)")
+            .selectable_label(selected, "SdrgeParam(a_re, a_im)")
             .on_hover_text("parameterized second degree recursive sequence with growing exponent")
             .clicked()
             && !selected
         {
-            self.params.fractal = Fractal::SDRGEParam { a_re: 1., a_im: 0. };
+            self.params.fractal = Fractal::SdrgeParam { a_re: 1., a_im: 0. };
             should_reset_view = true;
         };
 
-        let selected = matches!(self.params.fractal, Fractal::SDRAGE);
+        let selected = matches!(self.params.fractal, Fractal::Sdrage);
         if ui
-            .selectable_label(selected, "SDRAGE")
+            .selectable_label(selected, "Sdrage")
             .on_hover_text("second degree recursive alternating sequence with growing exponent")
             .clicked()
             && !selected
         {
-            self.params.fractal = Fractal::SDRAGE;
+            self.params.fractal = Fractal::Sdrage;
             should_reset_view = true;
         };
 
-        let selected = matches!(self.params.fractal, Fractal::TDRGE);
+        let selected = matches!(self.params.fractal, Fractal::Tdrge);
         if ui
-            .selectable_label(selected, "TDRGE")
+            .selectable_label(selected, "Tdrge")
             .on_hover_text("third degree recursive sequence with growing exponent")
             .clicked()
             && !selected
         {
-            self.params.fractal = Fractal::TDRGE;
+            self.params.fractal = Fractal::Tdrge;
             should_reset_view = true;
         };
 
-        let selected = matches!(self.params.fractal, Fractal::NthDRGE(_));
+        let selected = matches!(self.params.fractal, Fractal::NthDrge(_));
         if ui
-            .selectable_label(selected, "NthDRGE(n)")
+            .selectable_label(selected, "NthDrge(n)")
             .on_hover_text("nth degree recursive sequence with growing exponent")
             .clicked()
             && !selected
         {
-            self.params.fractal = Fractal::NthDRGE(4);
+            self.params.fractal = Fractal::NthDrge(4);
             should_reset_view = true;
         };
 
@@ -763,7 +698,7 @@ impl Gui {
         should_reset_view
     }
 
-    fn fractal_parameters(&mut self, ui: &mut egui::Ui) {
+    fn show_fractal_parameters(&mut self, ui: &mut egui::Ui) {
         const SPEED: f64 = 0.0001;
 
         if let Fractal::MandelbrotCustomExp { exp } = &mut self.params.fractal {
@@ -776,7 +711,7 @@ impl Gui {
             });
         }
 
-        if let Fractal::SDRGECustomExp { exp } = &mut self.params.fractal {
+        if let Fractal::SdrgeCustomExp { exp } = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("exp:");
                 let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
@@ -786,7 +721,7 @@ impl Gui {
             });
         }
 
-        if let Fractal::SDRGEParam { a_re, a_im }
+        if let Fractal::SdrgeParam { a_re, a_im }
         | Fractal::ComplexLogisticMapLike { a_re, a_im }
         | Fractal::Wmriho { a_re, a_im }
         | Fractal::Iigdzh { a_re, a_im } = &mut self.params.fractal
@@ -803,7 +738,7 @@ impl Gui {
             });
         }
 
-        if let Fractal::NthDRGE(n) = &mut self.params.fractal {
+        if let Fractal::NthDrge(n) = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("n:");
                 let res = ui.add(Slider::new(n, 2..=20));
@@ -812,5 +747,45 @@ impl Gui {
                 }
             });
         }
+    }
+
+    fn show_combobox_sampling_level(&mut self, ui: &mut egui::Ui) {
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Exploration,
+            "Exploration",
+        );
+        ui.selectable_value(&mut self.params.sampling.level, SamplingLevel::Low, "Low");
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Medium,
+            "Medium",
+        );
+        ui.selectable_value(&mut self.params.sampling.level, SamplingLevel::High, "High");
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Ultra,
+            "Ultra",
+        );
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Extreme,
+            "Extreme",
+        );
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Extreme1,
+            "Extreme1",
+        );
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Extreme2,
+            "Extreme2",
+        );
+        ui.selectable_value(
+            &mut self.params.sampling.level,
+            SamplingLevel::Extreme3,
+            "Extreme3",
+        );
     }
 }

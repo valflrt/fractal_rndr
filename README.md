@@ -48,7 +48,7 @@ These are preset renders I like, you can access their parameter files by clickin
 
 ### [cyggmf.ron](presets/cyggmf.ron)
 
-> Fractal: `TDRGE`
+> Fractal: `Tdrge`
 
 ![cyggmf.png](presets/cyggmf.png)
 
@@ -60,37 +60,37 @@ These are preset renders I like, you can access their parameter files by clickin
 
 ### [ukhbrp.ron](presets/ukhbrp.ron)
 
-> Fractal: `TDRGE`
+> Fractal: `Tdrge`
 
 ![ukhbrp.png](presets/ukhbrp.png)
 
 ### [ffayuk.ron](presets/ffayuk.ron)
 
-> Fractal: `SDRGE`
+> Fractal: `Sdrge`
 
 ![ffayuk.png](presets/ffayuk.png)
 
 ### [mzfyje.ron](presets/mzfyje.ron)
 
-> Fractal: `SDRGE`
+> Fractal: `Sdrge`
 
 ![mzfyje.png](presets/mzfyje.png)
 
 ### [ecwfwb.ron](presets/ecwfwb.ron)
 
-> Fractal: `SDRGEParam`
+> Fractal: `SdrgeParam`
 
 https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ### [txktfj.ron](presets/txktfj.ron)
 
-> Fractal: `SDRGECustomExp(8)`
+> Fractal: `SdrgeCustomExp(8)`
 
 ![txktfj.png](presets/txktfj.png)
 
 ### [xvebhd.ron](presets/xvebhd.ron)
 
-> Fractal: `SDRGE`
+> Fractal: `Sdrge`
 
 ![xvebhd.png](presets/xvebhd.png)
 
@@ -102,7 +102,7 @@ https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
 
 ### [ebidxr.ron](presets/ebidxr.ron)
 
-> Fractal: `TDRGE`
+> Fractal: `Tdrge`
 
 ![ebidxr.png](presets/ebidxr.png)
 
@@ -144,13 +144,13 @@ https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
 
 ### [dmgtyz.ron](presets/dmgtyz.ron)
 
-> Fractal: `SDRAGE`
+> Fractal: `Sdrage`
 
 ![dmgtyz.png](presets/dmgtyz.png)
 
 ### [datgdv.ron](presets/datgdv.ron)
 
-> Fractal: `SDRGE`
+> Fractal: `Sdrge`
 
 ![datgdv.png](presets/datgdv.png)
 

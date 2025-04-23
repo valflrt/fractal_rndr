@@ -10,20 +10,21 @@ pub enum Fractal {
         exp: F,
     },
     /// Second Degree Recursive sequence with Growing Exponent
-    SDRGE,
-    SDRGECustomExp {
+    Sdrge,
+    /// Second Degree Recursive sequence with Growing custom Exponent
+    SdrgeCustomExp {
         exp: F,
     },
-    SDRGEParam {
+    SdrgeParam {
         a_re: F,
         a_im: F,
     },
     /// Second degree recursive alternating sequence with growing exponent
-    SDRAGE,
+    Sdrage,
     /// Third Degree Recursive sequence with Growing Exponent
-    TDRGE,
+    Tdrge,
     /// Nth Degree Recursive sequence with Growing Exponent
-    NthDRGE(usize),
+    NthDrge(usize),
     ThirdDegreeRecPairs,
     SecondDegreeThirtySevenBlend,
     ComplexLogisticMapLike {
@@ -98,7 +99,7 @@ impl Fractal {
 
                 (iter, z)
             }
-            Fractal::SDRGE => {
+            Fractal::Sdrge => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -121,7 +122,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SDRGECustomExp { exp } => {
+            &Fractal::SdrgeCustomExp { exp } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -144,7 +145,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SDRGEParam { a_re, a_im } => {
+            &Fractal::SdrgeParam { a_re, a_im } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -169,7 +170,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::SDRAGE => {
+            Fractal::Sdrage => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -192,7 +193,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::TDRGE => {
+            Fractal::Tdrge => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -216,7 +217,7 @@ impl Fractal {
 
                 (iter, z2)
             }
-            Fractal::NthDRGE(n) => {
+            Fractal::NthDrge(n) => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 

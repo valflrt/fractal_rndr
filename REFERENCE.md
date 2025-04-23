@@ -16,10 +16,10 @@
 
       - `Mandelbrot`
       - `MandelbrotCustomExp(exp: float)`
-      - `SDRGE`
-      - `SDRGEParam(a_re: float, a_im: float)`
-      - `SDRAGE`
-      - `TDRGE`
+      - `Sdrge`
+      - `SdrgeParam(a_re: float, a_im: float)`
+      - `Sdrage`
+      - `Tdrge`
       - `NthDegreeRecWithGrowingExponent(n)`
       - `ThirdDegreeRecPairs`
       - `SecondDegreeThirtySevenBlend`
@@ -38,10 +38,10 @@
 
       - `Mandelbrot`
       - `MandelbrotCustomExp ( exp: [RenderStep] )`
-      - `SDRGE`
-      - `SDRGEParam ( a_re: [RenderStep], a_im: [RenderStep] )`
-      - `SDRAGE`
-      - `TDRGE`
+      - `Sdrge`
+      - `SdrgeParam ( a_re: [RenderStep], a_im: [RenderStep] )`
+      - `Sdrage`
+      - `Tdrge`
       - `NthDegreeRecWithGrowingExponent(n)`
       - `ThirdDegreeRecPairs`
       - `SecondDegreeThirtySevenBlend`

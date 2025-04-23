@@ -154,7 +154,7 @@ pub fn color_mapping(t: F, custom_gradient: Option<&Vec<(f32, [u8; 3])>>) -> Rgb
     if let Some(g) = custom_gradient {
         map(t, g)
     } else {
-        map(t, DEFAULT_GRADIENT.as_ref())
+        map(t, DEFAULT_GRADIENT)
     }
 }
 

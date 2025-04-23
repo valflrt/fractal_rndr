@@ -5,7 +5,7 @@ Frame((
     center_x: 0.00345,
     center_y: 0.0128,
     rotate: None,
-    fractal: SDRGECustomExp(
+    fractal: SdrgeCustomExp(
         exp: 8,
     ),
     max_iter: 1000,
