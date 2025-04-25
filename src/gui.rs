@@ -1,12 +1,14 @@
 use std::{
-    f64::consts::TAU,
+    f64::consts::{PI, TAU},
     fs,
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
 use eframe::{
-    egui::{self, Color32, ComboBox, DragValue, Image, ProgressBar, ScrollArea, Slider, Vec2},
+    egui::{
+        self, Color32, ComboBox, DragValue, Grid, Image, ProgressBar, ScrollArea, Slider, Vec2,
+    },
     App, CreationContext, Frame as EFrame,
 };
 use image::codecs::png::PngEncoder;
@@ -136,25 +138,28 @@ impl App for Gui {
                     {
                         let speed = 0.001 * self.params.zoom;
                         const N_DECIMALS: usize = 100; // arbitrary -> for max decimals
-                        c1.horizontal(|ui| {
+
+                        Grid::new("re and im").show(c1, |ui| {
+                            let mut changed = false;
+
                             ui.label("re:");
                             let res = ui.add(
                                 DragValue::new(&mut self.params.center_x)
                                     .speed(speed)
                                     .fixed_decimals(N_DECIMALS),
                             );
-                            if res.changed() {
-                                self.should_update_preview = true;
-                            }
-                        });
-                        c1.horizontal(|ui| {
+                            changed |= res.changed();
+                            ui.end_row();
+
                             ui.label("im:");
                             let res = ui.add(
                                 DragValue::new(&mut self.params.center_y)
                                     .speed(speed)
                                     .fixed_decimals(N_DECIMALS),
                             );
-                            if res.changed() {
+                            changed |= res.changed();
+
+                            if changed {
                                 self.should_update_preview = true;
                             }
                         });
@@ -165,8 +170,18 @@ impl App for Gui {
                             let res = ui.add(
                                 DragValue::new(&mut rotate)
                                     .speed(0.01)
-                                    .range(0. ..=TAU as F),
+                                    .range(0. ..=TAU as F)
+                                    .custom_parser(|s| {
+                                        s.parse::<F>()
+                                            .ok()
+                                            .map(|degrees| degrees.floor() * PI as F / 180.)
+                                    })
+                                    .custom_formatter(|rad, _| {
+                                        let degrees = rad * 180. / (PI as F);
+                                        degrees.floor().to_string()
+                                    }),
                             );
+                            ui.label("deg");
                             if res.changed() {
                                 self.params.rotate = if rotate > 0. { Some(rotate) } else { None };
                                 self.should_update_preview = true;
@@ -777,59 +792,30 @@ impl Gui {
         }
 
         if let Fractal::Sfwypc { alpha, beta, gamma } = &mut self.params.fractal {
-            ui.horizontal(|ui| {
-                ui.label("alpha_re:");
-                let res1 = ui.add(
-                    DragValue::new(&mut alpha.0)
-                        .speed(SPEED)
-                        .fixed_decimals(N_DECIMALS),
-                );
-                ui.label("alpha_im:");
-                let res2 = ui.add(
-                    DragValue::new(&mut alpha.1)
-                        .speed(SPEED)
-                        .fixed_decimals(N_DECIMALS),
-                );
+            let mut changed = false;
 
-                if res1.changed() || res2.changed() {
-                    self.should_update_preview = true;
-                }
-            });
-            ui.horizontal(|ui| {
-                ui.label("beta_re:");
-                let res1 = ui.add(
-                    DragValue::new(&mut beta.0)
-                        .speed(SPEED)
-                        .fixed_decimals(N_DECIMALS),
-                );
-                ui.label("beta_im:");
-                let res2 = ui.add(
-                    DragValue::new(&mut beta.1)
-                        .speed(SPEED)
-                        .fixed_decimals(N_DECIMALS),
-                );
-
-                if res1.changed() || res2.changed() {
-                    self.should_update_preview = true;
-                }
-            });
-            ui.horizontal(|ui| {
-                ui.label("gamma_re:");
-                let res1 = ui.add(
-                    DragValue::new(&mut gamma.0)
-                        .speed(SPEED)
-                        .fixed_decimals(N_DECIMALS),
-                );
-                ui.label("gamma_im:");
-                let res2 = ui.add(
-                    DragValue::new(&mut gamma.1)
-                        .speed(SPEED)
-                        .fixed_decimals(N_DECIMALS),
-                );
-
-                if res1.changed() || res2.changed() {
-                    self.should_update_preview = true;
-                }
+            Grid::new("param grid").show(ui, |ui| {
+                [(alpha, "alpha"), (beta, "beta"), (gamma, "gamma")]
+                    .iter_mut()
+                    .for_each(|(v, name)| {
+                        ui.label(name.to_string() + "_re:");
+                        changed |= ui
+                            .add(
+                                DragValue::new(&mut v.0)
+                                    .speed(SPEED)
+                                    .fixed_decimals(N_DECIMALS),
+                            )
+                            .changed();
+                        ui.label(name.to_string() + "_im:");
+                        changed |= ui
+                            .add(
+                                DragValue::new(&mut v.1)
+                                    .speed(SPEED)
+                                    .fixed_decimals(N_DECIMALS),
+                            )
+                            .changed();
+                        ui.end_row();
+                    });
             });
         }
     }
