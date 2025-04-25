@@ -44,6 +44,11 @@ pub enum Fractal {
     },
     Fxdicq,
     Mjygzr,
+    Sfwypc {
+        alpha: (F, F),
+        beta: (F, F),
+        gamma: (F, F),
+    },
 
     MoireTest,
 }
@@ -452,6 +457,35 @@ impl Fractal {
                     let new_z = z1 * z1 * c + z0 + c;
                     z0 = z1;
                     z1 = new_z;
+
+                    iter += undiverged_mask.blend(one, zero);
+                }
+
+                (iter, z1)
+            }
+            Fractal::Sfwypc { alpha, beta, gamma } => {
+                const BAILOUT: F = 100.;
+                let bailout_mask = FX::splat(BAILOUT);
+
+                let alpha = Complexx::splat(alpha.0, alpha.1);
+                let beta = Complexx::splat(beta.0, beta.1);
+                let gamma = Complexx::splat(gamma.0, gamma.1);
+
+                let mut z0 = Complexx::zeros();
+                let mut z1 = Complexx::zeros();
+                let mut z2 = Complexx::zeros();
+
+                let mut iter = FX::splat(0.);
+                for _ in 0..max_iter {
+                    let undiverged_mask = z1.norm_sqr().cmp_le(bailout_mask);
+                    if !undiverged_mask.any() {
+                        break;
+                    }
+
+                    let new_z = (z0 - alpha) * (z1 - beta) * (z2 - gamma) + c;
+                    z0 = z1;
+                    z1 = z2;
+                    z2 = new_z;
 
                     iter += undiverged_mask.blend(one, zero);
                 }
