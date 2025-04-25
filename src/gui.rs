@@ -135,18 +135,25 @@ impl App for Gui {
 
                     {
                         let speed = 0.001 * self.params.zoom;
+                        const N_DECIMALS: usize = 100; // arbitrary -> for max decimals
                         c1.horizontal(|ui| {
                             ui.label("re:");
-                            let res =
-                                ui.add(DragValue::new(&mut self.params.center_x).speed(speed));
+                            let res = ui.add(
+                                DragValue::new(&mut self.params.center_x)
+                                    .speed(speed)
+                                    .fixed_decimals(N_DECIMALS),
+                            );
                             if res.changed() {
                                 self.should_update_preview = true;
                             }
                         });
                         c1.horizontal(|ui| {
                             ui.label("im:");
-                            let res =
-                                ui.add(DragValue::new(&mut self.params.center_y).speed(speed));
+                            let res = ui.add(
+                                DragValue::new(&mut self.params.center_y)
+                                    .speed(speed)
+                                    .fixed_decimals(N_DECIMALS),
+                            );
                             if res.changed() {
                                 self.should_update_preview = true;
                             }
@@ -695,16 +702,32 @@ impl Gui {
             should_reset_view = true;
         };
 
+        let selected = matches!(self.params.fractal, Fractal::Sfwypc { .. });
+        if ui.selectable_label(selected, "Sfwypc").clicked() && !selected {
+            self.params.fractal = Fractal::Sfwypc {
+                alpha: (0., 0.),
+                beta: (0., 0.),
+                gamma: (0., 0.),
+            };
+            should_reset_view = true;
+        };
+
         should_reset_view
     }
 
     fn show_fractal_parameters(&mut self, ui: &mut egui::Ui) {
         const SPEED: f64 = 0.0001;
+        const N_DECIMALS: usize = 8;
 
         if let Fractal::MandelbrotCustomExp { exp } = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("exp:");
-                let res = ui.add(DragValue::new(exp).speed(SPEED).range(0.001..=20.));
+                let res = ui.add(
+                    DragValue::new(exp)
+                        .speed(SPEED)
+                        .range(0.001..=20.)
+                        .fixed_decimals(N_DECIMALS),
+                );
                 if res.changed() {
                     self.should_update_preview = true;
                 }
@@ -714,7 +737,12 @@ impl Gui {
         if let Fractal::SdrgeCustomExp { exp } = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("exp:");
-                let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
+                let res = ui.add(
+                    DragValue::new(exp)
+                        .speed(SPEED)
+                        .range(1..=10)
+                        .fixed_decimals(N_DECIMALS),
+                );
                 if res.changed() {
                     self.should_update_preview = true;
                 }
@@ -728,9 +756,9 @@ impl Gui {
         {
             ui.horizontal(|ui| {
                 ui.label("a_re:");
-                let res1 = ui.add(DragValue::new(a_re).speed(SPEED));
+                let res1 = ui.add(DragValue::new(a_re).speed(SPEED).fixed_decimals(N_DECIMALS));
                 ui.label("a_im:");
-                let res2 = ui.add(DragValue::new(a_im).speed(SPEED));
+                let res2 = ui.add(DragValue::new(a_im).speed(SPEED).fixed_decimals(N_DECIMALS));
 
                 if res1.changed() || res2.changed() {
                     self.should_update_preview = true;
@@ -743,6 +771,63 @@ impl Gui {
                 ui.label("n:");
                 let res = ui.add(Slider::new(n, 2..=20));
                 if res.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+        }
+
+        if let Fractal::Sfwypc { alpha, beta, gamma } = &mut self.params.fractal {
+            ui.horizontal(|ui| {
+                ui.label("alpha_re:");
+                let res1 = ui.add(
+                    DragValue::new(&mut alpha.0)
+                        .speed(SPEED)
+                        .fixed_decimals(N_DECIMALS),
+                );
+                ui.label("alpha_im:");
+                let res2 = ui.add(
+                    DragValue::new(&mut alpha.1)
+                        .speed(SPEED)
+                        .fixed_decimals(N_DECIMALS),
+                );
+
+                if res1.changed() || res2.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+            ui.horizontal(|ui| {
+                ui.label("beta_re:");
+                let res1 = ui.add(
+                    DragValue::new(&mut beta.0)
+                        .speed(SPEED)
+                        .fixed_decimals(N_DECIMALS),
+                );
+                ui.label("beta_im:");
+                let res2 = ui.add(
+                    DragValue::new(&mut beta.1)
+                        .speed(SPEED)
+                        .fixed_decimals(N_DECIMALS),
+                );
+
+                if res1.changed() || res2.changed() {
+                    self.should_update_preview = true;
+                }
+            });
+            ui.horizontal(|ui| {
+                ui.label("gamma_re:");
+                let res1 = ui.add(
+                    DragValue::new(&mut gamma.0)
+                        .speed(SPEED)
+                        .fixed_decimals(N_DECIMALS),
+                );
+                ui.label("gamma_im:");
+                let res2 = ui.add(
+                    DragValue::new(&mut gamma.1)
+                        .speed(SPEED)
+                        .fixed_decimals(N_DECIMALS),
+                );
+
+                if res1.changed() || res2.changed() {
                     self.should_update_preview = true;
                 }
             });
