@@ -864,7 +864,11 @@ impl Gui {
         };
 
         let selected = matches!(self.params.fractal, Fractal::Sfwypc { .. });
-        if ui.selectable_label(selected, "Sfwypc").clicked() && !selected {
+        if ui
+            .selectable_label(selected, "Sfwypc(alpha, beta, gamma)")
+            .clicked()
+            && !selected
+        {
             self.params.fractal = Fractal::Sfwypc {
                 alpha: (0., 0.),
                 beta: (0., 0.),
