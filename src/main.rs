@@ -18,7 +18,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use eframe::egui::Vec2;
+use eframe::egui::ViewportBuilder;
+use gui::WINDOW_SIZE;
 use uni_path::PathBuf;
 
 use crate::{
@@ -28,7 +29,7 @@ use crate::{
     params::{AnimationParams, DevOptions, FrameParams, ParamsKind},
     progress::Progress,
     rendering::render_raw_image,
-    sampling::{generate_sampling_points, preview_sampling_points},
+    sampling::preview_sampling_points,
 };
 
 #[cfg(feature = "force_f32")]
@@ -44,8 +45,6 @@ type F = f64;
 use wide::f64x4;
 #[cfg(not(feature = "force_f32"))]
 type FX = f64x4;
-
-const WINDOW_SIZE: Vec2 = Vec2 { x: 900., y: 500. };
 
 const USAGE: &str = "This is a fractal renderer.
 Usage: fractal_rndr <param file path> <output image path>
@@ -95,14 +94,14 @@ fn start_gui(
     param_file_path: PathBuf,
     output_image_path: PathBuf,
 ) -> Result<()> {
-    let mut options = eframe::NativeOptions::default();
-    let size = Some(WINDOW_SIZE);
-    options.viewport.inner_size = size;
-    options.viewport.min_inner_size = size;
-
     eframe::run_native(
         "fractal renderer",
-        options,
+        eframe::NativeOptions {
+            viewport: ViewportBuilder::default()
+                .with_inner_size(WINDOW_SIZE)
+                .with_min_inner_size(WINDOW_SIZE),
+            ..Default::default()
+        },
         Box::new(|cc| {
             Ok(Box::new(Gui::new(
                 cc,
@@ -124,7 +123,7 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
         ..
     } = params;
 
-    let sampling_points = generate_sampling_points(sampling.level);
+    let sampling_points = sampling.generate_sampling_points();
 
     if let Some(DevOptions {
         save_sampling_pattern: Some(true),
@@ -207,12 +206,12 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
     println!("frame count: {}", frame_count);
     println!();
 
-    let sampling_points = generate_sampling_points(sampling.level);
+    let sampling_points = sampling.generate_sampling_points();
 
     let global_start = Instant::now();
 
     for frame_i in 0..frame_count {
-        let t = frame_i as f32 / fps;
+        let t = frame_i as F / fps;
 
         let params = params.get_frame_params(t);
         let FrameParams {

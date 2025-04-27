@@ -15,7 +15,6 @@ impl Default for ParamsKind {
     }
 }
 
-/// Hello world this is a very very very very very very very very very very very very very very very very very very long comment
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrameParams {
     pub img_width: u32,
@@ -33,7 +32,7 @@ pub struct FrameParams {
     pub sampling: Sampling,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
+    pub custom_gradient: Option<Vec<(F, [u8; 3])>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dev_options: Option<DevOptions>,
@@ -52,21 +51,21 @@ pub struct AnimationParams {
 
     pub max_iter: u32,
 
-    pub duration: f32,
-    pub fps: f32,
+    pub duration: F,
+    pub fps: F,
 
     pub coloring_mode: ColoringMode,
     pub sampling: Sampling,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_gradient: Option<Vec<(f32, [u8; 3])>>,
+    pub custom_gradient: Option<Vec<(F, [u8; 3])>>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dev_options: Option<DevOptions>,
 }
 
 impl AnimationParams {
-    pub fn get_frame_params(&self, t: f32) -> FrameParams {
+    pub fn get_frame_params(&self, t: F) -> FrameParams {
         FrameParams {
             img_width: self.img_width,
             img_height: self.img_height,
@@ -105,15 +104,15 @@ pub mod animation {
     #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
     pub enum RenderStep {
         /// (start_time, end_time, value)
-        Const(f32, f32, F),
+        Const(F, F, F),
         /// (start_time, end_time, start_value, end_value)
-        Linear(f32, f32, F, F),
+        Linear(F, F, F, F),
         /// (start_time, end_time, start_value, end_value)
-        Smooth(f32, f32, F, F),
+        Smooth(F, F, F, F),
     }
 
     impl RenderStep {
-        pub fn get_current_step_index(steps: &[RenderStep], t: f32) -> usize {
+        pub fn get_current_step_index(steps: &[RenderStep], t: F) -> usize {
             steps
                 .iter()
                 .enumerate()
@@ -127,16 +126,16 @@ pub mod animation {
                 .unwrap()
         }
 
-        pub fn get_value(&self, t: f32) -> F {
+        pub fn get_value(&self, t: F) -> F {
             // see https://www.desmos.com/calculator/a1ddmg7pxk
             match *self {
                 RenderStep::Const(_, _, value) => value,
                 RenderStep::Linear(start_time, end_time, start_value, end_value) => {
-                    let w = ((t - start_time) / (end_time - start_time)) as F;
+                    let w = (t - start_time) / (end_time - start_time);
                     start_value * (1. - w) + end_value * w
                 }
                 RenderStep::Smooth(start_time, end_time, start_value, end_value) => {
-                    let w = ((t - start_time) / (end_time - start_time)) as F;
+                    let w = (t - start_time) / (end_time - start_time);
                     let smooth_w = w * w * (3. - 2. * w);
                     start_value * (1. - smooth_w) + end_value * smooth_w
                 }
@@ -179,7 +178,7 @@ pub mod animation {
     }
 
     impl Fractal {
-        pub fn get_fractal(&self, t: f32) -> crate::fractal::Fractal {
+        pub fn get_fractal(&self, t: F) -> crate::fractal::Fractal {
             match self {
                 Self::Mandelbrot => crate::fractal::Fractal::Mandelbrot,
                 Self::MandelbrotCustomExp { exp } => crate::fractal::Fractal::MandelbrotCustomExp {

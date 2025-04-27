@@ -12,6 +12,38 @@ pub struct Sampling {
     pub random_offsets: bool,
 }
 
+impl Sampling {
+    pub fn generate_sampling_points(&self) -> Vec<(F, F)> {
+        const PHI: F = 1.618033988749895;
+        const EPS: F = 0.5;
+
+        let n = self.sample_count();
+
+        (0..n)
+            .map(|i| {
+                (
+                    i as F / PHI % 1.,
+                    (i as F + EPS) / ((n - 1) as F + 2. * EPS),
+                )
+            })
+            .collect::<Vec<_>>()
+    }
+
+    pub fn sample_count(&self) -> usize {
+        match self.level {
+            SamplingLevel::Exploration => 8,
+            SamplingLevel::Low => 21,
+            SamplingLevel::Medium => 34,
+            SamplingLevel::High => 55,
+            SamplingLevel::Ultra => 89,
+            SamplingLevel::Extreme => 144,
+            SamplingLevel::Extreme1 => 233,
+            SamplingLevel::Extreme2 => 377,
+            SamplingLevel::Extreme3 => 610,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SamplingLevel {
     Exploration,
@@ -23,32 +55,6 @@ pub enum SamplingLevel {
     Extreme1,
     Extreme2,
     Extreme3,
-}
-
-pub fn generate_sampling_points(sampling_level: SamplingLevel) -> Vec<(F, F)> {
-    let n = match sampling_level {
-        SamplingLevel::Exploration => 8,
-        SamplingLevel::Low => 21,
-        SamplingLevel::Medium => 34,
-        SamplingLevel::High => 55,
-        SamplingLevel::Ultra => 89,
-        SamplingLevel::Extreme => 144,
-        SamplingLevel::Extreme1 => 233,
-        SamplingLevel::Extreme2 => 377,
-        SamplingLevel::Extreme3 => 610,
-    };
-
-    const PHI: F = 1.618033988749895;
-    const EPS: F = 0.5;
-
-    (0..n)
-        .map(|i| {
-            (
-                i as F / PHI % 1.,
-                (i as F + EPS) / ((n - 1) as F + 2. * EPS),
-            )
-        })
-        .collect::<Vec<_>>()
 }
 
 pub fn map_points_with_offsets(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {

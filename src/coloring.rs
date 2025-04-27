@@ -7,7 +7,7 @@ use crate::{mat::Mat2D, params::FrameParams, F};
 pub fn color_raw_image(
     params: &FrameParams,
     coloring_mode: ColoringMode,
-    custom_gradient: Option<&Vec<(f32, [u8; 3])>>,
+    custom_gradient: Option<&Vec<(F, [u8; 3])>>,
     mut raw_image: Mat2D<F>,
 ) -> RgbImage {
     let &FrameParams {
@@ -22,19 +22,6 @@ pub fn color_raw_image(
     let min_v = raw_image.vec.iter().copied().fold(max_v, F::min);
 
     match coloring_mode {
-        ColoringMode::CumulativeHistogram { map } => {
-            raw_image.vec.iter_mut().for_each(|v| *v /= max_v);
-            let cumulative_histogram = cumulate_histogram(compute_histogram(&raw_image.vec));
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let value = raw_image[(i, j)];
-
-                    let t = map.apply(get_histogram_value(value, &cumulative_histogram));
-
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
-                }
-            }
-        }
         ColoringMode::MinMaxNorm { min, max, map } => {
             let min = min.unwrap_custom_or(min_v);
             let max = max.unwrap_custom_or(max_v);
@@ -49,6 +36,19 @@ pub fn color_raw_image(
                 }
             }
         }
+        ColoringMode::CumulativeHistogram { map } => {
+            raw_image.vec.iter_mut().for_each(|v| *v /= max_v);
+            let cumulative_histogram = cumulate_histogram(compute_histogram(&raw_image.vec));
+            for j in 0..img_height as usize {
+                for i in 0..img_width as usize {
+                    let value = raw_image[(i, j)];
+
+                    let t = map.apply(get_histogram_value(value, &cumulative_histogram));
+
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
+                }
+            }
+        }
     };
 
     output_image
@@ -56,14 +56,14 @@ pub fn color_raw_image(
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum ColoringMode {
-    CumulativeHistogram {
-        map: MapValue,
-    },
     MinMaxNorm {
         #[serde(default)]
         min: Extremum,
         #[serde(default)]
         max: Extremum,
+        map: MapValue,
+    },
+    CumulativeHistogram {
         map: MapValue,
     },
 }
@@ -102,12 +102,19 @@ impl MapValue {
         match self {
             MapValue::Linear => t,
             MapValue::Squared => t * t,
-            MapValue::Powf(p) => t.powf(*p),
+            MapValue::Powf(p) => {
+                let t = t.powf(*p);
+                if t.is_normal() {
+                    t
+                } else {
+                    0.
+                }
+            }
         }
     }
 }
 
-const DEFAULT_GRADIENT: &[(f32, [u8; 3])] = &[
+const DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
     (0.0, [230, 230, 240]),
     (0.2, [60, 50, 90]),
     (0.3, [230, 180, 180]),
@@ -116,7 +123,7 @@ const DEFAULT_GRADIENT: &[(f32, [u8; 3])] = &[
     (1.0, [220, 210, 220]),
 ];
 #[allow(dead_code)]
-const OLD_DEFAULT_GRADIENT: &[(f32, [u8; 3])] = &[
+const OLD_DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
     (0., [20, 8, 30]),
     (0.1, [160, 30, 200]),
     (0.25, [20, 160, 230]),
@@ -127,28 +134,36 @@ const OLD_DEFAULT_GRADIENT: &[(f32, [u8; 3])] = &[
     (1., [20, 2, 10]),
 ];
 
-pub fn color_mapping(t: F, custom_gradient: Option<&Vec<(f32, [u8; 3])>>) -> Rgb<u8> {
-    fn map(t: F, gradient: &[(f32, [u8; 3])]) -> Rgb<u8> {
+pub fn color_mapping(t: F, custom_gradient: Option<&Vec<(F, [u8; 3])>>) -> Rgb<u8> {
+    fn map(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
         let first = gradient[0];
         let last = gradient.last().unwrap();
-        if t <= first.0 as F {
+
+        let c = if t < first.0 {
             Rgb(first.1)
-        } else if t >= last.0 as F {
+        } else if t > last.0 {
             Rgb(last.1)
         } else {
-            for i in 0..gradient.len() {
-                if gradient[i].0 as F <= t && t <= gradient[i + 1].0 as F {
-                    let ratio = (t - gradient[i].0 as F) / (gradient[i + 1].0 - gradient[i].0) as F;
-                    let [r1, g1, b1] = gradient[i].1;
-                    let [r2, g2, b2] = gradient[i + 1].1;
-                    let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
-                    let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
-                    let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
-                    return Rgb([r, g, b]);
-                }
-            }
-            Rgb(last.1)
+            let i = gradient
+                .binary_search_by(|&(value, _)| value.total_cmp(&t))
+                .unwrap_or_else(|index| index)
+                .saturating_sub(1);
+
+            let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
+            let [r1, g1, b1] = gradient[i].1;
+            let [r2, g2, b2] = gradient[i + 1].1;
+            let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
+            let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
+            let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
+
+            Rgb([r, g, b])
+        };
+
+        if c == Rgb([0, 0, 0]) {
+            // println!("{}", t);
         }
+
+        c
     }
 
     if let Some(g) = custom_gradient {
