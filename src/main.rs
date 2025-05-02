@@ -14,13 +14,13 @@ mod sampling;
 use std::{
     fs,
     io::Write,
+    path::PathBuf,
     thread,
     time::{Duration, Instant},
 };
 
 use eframe::egui::ViewportBuilder;
 use gui::WINDOW_SIZE;
-use uni_path::PathBuf;
 
 use crate::{
     coloring::{color_mapping, color_raw_image},
@@ -62,7 +62,7 @@ fn main() -> Result<()> {
 
     if let (Some(param_file_path), Some(output_image_path)) = (param_file_path, output_image_path) {
         let params = ron::from_str::<ParamsKind>(
-            &fs::read_to_string(param_file_path.as_str()).map_err(ErrorKind::ReadParameterFile)?,
+            &fs::read_to_string(&param_file_path).map_err(ErrorKind::ReadParameterFile)?,
         )
         .map_err(ErrorKind::DecodeParameterFile)?;
 
@@ -167,10 +167,10 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
     );
 
     output_image
-        .save(output_image_path.as_str())
+        .save(&output_image_path)
         .map_err(ErrorKind::SaveImage)?;
 
-    let image_size = fs::metadata(output_image_path.as_str()).unwrap().len();
+    let image_size = fs::metadata(&output_image_path).unwrap().len();
     println!(
         " output image: {}x{} - {} {}",
         img_width,
@@ -182,7 +182,7 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
         } else {
             format!("{}b", image_size)
         },
-        if let Some(ext) = output_image_path.extension() {
+        if let Some(ext) = output_image_path.extension().and_then(|s| s.to_str()) {
             format!("- {} ", ext)
         } else {
             "".to_string()
@@ -277,20 +277,30 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
         }
 
         let output_image_path = PathBuf::from(
-            output_image_path.parent().unwrap().to_string()
+            output_image_path
+                .parent()
+                .and_then(|p| p.to_str())
+                .unwrap()
+                .to_string()
                 + "/"
-                + output_image_path.file_stem().unwrap()
+                + output_image_path
+                    .file_stem()
+                    .and_then(|e| e.to_str())
+                    .unwrap()
                 + "_"
                 + &format!("{:06}", frame_i)
                 + "."
-                + output_image_path.extension().unwrap(),
+                + output_image_path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .unwrap(),
         );
 
         output_image
-            .save(output_image_path.as_str())
+            .save(&output_image_path)
             .map_err(ErrorKind::SaveImage)?;
 
-        let image_size = fs::metadata(output_image_path.as_str()).unwrap().len();
+        let image_size = fs::metadata(&output_image_path).unwrap().len();
         println!(
             " frame {}: {}x{} - {} {}",
             frame_i + 1,
@@ -303,7 +313,7 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
             } else {
                 format!("{}b", image_size)
             },
-            if let Some(ext) = output_image_path.extension() {
+            if let Some(ext) = output_image_path.extension().and_then(|s| s.to_str()) {
                 format!("- {} ", ext)
             } else {
                 "".to_string()

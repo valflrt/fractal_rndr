@@ -1,6 +1,7 @@
 use std::{
     f64::consts::{PI, TAU},
     fs,
+    path::PathBuf,
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
@@ -14,7 +15,6 @@ use eframe::{
 use image::codecs::png::PngEncoder;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
-use uni_path::PathBuf;
 
 use crate::{
     coloring::{color_raw_image, ColoringMode, Extremum, MapValue},
@@ -608,7 +608,7 @@ impl Gui {
                     raw_image.to_owned(),
                 );
 
-                match output_image.save(self.output_image_path.as_str()) {
+                match output_image.save(&self.output_image_path) {
                     Ok(_) => self.notify("image saved"),
                     Err(_) => self.notify("failed to save image"),
                 }
@@ -683,7 +683,7 @@ impl Gui {
     fn save_parameter_file(&mut self) -> Result<()> {
         self.init_params = self.params.clone();
         fs::write(
-            self.param_file_path.as_str(),
+            &self.param_file_path,
             ron::ser::to_string_pretty(
                 &ParamsKind::Frame(self.params.clone()),
                 PrettyConfig::default(),

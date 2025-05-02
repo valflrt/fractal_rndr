@@ -20,7 +20,6 @@ image = { version = "0.25.5", default-features = false, features = [
 rayon = "1.10.0"
 ron = "0.10.1"
 serde = { version = "1.0.219", features = ["derive"] }
-uni-path = "1.51.1"
 valargs = "0.1.2"
 wide = "0.7.32"
 
