@@ -20,7 +20,7 @@ image = { version = "0.25.5", default-features = false, features = [
 rayon = "1.10.0"
 ron = "0.10.1"
 serde = { version = "1.0.219", features = ["derive"] }
-valargs = "0.1.2"
+valargs = "0.1.3"
 wide = "0.7.32"
 
 [features]
