@@ -740,6 +740,17 @@ impl Gui {
             changed = true;
         };
 
+        let selected = matches!(self.params.fractal, Fractal::SdrgeCustomIntExp { .. });
+        if ui
+            .selectable_label(selected, "SdrgeCustomIntExp(exp)")
+            .on_hover_text("second degree recursive sequence with growing custom integer exponent")
+            .clicked()
+            && !selected
+        {
+            self.params.fractal = Fractal::SdrgeCustomIntExp { exp: 2 };
+            changed = true;
+        };
+
         let selected = matches!(self.params.fractal, Fractal::SdrgeCustomExp { .. });
         if ui
             .selectable_label(selected, "SdrgeCustomExp(exp)")
@@ -899,6 +910,13 @@ impl Gui {
             });
         }
 
+        if let Fractal::SdrgeCustomIntExp { exp } = &mut self.params.fractal {
+            ui.horizontal(|ui| {
+                ui.label("exp:");
+                let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
+                changed |= res.changed();
+            });
+        }
         if let Fractal::SdrgeCustomExp { exp } = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("exp:");
