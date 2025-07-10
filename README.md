@@ -29,130 +29,21 @@ Start the app using:
 fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
 ```
 
+> [!WARNING]
+> Don't forget the `--gui` option
+
 > [!NOTE]
 > Supported image formats are png and jpg (the extension is used to guess the format)
 
 This is what the app looks like:
 
-![gui](/img/gui.png)
-
-If there is no parameter file, the app will start with a preset fractal. You can save the parameter file anytime by clicking the corresponding button.
+![gui](img/gui.png)
 
 Enjoy !
 
 # Preset renders
 
-These are preset renders I like, you can access their parameter files by clicking on the title. There are some more in [`presets/`](presets/).
-
-> The renders found in `presets/` are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
-
-### [cyggmf.ron](presets/cyggmf.ron)
-
-> Fractal: `Tdrge`
-
-![cyggmf.png](presets/cyggmf.png)
-
-### [iabppp.ron](presets/iabppp.ron)
-
-> Fractal: `Mandelbrot`
-
-![iabppp.png](presets/iabppp.png)
-
-### [ukhbrp.ron](presets/ukhbrp.ron)
-
-> Fractal: `Tdrge`
-
-![ukhbrp.png](presets/ukhbrp.png)
-
-### [ffayuk.ron](presets/ffayuk.ron)
-
-> Fractal: `Sdrge`
-
-![ffayuk.png](presets/ffayuk.png)
-
-### [mzfyje.ron](presets/mzfyje.ron)
-
-> Fractal: `Sdrge`
-
-![mzfyje.png](presets/mzfyje.png)
-
-### [ecwfwb.ron](presets/ecwfwb.ron)
-
-> Fractal: `SdrgeParam`
-
-https://github.com/user-attachments/assets/a328b7b6-0e66-490a-9a35-ef8e93178f94
-
-### [txktfj.ron](presets/txktfj.ron)
-
-> Fractal: `SdrgeCustomExp(8)`
-
-![txktfj.png](presets/txktfj.png)
-
-### [xvebhd.ron](presets/xvebhd.ron)
-
-> Fractal: `Sdrge`
-
-![xvebhd.png](presets/xvebhd.png)
-
-### [quhuap.ron](presets/quhuap.ron)
-
-> Fractal: `Iigdzh`
-
-![quhuap.png](presets/quhuap.png)
-
-### [ebidxr.ron](presets/ebidxr.ron)
-
-> Fractal: `Tdrge`
-
-![ebidxr.png](presets/ebidxr.png)
-
-### [ajwrkx.ron](presets/ajwrkx.ron)
-
-> Fractal: `Mjygzr`
-
-![ajwrkx.png](presets/ajwrkx.png)
-
-### [wztpft.ron](presets/wztpft.ron)
-
-> Fractal: `Vshqwj`
-
-![wztpft.png](presets/wztpft.png)
-
-### [dvzrjn.ron](presets/dvzrjn.ron)
-
-> Fractal: `Iigdzh`
-
-![dvzrjn.png](presets/dvzrjn.png)
-
-### [ckvjjj.ron](presets/ckvjjj.ron)
-
-> Fractal: `SecondDegreeThirtySevenBlend`
-
-![ckvjjj.png](presets/ckvjjj.png)
-
-### [phgzbz.ron](presets/phgzbz.ron)
-
-> Fractal: `Wmriho(a_re: -0.1, a_im: 0)`
-
-![phgzbz.png](presets/phgzbz.png)
-
-### [gqwzzr.ron](presets/gqwzzr.ron)
-
-> Fractal: `ComplexLogisticMapLike`
-
-https://github.com/user-attachments/assets/83793c10-4d2a-47f2-8e0b-7cee47c27e6b
-
-### [dmgtyz.ron](presets/dmgtyz.ron)
-
-> Fractal: `Sdrage`
-
-![dmgtyz.png](presets/dmgtyz.png)
-
-### [datgdv.ron](presets/datgdv.ron)
-
-> Fractal: `Sdrge`
-
-![datgdv.png](presets/datgdv.png)
+See [this repository](https://gitlab.com/valflrt/fractals).
 
 # Ideas
 

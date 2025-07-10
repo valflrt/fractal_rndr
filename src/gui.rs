@@ -431,14 +431,14 @@ impl App for Gui {
                                 .max_width(200.)
                                 .max_height(100.)
                                 .show(ui, |ui| {
-                                    for p in PRESETS {
+                                    for &(name, cfg_file) in PRESETS {
                                         if let ParamsKind::Frame(params) =
-                                            ron::from_str(p.1).unwrap()
+                                            ron::from_str(cfg_file).unwrap()
                                         {
-                                            if ui.button(p.0).clicked() {
+                                            if ui.button(name).clicked() {
                                                 self.params = params;
                                                 self.params_changes.set_breaking();
-                                                self.notify(format!("loaded {}", p.0));
+                                                self.notify(format!("loaded {}", name));
                                                 ui.close_menu();
                                             };
                                         }

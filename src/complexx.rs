@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 use crate::{F, FX};
 
@@ -52,7 +52,7 @@ impl Complexx {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn norm_sqr(&self) -> FX {
         self.re * self.re + self.im * self.im
     }
@@ -68,6 +68,13 @@ impl Complexx {
     }
 
     #[inline]
+    pub fn conjugate(&self) -> Complexx {
+        Complexx {
+            re: self.re,
+            im: -self.im,
+        }
+    }
+
     pub fn powu(&self, n: usize) -> Complexx {
         if n == 0 {
             return Complexx::splat(1.0, 0.0);
@@ -95,9 +102,9 @@ impl Complexx {
     }
 
     // #[inline]
-    // pub fn powf4(&self, exp: FX) -> Complex4 {
+    // pub fn powf4(&self, exp: FX) -> Complexx {
     //     let (r, theta) = self.to_polar();
-    //     Complex4::from_polar(r.pow_FX(exp), theta * exp)
+    //     Complexx::from_polar(r.pow_f64x4(exp), theta * exp)
     // }
 }
 
@@ -185,5 +192,36 @@ impl Mul<FX> for Complexx {
             re: self.re * rhs,
             im: self.im * rhs,
         }
+    }
+}
+
+impl Div<F> for Complexx {
+    type Output = Complexx;
+
+    fn div(self, rhs: F) -> Self::Output {
+        Complexx {
+            re: self.re / rhs,
+            im: self.im / rhs,
+        }
+    }
+}
+
+impl Div<FX> for Complexx {
+    type Output = Complexx;
+
+    fn div(self, rhs: FX) -> Self::Output {
+        Complexx {
+            re: self.re / rhs,
+            im: self.im / rhs,
+        }
+    }
+}
+
+impl Div for Complexx {
+    type Output = Complexx;
+
+    fn div(self, rhs: Self) -> Self::Output {
+        let rhs_norm = rhs.norm();
+        self * rhs.conjugate() / rhs_norm
     }
 }

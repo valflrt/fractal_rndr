@@ -1,0 +1,26 @@
+Frame((
+    img_width: 1920,
+    img_height: 1080,
+    zoom: 0.000000014,
+    center_x: 0.593958913,
+    center_y: 0.6619147191,
+    rotate: None,
+    fractal: Iigdzh(
+        a_re: 0.0,
+        a_im: 0.0,
+    ),
+    max_iter: 600,
+    coloring_mode: MinMaxNorm(
+        min: Custom(40.0),
+        max: Custom(400.0),
+        map: Powf(0.9),
+    ),
+    sampling: (
+        level: Extreme,
+        random_offsets: true,
+    ),
+    custom_gradient: Some([
+        (0.0, (0, 0, 0)),
+        (1.0, (255, 255, 255)),
+    ]),
+))

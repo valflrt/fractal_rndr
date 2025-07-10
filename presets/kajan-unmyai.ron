@@ -1,0 +1,25 @@
+Frame((
+    img_width: 1920,
+    img_height: 1080,
+    zoom: 0.000011,
+    center_x: 0.005571532643,
+    center_y: 0.016922959349,
+    rotate: Some(5.57),
+    fractal: Sdrage,
+    max_iter: 8000,
+    coloring_mode: MinMaxNorm(
+        min: Custom(0.0),
+        max: Custom(8000.0),
+        map: Linear,
+    ),
+    sampling: (
+        level: Ultra,
+        random_offsets: true,
+    ),
+    custom_gradient: Some([
+        (0.0, (230, 230, 240)),
+        (0.3, (230, 180, 180)),
+        (0.5, (60, 60, 90)),
+        (1.0, (220, 210, 220)),
+    ]),
+))

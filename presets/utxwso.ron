@@ -1,0 +1,23 @@
+Frame((
+    img_width: 1920,
+    img_height: 1080,
+    zoom: 0.09,
+    center_x: -1.028,
+    center_y: 0.017300000000000003,
+    rotate: None,
+    fractal: Sfwypc(
+        alpha: (0.0, 0.0),
+        beta: (-1.0, 0.0),
+        gamma: (0.0, 0.0),
+    ),
+    max_iter: 1500,
+    coloring_mode: MinMaxNorm(
+        min: Custom(0.0),
+        max: Custom(1500.0),
+        map: Linear,
+    ),
+    sampling: (
+        level: Extreme,
+        random_offsets: true,
+    ),
+))
