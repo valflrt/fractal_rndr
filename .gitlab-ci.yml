@@ -1,0 +1,39 @@
+stages:
+  - build
+  - upload
+  - release
+
+variables:
+  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/fractal_rndr/${CI_COMMIT_TAG}"
+
+build:
+  stage: build
+  image: rust:latest
+  script:
+    - cargo build --release
+    - mkdir bin
+    - mv target/release/fractal_rndr bin/fractal_rndr-${CI_COMMIT_TAG}
+  cache:
+    paths:
+      - target/release/
+  artifacts:
+    paths:
+      - bin
+  rules:
+    - if: $CI_COMMIT_TAG
+
+upload:
+  stage: upload
+  image: curlimages/curl:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/fractal_rndr-${CI_COMMIT_TAG} ${PACKAGE_REGISTRY_URL}/fractal_rndr-${CI_COMMIT_TAG}'
+
+release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - 'release-cli create --name "fractal_rndr-$CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG --assets-link "{\"name\":\"fractal_rndr-${CI_COMMIT_TAG}\", \"url\":\"${PACKAGE_REGISTRY_URL}/fractal_rndr-${CI_COMMIT_TAG}\"}"'
