@@ -13,6 +13,7 @@ use eframe::{
     App, CreationContext, Frame as EFrame,
 };
 use image::codecs::png::PngEncoder;
+use rfd::FileDialog;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 
@@ -29,7 +30,7 @@ use crate::{
     F,
 };
 
-pub const WINDOW_SIZE: Vec2 = Vec2 { x: 1000., y: 500. };
+pub const WINDOW_SIZE: Vec2 = Vec2 { x: 1000., y: 540. };
 const DEFAULT_ZOOM: F = 5.;
 
 type RenderInfo = Option<(JoinHandle<(Mat2D<F>, Duration)>, Progress)>;
@@ -66,12 +67,13 @@ impl ParamsChanges {
 
 pub struct Gui {
     params: FrameParams,
-    init_params: FrameParams,
+    last_saved_params: FrameParams,
 
     params_changes: ParamsChanges,
 
-    param_file_path: PathBuf,
-    output_image_path: PathBuf,
+    param_file_path: Option<PathBuf>,
+    output_image_path: Option<PathBuf>,
+    path_selection_handle: Option<JoinHandle<(u8, Option<PathBuf>)>>,
 
     preview_bytes: Option<Vec<u8>>,
     preview_size: Option<Vec2>,
@@ -91,20 +93,21 @@ impl Gui {
 
     pub fn new(
         cc: &CreationContext,
-        params: FrameParams,
-        param_file_path: PathBuf,
-        output_image_path: PathBuf,
+        frame_params: FrameParams,
+        param_file_path: Option<PathBuf>,
+        output_image_path: Option<PathBuf>,
     ) -> Self {
         egui_extras::install_image_loaders(&cc.egui_ctx);
 
         Gui {
-            init_params: params.clone(),
-            params,
+            last_saved_params: frame_params.clone(),
+            params: frame_params,
 
             params_changes: ParamsChanges::NonBreakingChanges,
 
             param_file_path,
             output_image_path,
+            path_selection_handle: None,
 
             preview_bytes: None,
             preview_size: None,
@@ -128,14 +131,14 @@ impl App for Gui {
             const SLIDER_END_POS: f32 = 350.;
             ui.spacing_mut().slider_width = 150.;
 
-            ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                ui.columns_const(|[c1, c2]| {
-                    // First column
+            ui.columns_const(|[c1, c2]| {
+                // First column
 
-                    c1.heading("Fractal");
-                    c1.separator();
+                c1.heading("Fractal");
+                c1.separator();
 
-                    c1.horizontal(|ui| {
+                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
+                    ui.horizontal(|ui| {
                         ui.label("fractal:");
 
                         let inner_res = ComboBox::from_id_salt("fractal")
@@ -156,11 +159,11 @@ impl App for Gui {
                         }
                     });
 
-                    if self.show_fractal_parameters(c1) {
+                    if self.show_fractal_parameters(ui) {
                         self.params_changes.set_breaking();
                     }
 
-                    c1.horizontal(|ui| {
+                    ui.horizontal(|ui| {
                         let label_width = ui.label("max_iter:").rect.width();
                         ui.spacing_mut().slider_width = SLIDER_END_POS - label_width;
                         let prev_max_iter = self.params.max_iter;
@@ -183,90 +186,92 @@ impl App for Gui {
                             }
                         }
                     });
+                });
 
-                    c1.add_space(SPACE_SIZE);
-                    c1.heading("Controls");
-                    c1.separator();
+                c1.add_space(SPACE_SIZE);
+                c1.heading("Controls");
+                c1.separator();
 
-                    {
-                        const N_DECIMALS: usize = 8;
+                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
+                    const N_DECIMALS: usize = 8;
 
-                        c1.scope(|ui| {
-                            ui.horizontal(|ui| {
-                                let label_width = ui.label("zoom:").rect.width();
-                                ui.spacing_mut().slider_width = SLIDER_END_POS - label_width;
-                                let res = ui.add(
-                                    Slider::new(&mut self.params.zoom, 0.000000000001..=50.)
-                                        .logarithmic(true)
-                                        .min_decimals(N_DECIMALS),
-                                );
-                                if res.changed() {
-                                    self.params_changes.set_breaking();
-                                }
-                            });
-                        });
-
-                        let speed = 0.001 * self.params.zoom;
-
-                        let mut changed = false;
-
-                        const FIXED_LABEL_WIDTH: f32 = 20.;
-
-                        c1.horizontal(|ui| {
-                            let label_width = ui.label("re:").rect.width();
-                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
+                    ui.scope(|ui| {
+                        ui.horizontal(|ui| {
+                            let label_width = ui.label("zoom:").rect.width();
+                            ui.spacing_mut().slider_width = SLIDER_END_POS - label_width;
                             let res = ui.add(
-                                DragValue::new(&mut self.params.center_x)
-                                    .speed(speed)
+                                Slider::new(&mut self.params.zoom, 0.000000000001..=50.)
+                                    .logarithmic(true)
                                     .min_decimals(N_DECIMALS),
                             );
-                            changed |= res.changed();
-                        });
-                        c1.horizontal(|ui| {
-                            let label_width = ui.label("im:").rect.width();
-                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
-                            let res = ui.add(
-                                DragValue::new(&mut self.params.center_y)
-                                    .speed(speed)
-                                    .min_decimals(N_DECIMALS),
-                            );
-                            changed |= res.changed();
-                        });
-
-                        c1.horizontal(|ui| {
-                            ui.label("rotate:");
-                            let mut rotate = self.params.rotate.unwrap_or(0.);
-                            let res = ui.add(
-                                DragValue::new(&mut rotate)
-                                    .speed(0.01)
-                                    .range(0. ..=TAU as F)
-                                    .custom_parser(|s| {
-                                        s.parse::<F>()
-                                            .ok()
-                                            .map(|degrees| degrees.floor() * PI as F / 180.)
-                                    })
-                                    .custom_formatter(|rad, _| {
-                                        let degrees = rad * 180. / (PI as F);
-                                        degrees.floor().to_string()
-                                    }),
-                            );
-                            ui.label("deg");
                             if res.changed() {
-                                self.params.rotate = if rotate > 0. { Some(rotate) } else { None };
+                                self.params_changes.set_breaking();
                             }
-                            changed |= res.changed();
                         });
+                    });
 
-                        if changed {
-                            self.params_changes.set_breaking();
+                    let speed = 0.001 * self.params.zoom;
+
+                    let mut changed = false;
+
+                    const FIXED_LABEL_WIDTH: f32 = 20.;
+
+                    ui.horizontal(|ui| {
+                        let label_width = ui.label("re:").rect.width();
+                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
+                        let res = ui.add(
+                            DragValue::new(&mut self.params.center_x)
+                                .speed(speed)
+                                .min_decimals(N_DECIMALS),
+                        );
+                        changed |= res.changed();
+                    });
+                    ui.horizontal(|ui| {
+                        let label_width = ui.label("im:").rect.width();
+                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
+                        let res = ui.add(
+                            DragValue::new(&mut self.params.center_y)
+                                .speed(speed)
+                                .min_decimals(N_DECIMALS),
+                        );
+                        changed |= res.changed();
+                    });
+
+                    ui.horizontal(|ui| {
+                        ui.label("rotate:");
+                        let mut rotate = self.params.rotate.unwrap_or(0.);
+                        let res = ui.add(
+                            DragValue::new(&mut rotate)
+                                .speed(0.01)
+                                .range(0. ..=TAU as F)
+                                .custom_parser(|s| {
+                                    s.parse::<F>()
+                                        .ok()
+                                        .map(|degrees| degrees.floor() * PI as F / 180.)
+                                })
+                                .custom_formatter(|rad, _| {
+                                    let degrees = rad * 180. / (PI as F);
+                                    degrees.floor().to_string()
+                                }),
+                        );
+                        ui.label("deg");
+                        if res.changed() {
+                            self.params.rotate = if rotate > 0. { Some(rotate) } else { None };
                         }
+                        changed |= res.changed();
+                    });
+
+                    if changed {
+                        self.params_changes.set_breaking();
                     }
+                });
 
-                    c1.add_space(SPACE_SIZE);
-                    c1.heading("Coloring");
-                    c1.separator();
+                c1.add_space(SPACE_SIZE);
+                c1.heading("Coloring");
+                c1.separator();
 
-                    c1.horizontal(|ui| {
+                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
+                    ui.horizontal(|ui| {
                         ui.label("coloring mode:");
 
                         ComboBox::from_id_salt("coloring_mode")
@@ -307,7 +312,7 @@ impl App for Gui {
                             });
                     });
 
-                    c1.horizontal(|ui| {
+                    ui.horizontal(|ui| {
                         ui.label("map value:");
 
                         let (ColoringMode::CumulativeHistogram { map }
@@ -352,7 +357,7 @@ impl App for Gui {
                     {
                         const FIXED_LABEL_WIDTH: f32 = 30.;
 
-                        c1.horizontal(|ui| {
+                        ui.horizontal(|ui| {
                             let label_width = ui.label("min:").rect.width();
                             ui.add_space(FIXED_LABEL_WIDTH - label_width);
 
@@ -381,7 +386,7 @@ impl App for Gui {
                             }
                         });
 
-                        c1.horizontal(|ui| {
+                        ui.horizontal(|ui| {
                             let label_width = ui.label("max:").rect.width();
                             ui.add_space(FIXED_LABEL_WIDTH - label_width);
 
@@ -410,22 +415,33 @@ impl App for Gui {
                             }
                         });
                     }
+                });
 
-                    c1.add_space(SPACE_SIZE);
-                    c1.heading("Parameter file");
-                    c1.separator();
+                c1.add_space(SPACE_SIZE);
+                c1.heading("Save Settings");
+                c1.separator();
 
-                    c1.horizontal(|ui| {
-                        if ui.button("revert all edits").clicked() {
-                            self.revert_edits();
+                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
+                    ui.horizontal(|ui| {
+                        if ui.button("revert unsaved changes").clicked() {
+                            self.params = self.last_saved_params.clone();
                             self.params_changes.set_breaking();
                         }
-                        if ui.button("save parameter file").clicked() {
-                            match self.save_parameter_file() {
-                                Ok(_) => self.notify("saved"),
-                                Err(_) => self.notify("failed to save parameter file"),
-                            }
-                        }
+                        ui.add_enabled_ui(
+                            self.render_info.is_none() && self.param_file_path.is_some(),
+                            |ui| {
+                                let res = ui.button("save parameter file").on_disabled_hover_text(
+                                    "no path was provided for the parameter file",
+                                );
+
+                                if res.clicked() {
+                                    match self.save_parameter_file() {
+                                        Ok(_) => self.notify("saved"),
+                                        Err(_) => self.notify("failed to save parameter file"),
+                                    }
+                                }
+                            },
+                        );
                         ui.menu_button("load preset", |ui| {
                             ScrollArea::vertical()
                                 .max_width(200.)
@@ -447,12 +463,29 @@ impl App for Gui {
                         });
                     });
 
-                    // Second column
+                    ui.horizontal(|ui| {
+                        if ui.button("set parameter file path").clicked() {
+                            if self.path_selection_handle.is_none() {
+                                self.path_selection_handle =
+                                    Some(thread::spawn(|| (0, FileDialog::new().save_file())));
+                            }
+                        }
+                        if ui.button("set output image path").clicked() {
+                            if self.path_selection_handle.is_none() {
+                                self.path_selection_handle =
+                                    Some(thread::spawn(|| (1, FileDialog::new().save_file())));
+                            }
+                        }
+                    });
+                });
 
-                    c2.heading("Render");
-                    c2.separator();
+                // Second column
 
-                    c2.horizontal(|ui| {
+                c2.heading("Render");
+                c2.separator();
+
+                c2.add_enabled_ui(self.render_info.is_none(), |ui| {
+                    ui.horizontal(|ui| {
                         ui.label("image width:");
                         let res1 = ui.add(
                             DragValue::new(&mut self.params.img_width)
@@ -471,13 +504,13 @@ impl App for Gui {
                         }
                     });
 
-                    c2.horizontal(|ui| {
+                    ui.horizontal(|ui| {
                         ui.label("current spp:")
                             .on_hover_text("number of samples per pixel of the internal image");
-                        ui.code(format!(" {} ", self.samples_per_pixel))
+                        ui.code(format!(" {} ", self.samples_per_pixel));
                     });
 
-                    c2.horizontal(|ui| {
+                    ui.horizontal(|ui| {
                         let inner_res = ComboBox::from_id_salt("sampling_level")
                             .selected_text(Self::format_label_ron(self.params.sampling.level))
                             .show_ui(ui, |ui| {
@@ -495,37 +528,51 @@ impl App for Gui {
                             self.render_info = Some(self.render_and_save());
                         };
 
-                        ui.add_enabled_ui(self.samples_per_pixel > 0, |ui| {
-                            let res = ui.button("save image").on_disabled_hover_text(
-                                "sample the fractal before saving the image",
-                            );
+                        let no_samples = self.samples_per_pixel == 0;
+                        let no_output_image_path = self.output_image_path.is_none();
+                        ui.add_enabled_ui(!(no_samples || no_output_image_path), |ui| {
+                            let res = {
+                                let btn = ui.button("save image");
+
+                                if no_output_image_path {
+                                    btn.on_disabled_hover_text(
+                                        "no path was provided for the output image",
+                                    )
+                                } else if no_samples {
+                                    btn.on_disabled_hover_text(
+                                        "sample the fractal before saving the image",
+                                    )
+                                } else {
+                                    btn
+                                }
+                            };
 
                             self.should_save_image |= res.clicked();
                         });
                     });
-
-                    c2.add_space(SPACE_SIZE);
-                    c2.heading("Preview");
-                    c2.separator();
-
-                    if let Some(preview_bytes) = &self.preview_bytes {
-                        if let Some(preview_size) = self.preview_size {
-                            let d = 0.5 * (Gui::PREVIEW_SIZE as f32 - preview_size.y);
-                            c2.add_space(d);
-                            c2.add_sized(
-                                preview_size,
-                                Image::from_bytes(
-                                    "bytes://fractal_preview".to_string()
-                                        + &self.preview_id.to_string(),
-                                    preview_bytes.to_owned(),
-                                )
-                                .maintain_aspect_ratio(true)
-                                .corner_radius(2),
-                            );
-                            c2.add_space(d);
-                        }
-                    }
                 });
+
+                c2.add_space(SPACE_SIZE);
+                c2.heading("Preview");
+                c2.separator();
+
+                if let Some(preview_bytes) = &self.preview_bytes {
+                    if let Some(preview_size) = self.preview_size {
+                        let d = 0.5 * (Gui::PREVIEW_SIZE as f32 - preview_size.y);
+                        c2.add_space(d);
+                        c2.add_sized(
+                            preview_size,
+                            Image::from_bytes(
+                                "bytes://fractal_preview".to_string()
+                                    + &self.preview_id.to_string(),
+                                preview_bytes.to_owned(),
+                            )
+                            .maintain_aspect_ratio(true)
+                            .corner_radius(2),
+                        );
+                        c2.add_space(d);
+                    }
+                }
             });
 
             ui.add_space(SPACE_SIZE);
@@ -600,21 +647,36 @@ impl Gui {
         }
 
         if self.should_save_image {
-            if let Some(raw_image) = &self.raw_image {
-                let output_image = color_raw_image(
-                    &self.params,
-                    self.params.coloring_mode,
-                    self.params.custom_gradient.as_ref(),
-                    raw_image.to_owned(),
-                );
+            if let Some(output_image_path) = self.output_image_path.as_ref() {
+                if let Some(raw_image) = &self.raw_image {
+                    let output_image = color_raw_image(
+                        &self.params,
+                        self.params.coloring_mode,
+                        self.params.custom_gradient.as_ref(),
+                        raw_image.to_owned(),
+                    );
 
-                match output_image.save(&self.output_image_path) {
-                    Ok(_) => self.notify("image saved"),
-                    Err(_) => self.notify("failed to save image"),
+                    match output_image.save(&output_image_path) {
+                        Ok(_) => self.notify("image saved"),
+                        Err(_) => self.notify("failed to save image"),
+                    }
                 }
             }
 
             self.should_save_image = false;
+        }
+
+        if self
+            .path_selection_handle
+            .as_ref()
+            .is_some_and(|h| h.is_finished())
+        {
+            let (which, path) = self.path_selection_handle.take().unwrap().join().unwrap();
+            if which == 0 {
+                self.param_file_path = path;
+            } else if which == 1 {
+                self.output_image_path = path;
+            }
         }
     }
 
@@ -681,20 +743,19 @@ impl Gui {
     }
 
     fn save_parameter_file(&mut self) -> Result<()> {
-        self.init_params = self.params.clone();
-        fs::write(
-            &self.param_file_path,
-            ron::ser::to_string_pretty(
-                &ParamsKind::Frame(self.params.clone()),
-                PrettyConfig::default(),
+        if let Some(path) = self.param_file_path.as_ref() {
+            fs::write(
+                &path,
+                ron::ser::to_string_pretty(
+                    &ParamsKind::Frame(self.params.clone()),
+                    PrettyConfig::default(),
+                )
+                .map_err(ErrorKind::EncodeParameterFile)?,
             )
-            .map_err(ErrorKind::EncodeParameterFile)?,
-        )
-        .map_err(ErrorKind::WriteParameterFile)
-    }
-
-    fn revert_edits(&mut self) {
-        self.params = self.init_params.clone();
+            .map_err(ErrorKind::WriteParameterFile)
+        } else {
+            Ok(())
+        }
     }
 
     fn notify<S: ToString>(&mut self, msg: S) {

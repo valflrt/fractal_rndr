@@ -1,12 +1,43 @@
 use animation::RenderStep;
 use serde::{Deserialize, Serialize};
 
-use crate::{coloring::ColoringMode, fractal::Fractal, sampling::Sampling, F};
+use crate::{
+    coloring::{ColoringMode, Extremum, MapValue},
+    fractal::Fractal,
+    sampling::{Sampling, SamplingLevel},
+    F,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ParamsKind {
     Frame(FrameParams),
     Animation(AnimationParams),
+}
+
+impl Default for ParamsKind {
+    fn default() -> Self {
+        ParamsKind::Frame(FrameParams {
+            img_width: 1920,
+            img_height: 1080,
+            zoom: 10.,
+            center_x: -0.5,
+            center_y: 0.,
+            rotate: None,
+            fractal: Fractal::Mandelbrot,
+            max_iter: 100,
+            coloring_mode: ColoringMode::MinMaxNorm {
+                min: Extremum::Custom(0.),
+                max: Extremum::Custom(100.),
+                map: MapValue::Linear,
+            },
+            sampling: Sampling {
+                level: SamplingLevel::Exploration,
+                random_offsets: true,
+            },
+            custom_gradient: None,
+            dev_options: None,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

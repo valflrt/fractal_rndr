@@ -1,6 +1,8 @@
 # Fractal Renderer
 
-This is a program used to render fractals using a [RON](https://docs.rs/ron/latest/ron/) parameter file. It also has a very simple gui for an easier navigation.
+This is a program used to render fractals using a [RON](https://docs.rs/ron/latest/ron/) parameter file. It also has a simple GUI for easier navigation.
+
+It features anti-aliasing and the GUI allows for progressive sampling by manually taking as many samples as necessary to smoothen the image.
 
 ### Table of contents
 
@@ -23,14 +25,11 @@ Otherwise, you can download the latest executable from the [releases tab](https:
 
 # How to use
 
-Start the app using:
+You can either directly run the executable or use the command line:
 
 ```
-fractal_rndr path/to/param_file.ron path/to/output_image.png --gui
+fractal_rndr path/to/param_file.ron path/to/output_image.png
 ```
-
-> [!WARNING]
-> Don't forget the `--gui` option
 
 > [!NOTE]
 > Supported image formats are png and jpg (the extension is used to guess the format)

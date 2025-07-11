@@ -48,9 +48,9 @@ type FX = f64x4;
 
 const USAGE: &str = "This is a fractal renderer.
 Usage: fractal_rndr <param file path> <output image path>
-Use --gui to start the gui for image rendering (not animation).
+Use --no-gui for cli mode.
 
-More information: https://gh.valflrt.dev/fractal_rndr";
+More information: https://gitlab.com/valflrt/fractal_rndr";
 
 fn main() -> Result<()> {
     let args = valargs::parse();
@@ -60,58 +60,64 @@ fn main() -> Result<()> {
         args.nth(2).map(PathBuf::from),
     );
 
-    if let (Some(param_file_path), Some(output_image_path)) = (param_file_path, output_image_path) {
-        let params = ron::from_str::<ParamsKind>(
-            &fs::read_to_string(&param_file_path).map_err(ErrorKind::ReadParameterFile)?,
-        )
-        .map_err(ErrorKind::DecodeParameterFile)?;
+    let params = param_file_path
+        .as_ref()
+        .map(|param_file_path| {
+            let param_file_str =
+                fs::read_to_string(param_file_path).map_err(ErrorKind::ReadParameterFile)?;
+            let params = ron::from_str::<ParamsKind>(&param_file_str)
+                .map_err(ErrorKind::DecodeParameterFile)?;
+            Ok(params)
+        })
+        .transpose()?
+        .unwrap_or_default();
 
-        match params {
-            ParamsKind::Frame(params) => {
-                if args.has_option("gui") {
-                    start_gui(params, param_file_path, output_image_path)?;
-                } else {
-                    render_frame(params, output_image_path)?;
+    if args.has_option("help") || args.has_option("h") {
+        println!("{}", USAGE);
+        Ok(())
+    } else if args.has_option("no-gui") {
+        if let (Some(_), Some(output_image_path)) = (param_file_path, output_image_path) {
+            match params {
+                ParamsKind::Frame(params) => render_frame(params, output_image_path),
+                ParamsKind::Animation(animation_params) => {
+                    render_animation(animation_params, output_image_path)
                 }
             }
-            ParamsKind::Animation(animation_params) => {
-                if args.has_option("gui") {
-                    println!("There is no gui implementation for animations. Exiting...");
-                } else {
-                    render_animation(animation_params, output_image_path)?;
-                }
-            }
+        } else {
+            Err(ErrorKind::MissingCliArg)
         }
     } else {
-        println!("{}", USAGE);
+        start_gui(params, param_file_path, output_image_path)
     }
-
-    Ok(())
 }
 
 fn start_gui(
-    params: FrameParams,
-    param_file_path: PathBuf,
-    output_image_path: PathBuf,
+    params: ParamsKind,
+    param_file_path: Option<PathBuf>,
+    output_image_path: Option<PathBuf>,
 ) -> Result<()> {
-    eframe::run_native(
-        "fractal renderer",
-        eframe::NativeOptions {
-            viewport: ViewportBuilder::default()
-                .with_inner_size(WINDOW_SIZE)
-                .with_min_inner_size(WINDOW_SIZE),
-            ..Default::default()
-        },
-        Box::new(|cc| {
-            Ok(Box::new(Gui::new(
-                cc,
-                params,
-                param_file_path,
-                output_image_path,
-            )))
-        }),
-    )
-    .map_err(|_| ErrorKind::StartGui)
+    if let ParamsKind::Frame(frame_params) = params {
+        eframe::run_native(
+            "fractal renderer",
+            eframe::NativeOptions {
+                viewport: ViewportBuilder::default()
+                    .with_inner_size(WINDOW_SIZE)
+                    .with_min_inner_size(WINDOW_SIZE),
+                ..Default::default()
+            },
+            Box::new(|cc| {
+                Ok(Box::new(Gui::new(
+                    cc,
+                    frame_params,
+                    param_file_path,
+                    output_image_path,
+                )))
+            }),
+        )
+        .map_err(|_| ErrorKind::StartGui)
+    } else {
+        Err(ErrorKind::StartGui)
+    }
 }
 
 fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
