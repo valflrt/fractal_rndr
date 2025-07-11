@@ -1,13 +1,11 @@
 [package]
 name = "fractal_rndr"
 version = "0.2.2"
-description = "A tiny fractal renderer that features several coloring modes, anti-aliasing and a gui."
+description = "A fractal renderer that features several coloring modes, anti-aliasing and a gui."
 homepage = "https://github.com/valflrt/fractal_rndr"
 authors = ["valflrt"]
 edition = "2021"
 license = "MIT"
-readme = "README_PKG.md"
-exclude = ["/presets/*.png", "/presets/*.mp4"]
 
 [dependencies]
 eframe = "0.31.1"
