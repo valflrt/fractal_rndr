@@ -1,11 +1,5 @@
 image: ghcr.io/cross-rs/x86_64-unknown-linux-gnu:latest
 
-cache:
-  paths:
-    - target/
-    - /usr/local/cargo/registry/
-    - /root/.cache/sccache/
-
 variables:
   EXECUTABLE_NAME: fractal_rndr
   INSTANCE: gitlab.com
@@ -50,6 +44,8 @@ build-macos:
 release:
   stage: release
   image: curlimages/curl:latest
+  before_script:
+    - apk add --no-cache jq
   needs:
     - job: build-linux
       artifacts: true
@@ -59,8 +55,6 @@ release:
       artifacts: true
   script:
     - |
-      # Install jq
-      apk add --no-cache jq
       # Get the release ID using the GitLab API
       RELEASE_ID=$(curl --header "PRIVATE-TOKEN: $CI_JOB_TOKEN" "https://$INSTANCE/api/v4/projects/$CI_PROJECT_ID/releases/$CI_COMMIT_TAG_NAME" | jq -r '.id')
       # Attach the Linux binary to the release
