@@ -8,12 +8,6 @@ variables:
   EXECUTABLE_NAME: fractal_rndr
   INSTANCE: gitlab.com
 
-default:
-  before_script:
-    - |
-      rustc --version
-      cargo --version
-
 stages:
   - build
   - release
