@@ -1,20 +1,18 @@
-image: ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main
+stages:
+  - build
+  - release
 
 variables:
   EXECUTABLE_NAME: fractal_rndr
   INSTANCE: gitlab.com
 
-before_script:
-  - command -v cross || cargo install cross --git https://github.com/cross-rs/cross
-
-stages:
-  - build
-  - release
-
+# Linux build
 build-linux:
   stage: build
+  image: rust:latest
   script:
-    - cross build --target x86_64-unknown-linux-gnu --release
+    - rustup target add x86_64-unknown-linux-gnu
+    - cargo build --target x86_64-unknown-linux-gnu --release
   artifacts:
     paths:
       - target/x86_64-unknown-linux-gnu/release/${EXECUTABLE_NAME}
@@ -22,10 +20,14 @@ build-linux:
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9](-rc.+)?/'
 
+# Windows build
 build-windows:
   stage: build
+  image: rust:latest
   script:
-    - cross build --target x86_64-pc-windows-gnu --release
+    - rustup target add x86_64-pc-windows-gnu
+    - apt-get update && apt-get install -y mingw-w64
+    - cargo build --target x86_64-pc-windows-gnu --release
   artifacts:
     paths:
       - target/x86_64-pc-windows-gnu/release/${EXECUTABLE_NAME}.exe
@@ -33,10 +35,14 @@ build-windows:
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9](-rc.+)?/'
 
+# macOS build
 build-macos:
   stage: build
+  image: rust:latest
   script:
-    - cross build --target x86_64-apple-darwin --release
+    - rustup target add x86_64-apple-darwin
+    - apt-get update && apt-get install -y cmake clang llvm libssl-dev
+    - cargo build --target x86_64-apple-darwin --release
   artifacts:
     paths:
       - target/x86_64-apple-darwin/release/${EXECUTABLE_NAME}
@@ -44,6 +50,7 @@ build-macos:
   rules:
     - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9](-rc.+)?/'
 
+# Release job
 release:
   stage: release
   image: curlimages/curl:latest
