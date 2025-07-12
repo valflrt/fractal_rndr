@@ -1,39 +1,62 @@
-stages:
-  - build
-  - upload
-  - release
+image: "rust"
+
+cache:
+  paths:
+    - target/
 
 variables:
-  PACKAGE_REGISTRY_URL: "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/fractal_rndr/${CI_COMMIT_TAG}"
+  EXECUTABLE_NAME: fractal_rndr
+  INSTANCE: gitlab.com
 
-build:
+default:
+  before_script:
+    - |
+      rustc --version
+      cargo --version
+
+stages:
+  - build
+  - release
+
+build-linux:
   stage: build
-  image: rust:latest
   script:
-    - cargo build --release
-    - mkdir bin
-    - mv target/release/fractal_rndr bin/fractal_rndr-${CI_COMMIT_TAG}
-  cache:
-    paths:
-      - target/release/
+    - rustup target add x86_64-unknown-linux-gnu
+    - cargo build --target x86_64-unknown-linux-gnu --release
   artifacts:
     paths:
-      - bin
+      - target/x86_64-unknown-linux-gnu/release/${EXECUTABLE_NAME}
+    expire_in: 1 week
   rules:
-    - if: $CI_COMMIT_TAG
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9](-rc.+)?/'
 
-upload:
-  stage: upload
-  image: curlimages/curl:latest
-  rules:
-    - if: $CI_COMMIT_TAG
+build-windows:
+  stage: build
   script:
-    - 'curl --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file bin/fractal_rndr-${CI_COMMIT_TAG} ${PACKAGE_REGISTRY_URL}/fractal_rndr-${CI_COMMIT_TAG}'
+    - rustup target add x86_64-pc-windows-gnu
+    - cargo build --target x86_64-pc-windows-gnu --release
+  artifacts:
+    paths:
+      - target/x86_64-pc-windows-gnu/release/${EXECUTABLE_NAME}.exe
+    expire_in: 1 week
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9](-rc.+)?/'
 
 release:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
-  rules:
-    - if: $CI_COMMIT_TAG
+  image: curlimages/curl:latest
+  needs:
+    - job: build-linux
+      artifacts: true
+    - job: build-windows
+      artifacts: true
   script:
-    - 'release-cli create --name "fractal_rndr-$CI_COMMIT_TAG" --tag-name $CI_COMMIT_TAG --assets-link "{\"name\":\"fractal_rndr-${CI_COMMIT_TAG}\", \"url\":\"${PACKAGE_REGISTRY_URL}/fractal_rndr-${CI_COMMIT_TAG}\"}"'
+    - |
+      # Get the release ID using the GitLab API
+      RELEASE_ID=$(curl --header "PRIVATE-TOKEN: $CI_JOB_TOKEN" "https://$INSTANCE/api/v4/projects/$CI_PROJECT_ID/releases/$CI_COMMIT_TAG_NAME" | jq -r '.id')
+      # Attach the Linux binary to the release
+      curl --header "PRIVATE-TOKEN: $CI_JOB_TOKEN" --header "Content-Disposition: attachment; filename=${EXECUTABLE_NAME}-linux" --upload-file "target/x86_64-unknown-linux-gnu/release/${EXECUTABLE_NAME}" "https://$INSTANCE/api/v4/projects/$CI_PROJECT_ID/releases/$RELEASE_ID/uploads?url=true"
+      # Attach the Windows binary to the release
+      curl --header "PRIVATE-TOKEN: $CI_JOB_TOKEN" --header "Content-Disposition: attachment; filename=${EXECUTABLE_NAME}-windows.exe" --upload-file "target/x86_64-pc-windows-gnu/release/${EXECUTABLE_NAME}.exe" "https://$INSTANCE/api/v4/projects/$CI_PROJECT_ID/releases/$RELEASE_ID/uploads?url=true"
+  rules:
+    - if: '$CI_COMMIT_TAG && $CI_COMMIT_TAG =~ /^v[0-9]\.[0-9]\.[0-9](-rc.+)?/'
