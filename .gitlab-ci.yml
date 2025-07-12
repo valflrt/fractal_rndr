@@ -38,9 +38,7 @@ build-windows:
 # Release job
 release:
   stage: release
-  image: curlimages/curl:latest
-  before_script:
-    - apk add --no-cache jq
+  image: jlovich/curl-jq:latest
   needs:
     - job: build-linux
       artifacts: true
