@@ -27,7 +27,6 @@ build-linux:
 build-windows:
   stage: build
   script:
-    - sudo apt install mingw-w64
     - rustup target add x86_64-pc-windows-gnu
     - cargo build --target x86_64-pc-windows-gnu --release
   artifacts:
