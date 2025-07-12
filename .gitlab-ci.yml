@@ -38,7 +38,7 @@ build-windows:
 # Release job
 release:
   stage: release
-  image: jlovich/curl-jq:latest
+  image: dwdraju/alpine-curl-jq
   needs:
     - job: build-linux
       artifacts: true
