@@ -4,6 +4,9 @@ variables:
   EXECUTABLE_NAME: fractal_rndr
   INSTANCE: gitlab.com
 
+before_script:
+  - command -v cross || cargo install cross --git https://github.com/cross-rs/cross
+
 stages:
   - build
   - release
