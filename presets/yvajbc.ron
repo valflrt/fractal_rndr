@@ -15,12 +15,12 @@ Frame((
         max: Custom(400.0),
         map: Powf(0.9),
     ),
+    gradient: [
+        (0.0, (0, 0, 0)),
+        (1.0, (255, 255, 255)),
+    ],
     sampling: (
         level: Extreme,
         random_offsets: true,
     ),
-    custom_gradient: Some([
-        (0.0, (0, 0, 0)),
-        (1.0, (255, 255, 255)),
-    ]),
 ))

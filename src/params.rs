@@ -2,11 +2,15 @@ use animation::RenderStep;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    coloring::{ColoringMode, Extremum, MapValue},
+    coloring::{ColoringMode, Extremum, MapValue, DEFAULT_GRADIENT},
     fractal::Fractal,
     sampling::{Sampling, SamplingLevel},
     F,
 };
+
+fn default_gradient() -> Vec<(f64, [u8; 3])> {
+    DEFAULT_GRADIENT.to_vec()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ParamsKind {
@@ -30,11 +34,11 @@ impl Default for ParamsKind {
                 max: Extremum::Custom(100.),
                 map: MapValue::Linear,
             },
+            gradient: DEFAULT_GRADIENT.to_vec(),
             sampling: Sampling {
                 level: SamplingLevel::Exploration,
                 random_offsets: true,
             },
-            custom_gradient: None,
             dev_options: None,
         })
     }
@@ -54,10 +58,10 @@ pub struct FrameParams {
     pub max_iter: u32,
 
     pub coloring_mode: ColoringMode,
-    pub sampling: Sampling,
+    #[serde(default = "default_gradient")]
+    pub gradient: Vec<(F, [u8; 3])>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_gradient: Option<Vec<(F, [u8; 3])>>,
+    pub sampling: Sampling,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dev_options: Option<DevOptions>,
@@ -80,10 +84,10 @@ pub struct AnimationParams {
     pub fps: F,
 
     pub coloring_mode: ColoringMode,
-    pub sampling: Sampling,
+    #[serde(default = "default_gradient")]
+    pub gradient: Vec<(F, [u8; 3])>,
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub custom_gradient: Option<Vec<(F, [u8; 3])>>,
+    pub sampling: Sampling,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dev_options: Option<DevOptions>,
@@ -107,7 +111,7 @@ impl AnimationParams {
             max_iter: self.max_iter,
             coloring_mode: self.coloring_mode,
             sampling: self.sampling,
-            custom_gradient: self.custom_gradient.to_owned(),
+            gradient: self.gradient.to_owned(),
             dev_options: self.dev_options,
         }
     }

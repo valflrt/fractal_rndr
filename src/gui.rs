@@ -8,7 +8,8 @@ use std::{
 
 use eframe::{
     egui::{
-        self, Color32, ComboBox, DragValue, Grid, Image, ProgressBar, ScrollArea, Slider, Vec2,
+        self, color_picker::color_edit_button_srgb, Button, Color32, ComboBox, DragValue, Grid,
+        Image, ProgressBar, ScrollArea, Slider, Vec2, Vec2b,
     },
     App, CreationContext, Frame as EFrame,
 };
@@ -127,476 +128,555 @@ impl Gui {
 impl App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut EFrame) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            const SPACE_SIZE: f32 = 8.;
             const SLIDER_END_POS: f32 = 350.;
             ui.spacing_mut().slider_width = 150.;
 
             ui.columns_const(|[c1, c2]| {
                 // First column
 
-                c1.heading("Fractal");
+                c1.heading("Settings");
                 c1.separator();
 
-                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("fractal:");
+                egui::ScrollArea::vertical()
+                    .auto_shrink(Vec2b::new(false, true))
+                    .show(c1, |ui| {
+                        egui::CollapsingHeader::new("Fractal")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.label("fractal:");
 
-                        let inner_res = ComboBox::from_id_salt("fractal")
-                            .selected_text(Self::format_label_ron(self.params.fractal))
-                            .show_ui(ui, |ui| self.show_combobox_fractal(ui));
+                                        let inner_res = ComboBox::from_id_salt("fractal")
+                                            .selected_text(Self::format_label_ron(
+                                                self.params.fractal,
+                                            ))
+                                            .show_ui(ui, |ui| self.show_combobox_fractal(ui));
 
-                        inner_res
-                            .response
-                            .on_hover_text("select the fractal to render");
+                                        inner_res
+                                            .response
+                                            .on_hover_text("select the fractal to render");
 
-                        if inner_res.inner.unwrap_or(false) {
-                            // Reset view
-                            self.params.center_x = 0.;
-                            self.params.center_y = 0.;
-                            self.params.zoom = DEFAULT_ZOOM;
+                                        if inner_res.inner.unwrap_or(false) {
+                                            // Reset view
+                                            self.params.center_x = 0.;
+                                            self.params.center_y = 0.;
+                                            self.params.zoom = DEFAULT_ZOOM;
 
-                            self.params_changes.set_breaking();
-                        }
-                    });
-
-                    if self.show_fractal_parameters(ui) {
-                        self.params_changes.set_breaking();
-                    }
-
-                    ui.horizontal(|ui| {
-                        let label_width = ui.label("max_iter:").rect.width();
-                        ui.spacing_mut().slider_width = SLIDER_END_POS - label_width;
-                        let prev_max_iter = self.params.max_iter;
-                        let res = ui.add(
-                            Slider::new(&mut self.params.max_iter, 10..=200000).logarithmic(true),
-                        );
-                        if res.changed() {
-                            self.params_changes.set_breaking();
-
-                            // Avoid leaving max slider at a low value when
-                            // max_iter is increased.
-                            if prev_max_iter < self.params.max_iter {
-                                if let ColoringMode::MinMaxNorm {
-                                    max: Extremum::Custom(max),
-                                    ..
-                                } = &mut self.params.coloring_mode
-                                {
-                                    *max = self.params.max_iter as F;
-                                }
-                            }
-                        }
-                    });
-                });
-
-                c1.add_space(SPACE_SIZE);
-                c1.heading("Controls");
-                c1.separator();
-
-                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
-                    const N_DECIMALS: usize = 8;
-
-                    ui.scope(|ui| {
-                        ui.horizontal(|ui| {
-                            let label_width = ui.label("zoom:").rect.width();
-                            ui.spacing_mut().slider_width = SLIDER_END_POS - label_width;
-                            let res = ui.add(
-                                Slider::new(&mut self.params.zoom, 0.000000000001..=50.)
-                                    .logarithmic(true)
-                                    .min_decimals(N_DECIMALS),
-                            );
-                            if res.changed() {
-                                self.params_changes.set_breaking();
-                            }
-                        });
-                    });
-
-                    let speed = 0.001 * self.params.zoom;
-
-                    let mut changed = false;
-
-                    const FIXED_LABEL_WIDTH: f32 = 20.;
-
-                    ui.horizontal(|ui| {
-                        let label_width = ui.label("re:").rect.width();
-                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
-                        let res = ui.add(
-                            DragValue::new(&mut self.params.center_x)
-                                .speed(speed)
-                                .min_decimals(N_DECIMALS),
-                        );
-                        changed |= res.changed();
-                    });
-                    ui.horizontal(|ui| {
-                        let label_width = ui.label("im:").rect.width();
-                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
-                        let res = ui.add(
-                            DragValue::new(&mut self.params.center_y)
-                                .speed(speed)
-                                .min_decimals(N_DECIMALS),
-                        );
-                        changed |= res.changed();
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("rotate:");
-                        let mut rotate = self.params.rotate.unwrap_or(0.);
-                        let res = ui.add(
-                            DragValue::new(&mut rotate)
-                                .speed(0.01)
-                                .range(0. ..=TAU as F)
-                                .custom_parser(|s| {
-                                    s.parse::<F>()
-                                        .ok()
-                                        .map(|degrees| degrees.floor() * PI as F / 180.)
-                                })
-                                .custom_formatter(|rad, _| {
-                                    let degrees = rad * 180. / (PI as F);
-                                    degrees.floor().to_string()
-                                }),
-                        );
-                        ui.label("deg");
-                        if res.changed() {
-                            self.params.rotate = if rotate > 0. { Some(rotate) } else { None };
-                        }
-                        changed |= res.changed();
-                    });
-
-                    if changed {
-                        self.params_changes.set_breaking();
-                    }
-                });
-
-                c1.add_space(SPACE_SIZE);
-                c1.heading("Coloring");
-                c1.separator();
-
-                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("coloring mode:");
-
-                        ComboBox::from_id_salt("coloring_mode")
-                            .selected_text(match self.params.coloring_mode {
-                                ColoringMode::MinMaxNorm { .. } => "MinMaxNorm",
-                                ColoringMode::CumulativeHistogram { .. } => "CumulativeHistogram",
-                            })
-                            .show_ui(ui, |ui| {
-                                let selected = matches!(
-                                    self.params.coloring_mode,
-                                    ColoringMode::MinMaxNorm { .. }
-                                );
-                                if ui.selectable_label(selected, "MinMaxNorm").clicked()
-                                    && !selected
-                                {
-                                    self.params.coloring_mode = ColoringMode::MinMaxNorm {
-                                        min: Extremum::Auto,
-                                        max: Extremum::Auto,
-                                        map: MapValue::Linear,
-                                    };
-                                    self.params_changes.set_non_breaking();
-                                };
-
-                                let selected = matches!(
-                                    self.params.coloring_mode,
-                                    ColoringMode::CumulativeHistogram { .. }
-                                );
-                                if ui
-                                    .selectable_label(selected, "CumulativeHistogram")
-                                    .clicked()
-                                    && !selected
-                                {
-                                    self.params.coloring_mode = ColoringMode::CumulativeHistogram {
-                                        map: MapValue::Linear,
-                                    };
-                                    self.params_changes.set_non_breaking();
-                                };
-                            });
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("map value:");
-
-                        let (ColoringMode::CumulativeHistogram { map }
-                        | ColoringMode::MinMaxNorm { map, .. }) = &mut self.params.coloring_mode;
-
-                        ComboBox::from_id_salt("map_value")
-                            .selected_text(match map {
-                                MapValue::Linear => "Linear",
-                                MapValue::Squared => "Squared",
-                                MapValue::Powf(_) => "Powf",
-                            })
-                            .show_ui(ui, |ui| {
-                                let selected = matches!(map, MapValue::Linear);
-                                if ui.selectable_label(selected, "Linear").clicked() && !selected {
-                                    *map = MapValue::Linear;
-                                    self.params_changes.set_non_breaking();
-                                };
-
-                                let selected = matches!(map, MapValue::Squared);
-                                if ui.selectable_label(selected, "Squared").clicked() && !selected {
-                                    *map = MapValue::Squared;
-                                    self.params_changes.set_non_breaking();
-                                };
-
-                                let selected = matches!(map, MapValue::Powf(_));
-                                if ui.selectable_label(selected, "Powf").clicked() && !selected {
-                                    *map = MapValue::Powf(1.);
-                                    self.params_changes.set_non_breaking();
-                                };
-                            });
-
-                        if let MapValue::Powf(exp) = map {
-                            let res = ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
-                            if res.changed() {
-                                self.params_changes.set_non_breaking();
-                            }
-                        }
-                    });
-
-                    if let ColoringMode::MinMaxNorm { min, max, .. } =
-                        &mut self.params.coloring_mode
-                    {
-                        const FIXED_LABEL_WIDTH: f32 = 30.;
-
-                        ui.horizontal(|ui| {
-                            let label_width = ui.label("min:").rect.width();
-                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
-
-                            let mut auto = min.is_auto();
-                            let res = ui.checkbox(&mut auto, "auto");
-                            if res.changed() {
-                                *min = if auto {
-                                    Extremum::Auto
-                                } else {
-                                    Extremum::Custom(0.)
-                                };
-                                self.params_changes.set_non_breaking();
-                            }
-
-                            ui.spacing_mut().slider_width =
-                                SLIDER_END_POS - FIXED_LABEL_WIDTH - res.rect.width();
-
-                            if let Extremum::Custom(min) = min {
-                                let res = ui.add(
-                                    Slider::new(min, 0. ..=self.params.max_iter as F)
-                                        .fixed_decimals(0),
-                                );
-                                if res.changed() {
-                                    self.params_changes.set_non_breaking();
-                                }
-                            }
-                        });
-
-                        ui.horizontal(|ui| {
-                            let label_width = ui.label("max:").rect.width();
-                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
-
-                            let mut auto = max.is_auto();
-                            let res = ui.checkbox(&mut auto, "auto");
-                            if res.changed() {
-                                *max = if auto {
-                                    Extremum::Auto
-                                } else {
-                                    Extremum::Custom(self.params.max_iter as F)
-                                };
-                                self.params_changes.set_non_breaking();
-                            }
-
-                            ui.spacing_mut().slider_width =
-                                SLIDER_END_POS - FIXED_LABEL_WIDTH - res.rect.width();
-
-                            if let Extremum::Custom(max) = max {
-                                let res = ui.add(
-                                    Slider::new(max, 0. ..=self.params.max_iter as F)
-                                        .fixed_decimals(0),
-                                );
-                                if res.changed() {
-                                    self.params_changes.set_non_breaking();
-                                }
-                            }
-                        });
-                    }
-                });
-
-                c1.add_space(SPACE_SIZE);
-                c1.heading("Save Settings");
-                c1.separator();
-
-                c1.add_enabled_ui(self.render_info.is_none(), |ui| {
-                    ui.horizontal(|ui| {
-                        if ui.button("revert unsaved changes").clicked() {
-                            self.params = self.last_saved_params.clone();
-                            self.params_changes.set_breaking();
-                        }
-                        ui.add_enabled_ui(
-                            self.render_info.is_none() && self.param_file_path.is_some(),
-                            |ui| {
-                                let res = ui.button("save parameter file").on_disabled_hover_text(
-                                    "no path was provided for the parameter file",
-                                );
-
-                                if res.clicked() {
-                                    match self.save_parameter_file() {
-                                        Ok(_) => self.notify("saved"),
-                                        Err(_) => self.notify("failed to save parameter file"),
-                                    }
-                                }
-                            },
-                        );
-                        ui.menu_button("load preset", |ui| {
-                            ScrollArea::vertical()
-                                .max_width(200.)
-                                .max_height(100.)
-                                .show(ui, |ui| {
-                                    for &(name, cfg_file) in PRESETS {
-                                        if let ParamsKind::Frame(params) =
-                                            ron::from_str(cfg_file).unwrap()
-                                        {
-                                            if ui.button(name).clicked() {
-                                                self.params = params;
-                                                self.params_changes.set_breaking();
-                                                self.notify(format!("loaded {}", name));
-                                                ui.close_menu();
-                                            };
+                                            self.params_changes.set_breaking();
                                         }
-                                    }
-                                })
-                        });
-                    });
+                                    });
 
-                    ui.horizontal(|ui| {
-                        if ui.button("set parameter file path").clicked() {
-                            if self.path_selection_handle.is_none() {
-                                self.path_selection_handle =
-                                    Some(thread::spawn(|| (0, FileDialog::new().save_file())));
-                            }
-                        }
-                        if ui.button("set output image path").clicked() {
-                            if self.path_selection_handle.is_none() {
-                                self.path_selection_handle =
-                                    Some(thread::spawn(|| (1, FileDialog::new().save_file())));
-                            }
-                        }
+                                    if self.show_fractal_parameters(ui) {
+                                        self.params_changes.set_breaking();
+                                    }
+
+                                    ui.horizontal(|ui| {
+                                        let label_width = ui.label("max_iter:").rect.width();
+                                        ui.spacing_mut().slider_width =
+                                            SLIDER_END_POS - label_width;
+                                        let prev_max_iter = self.params.max_iter;
+                                        let res = ui.add(
+                                            Slider::new(&mut self.params.max_iter, 10..=200000)
+                                                .logarithmic(true),
+                                        );
+                                        if res.changed() {
+                                            self.params_changes.set_breaking();
+
+                                            // Avoid leaving max slider at a low value when
+                                            // max_iter is increased.
+                                            if prev_max_iter < self.params.max_iter {
+                                                if let ColoringMode::MinMaxNorm {
+                                                    max: Extremum::Custom(max),
+                                                    ..
+                                                } = &mut self.params.coloring_mode
+                                                {
+                                                    *max = self.params.max_iter as F;
+                                                }
+                                            }
+                                        }
+                                    });
+                                });
+                            });
+
+                        egui::CollapsingHeader::new("Controls")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
+                                    const N_DECIMALS: usize = 8;
+
+                                    ui.scope(|ui| {
+                                        ui.horizontal(|ui| {
+                                            let label_width = ui.label("zoom:").rect.width();
+                                            ui.spacing_mut().slider_width =
+                                                SLIDER_END_POS - label_width;
+                                            let res = ui.add(
+                                                Slider::new(
+                                                    &mut self.params.zoom,
+                                                    0.000000000001..=50.,
+                                                )
+                                                .logarithmic(true)
+                                                .min_decimals(N_DECIMALS),
+                                            );
+                                            if res.changed() {
+                                                self.params_changes.set_breaking();
+                                            }
+                                        });
+                                    });
+
+                                    let speed = 0.001 * self.params.zoom;
+
+                                    let mut changed = false;
+
+                                    const FIXED_LABEL_WIDTH: f32 = 20.;
+
+                                    ui.horizontal(|ui| {
+                                        let label_width = ui.label("re:").rect.width();
+                                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
+                                        let res = ui.add(
+                                            DragValue::new(&mut self.params.center_x)
+                                                .speed(speed)
+                                                .min_decimals(N_DECIMALS),
+                                        );
+                                        changed |= res.changed();
+                                    });
+                                    ui.horizontal(|ui| {
+                                        let label_width = ui.label("im:").rect.width();
+                                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
+                                        let res = ui.add(
+                                            DragValue::new(&mut self.params.center_y)
+                                                .speed(speed)
+                                                .min_decimals(N_DECIMALS),
+                                        );
+                                        changed |= res.changed();
+                                    });
+
+                                    ui.horizontal(|ui| {
+                                        ui.label("rotate:");
+                                        let mut rotate = self.params.rotate.unwrap_or(0.);
+                                        let res = ui.add(
+                                            DragValue::new(&mut rotate)
+                                                .speed(0.01)
+                                                .range(0. ..=TAU as F)
+                                                .custom_parser(|s| {
+                                                    s.parse::<F>().ok().map(|degrees| {
+                                                        degrees.floor() * PI as F / 180.
+                                                    })
+                                                })
+                                                .custom_formatter(|rad, _| {
+                                                    let degrees = rad * 180. / (PI as F);
+                                                    degrees.floor().to_string()
+                                                }),
+                                        );
+                                        ui.label("deg");
+                                        if res.changed() {
+                                            self.params.rotate =
+                                                if rotate > 0. { Some(rotate) } else { None };
+                                        }
+                                        changed |= res.changed();
+                                    });
+
+                                    if changed {
+                                        self.params_changes.set_breaking();
+                                    }
+                                });
+                            });
+
+                        egui::CollapsingHeader::new("Coloring")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.label("coloring mode:");
+
+                                        ComboBox::from_id_salt("coloring_mode")
+                                            .selected_text(match self.params.coloring_mode {
+                                                ColoringMode::MinMaxNorm { .. } => "MinMaxNorm",
+                                                ColoringMode::CumulativeHistogram { .. } => {
+                                                    "CumulativeHistogram"
+                                                }
+                                            })
+                                            .show_ui(ui, |ui| {
+                                                let selected = matches!(
+                                                    self.params.coloring_mode,
+                                                    ColoringMode::MinMaxNorm { .. }
+                                                );
+                                                if ui
+                                                    .selectable_label(selected, "MinMaxNorm")
+                                                    .clicked()
+                                                    && !selected
+                                                {
+                                                    self.params.coloring_mode =
+                                                        ColoringMode::MinMaxNorm {
+                                                            min: Extremum::Auto,
+                                                            max: Extremum::Auto,
+                                                            map: MapValue::Linear,
+                                                        };
+                                                    self.params_changes.set_non_breaking();
+                                                };
+
+                                                let selected = matches!(
+                                                    self.params.coloring_mode,
+                                                    ColoringMode::CumulativeHistogram { .. }
+                                                );
+                                                if ui
+                                                    .selectable_label(
+                                                        selected,
+                                                        "CumulativeHistogram",
+                                                    )
+                                                    .clicked()
+                                                    && !selected
+                                                {
+                                                    self.params.coloring_mode =
+                                                        ColoringMode::CumulativeHistogram {
+                                                            map: MapValue::Linear,
+                                                        };
+                                                    self.params_changes.set_non_breaking();
+                                                };
+                                            });
+                                    });
+
+                                    ui.horizontal(|ui| {
+                                        ui.label("map value:");
+
+                                        let (ColoringMode::CumulativeHistogram { map }
+                                        | ColoringMode::MinMaxNorm { map, .. }) =
+                                            &mut self.params.coloring_mode;
+
+                                        ComboBox::from_id_salt("map_value")
+                                            .selected_text(match map {
+                                                MapValue::Linear => "Linear",
+                                                MapValue::Squared => "Squared",
+                                                MapValue::Powf(_) => "Powf",
+                                            })
+                                            .show_ui(ui, |ui| {
+                                                let selected = matches!(map, MapValue::Linear);
+                                                if ui.selectable_label(selected, "Linear").clicked()
+                                                    && !selected
+                                                {
+                                                    *map = MapValue::Linear;
+                                                    self.params_changes.set_non_breaking();
+                                                };
+
+                                                let selected = matches!(map, MapValue::Squared);
+                                                if ui
+                                                    .selectable_label(selected, "Squared")
+                                                    .clicked()
+                                                    && !selected
+                                                {
+                                                    *map = MapValue::Squared;
+                                                    self.params_changes.set_non_breaking();
+                                                };
+
+                                                let selected = matches!(map, MapValue::Powf(_));
+                                                if ui.selectable_label(selected, "Powf").clicked()
+                                                    && !selected
+                                                {
+                                                    *map = MapValue::Powf(1.);
+                                                    self.params_changes.set_non_breaking();
+                                                };
+                                            });
+
+                                        if let MapValue::Powf(exp) = map {
+                                            let res = ui.add(
+                                                Slider::new(exp, 0.01..=20.).logarithmic(true),
+                                            );
+                                            if res.changed() {
+                                                self.params_changes.set_non_breaking();
+                                            }
+                                        }
+                                    });
+
+                                    if let ColoringMode::MinMaxNorm { min, max, .. } =
+                                        &mut self.params.coloring_mode
+                                    {
+                                        const FIXED_LABEL_WIDTH: f32 = 30.;
+
+                                        ui.horizontal(|ui| {
+                                            let label_width = ui.label("min:").rect.width();
+                                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
+
+                                            let mut auto = min.is_auto();
+                                            let res = ui.checkbox(&mut auto, "auto");
+                                            if res.changed() {
+                                                *min = if auto {
+                                                    Extremum::Auto
+                                                } else {
+                                                    Extremum::Custom(0.)
+                                                };
+                                                self.params_changes.set_non_breaking();
+                                            }
+
+                                            ui.spacing_mut().slider_width = SLIDER_END_POS
+                                                - FIXED_LABEL_WIDTH
+                                                - res.rect.width();
+
+                                            if let Extremum::Custom(min) = min {
+                                                let res = ui.add(
+                                                    Slider::new(
+                                                        min,
+                                                        0. ..=self.params.max_iter as F,
+                                                    )
+                                                    .fixed_decimals(0),
+                                                );
+                                                if res.changed() {
+                                                    self.params_changes.set_non_breaking();
+                                                }
+                                            }
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            let label_width = ui.label("max:").rect.width();
+                                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
+
+                                            let mut auto = max.is_auto();
+                                            let res = ui.checkbox(&mut auto, "auto");
+                                            if res.changed() {
+                                                *max = if auto {
+                                                    Extremum::Auto
+                                                } else {
+                                                    Extremum::Custom(self.params.max_iter as F)
+                                                };
+                                                self.params_changes.set_non_breaking();
+                                            }
+
+                                            ui.spacing_mut().slider_width = SLIDER_END_POS
+                                                - FIXED_LABEL_WIDTH
+                                                - res.rect.width();
+
+                                            if let Extremum::Custom(max) = max {
+                                                let res = ui.add(
+                                                    Slider::new(
+                                                        max,
+                                                        0. ..=self.params.max_iter as F,
+                                                    )
+                                                    .fixed_decimals(0),
+                                                );
+                                                if res.changed() {
+                                                    self.params_changes.set_non_breaking();
+                                                }
+                                            }
+                                        });
+                                    }
+                                });
+                            });
+
+                        egui::CollapsingHeader::new("Gradient")
+                            .default_open(false)
+                            .show(ui, |ui| {
+                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
+                                    if self.show_gradient_ui(ui) {
+                                        self.params_changes.set_non_breaking();
+                                    }
+                                });
+                            });
+
+                        egui::CollapsingHeader::new("Save Settings")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
+                                    ui.horizontal(|ui| {
+                                        if ui.button("open parameter file").clicked() {
+                                            if self.path_selection_handle.is_none() {
+                                                self.path_selection_handle =
+                                                    Some(thread::spawn(|| {
+                                                        (0, FileDialog::new().pick_file())
+                                                    }));
+                                            }
+                                        }
+                                        if ui.button("set output image").clicked() {
+                                            if self.path_selection_handle.is_none() {
+                                                self.path_selection_handle =
+                                                    Some(thread::spawn(|| {
+                                                        (1, FileDialog::new().save_file())
+                                                    }));
+                                            }
+                                        }
+                                    });
+
+                                    ui.horizontal(|ui| {
+                                        if ui.button("revert unsaved changes").clicked() {
+                                            self.params = self.last_saved_params.clone();
+                                            self.params_changes.set_breaking();
+                                        }
+                                        ui.add_enabled_ui(
+                                            self.render_info.is_none()
+                                                && self.param_file_path.is_some(),
+                                            |ui| {
+                                                let res = ui.button("save parameter file");
+                                                let res = if self.param_file_path.is_none() {
+                                                    res.on_disabled_hover_text(
+                                                    "no path was provided for the parameter file",
+                                                )
+                                                } else {
+                                                    res
+                                                };
+
+                                                if res.clicked() {
+                                                    match self.save_parameter_file() {
+                                                        Ok(_) => self.notify("saved"),
+                                                        Err(_) => self.notify(
+                                                            "failed to save parameter file",
+                                                        ),
+                                                    }
+                                                }
+                                            },
+                                        );
+                                        ui.menu_button("load preset", |ui| {
+                                            ScrollArea::vertical()
+                                                .max_width(200.)
+                                                .max_height(100.)
+                                                .show(ui, |ui| {
+                                                    for &(name, cfg_file) in PRESETS {
+                                                        if let ParamsKind::Frame(params) =
+                                                            ron::from_str(cfg_file).unwrap()
+                                                        {
+                                                            if ui.button(name).clicked() {
+                                                                self.params = params;
+                                                                self.params_changes.set_breaking();
+                                                                self.notify(format!(
+                                                                    "loaded {}",
+                                                                    name
+                                                                ));
+                                                                ui.close();
+                                                            };
+                                                        }
+                                                    }
+                                                })
+                                        });
+                                    });
+                                });
+                            });
+
+                        egui::CollapsingHeader::new("Render")
+                            .default_open(true)
+                            .show(ui, |ui| {
+                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.label("image width:");
+                                        let res1 = ui.add(
+                                            DragValue::new(&mut self.params.img_width)
+                                                .range(32..=20000)
+                                                .speed(4.),
+                                        );
+                                        ui.label("image height:");
+                                        let res2 = ui.add(
+                                            DragValue::new(&mut self.params.img_height)
+                                                .range(32..=20000)
+                                                .speed(4.),
+                                        );
+
+                                        if res1.changed() || res2.changed() {
+                                            self.params_changes.set_breaking();
+                                        }
+                                    });
+
+                                    ui.horizontal(|ui| {
+                                        ui.label("current spp:").on_hover_text(
+                                            "number of samples per pixel of the internal image",
+                                        );
+                                        ui.code(format!(" {} ", self.samples_per_pixel));
+                                    });
+
+                                    ui.horizontal(|ui| {
+                                        let inner_res = ComboBox::from_id_salt("sampling_level")
+                                            .selected_text(Self::format_label_ron(
+                                                self.params.sampling.level,
+                                            ))
+                                            .show_ui(ui, |ui| {
+                                                self.show_combobox_sampling_level(ui);
+                                            });
+                                        inner_res.response.on_hover_text("sampling level");
+
+                                        let res = ui
+                                            .button(format!(
+                                                "sample fractal (+{} spp)",
+                                                self.params.sampling.sample_count()
+                                            ))
+                                            .on_hover_text("collect new samples");
+                                        if res.clicked() {
+                                            self.render_info = Some(self.render_and_save());
+                                        };
+
+                                        let no_samples = self.samples_per_pixel == 0;
+                                        let no_output_image_path = self.output_image_path.is_none();
+                                        ui.add_enabled_ui(
+                                            !(no_samples || no_output_image_path),
+                                            |ui| {
+                                                let res = {
+                                                    let btn = ui.button("save image");
+
+                                                    if no_output_image_path {
+                                                        btn.on_disabled_hover_text(
+                                                        "no path was provided for the output image",
+                                                    )
+                                                    } else if no_samples {
+                                                        btn.on_disabled_hover_text(
+                                                "sample the fractal before saving the image",
+                                            )
+                                                    } else {
+                                                        btn
+                                                    }
+                                                };
+
+                                                self.should_save_image |= res.clicked();
+                                            },
+                                        );
+                                    });
+                                });
+                            });
+
+                        ui.add_space(16.);
                     });
-                });
 
                 // Second column
 
-                c2.heading("Render");
-                c2.separator();
+                const INFO_AREA_HEIGHT: f32 = 48.;
 
-                c2.add_enabled_ui(self.render_info.is_none(), |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label("image width:");
-                        let res1 = ui.add(
-                            DragValue::new(&mut self.params.img_width)
-                                .range(32..=20000)
-                                .speed(4.),
-                        );
-                        ui.label("image height:");
-                        let res2 = ui.add(
-                            DragValue::new(&mut self.params.img_height)
-                                .range(32..=20000)
-                                .speed(4.),
-                        );
-
-                        if res1.changed() || res2.changed() {
-                            self.params_changes.set_breaking();
-                        }
-                    });
-
-                    ui.horizontal(|ui| {
-                        ui.label("current spp:")
-                            .on_hover_text("number of samples per pixel of the internal image");
-                        ui.code(format!(" {} ", self.samples_per_pixel));
-                    });
-
-                    ui.horizontal(|ui| {
-                        let inner_res = ComboBox::from_id_salt("sampling_level")
-                            .selected_text(Self::format_label_ron(self.params.sampling.level))
-                            .show_ui(ui, |ui| {
-                                self.show_combobox_sampling_level(ui);
-                            });
-                        inner_res.response.on_hover_text("sampling level");
-
-                        let res = ui
-                            .button(format!(
-                                "sample fractal (+{} spp)",
-                                self.params.sampling.sample_count()
-                            ))
-                            .on_hover_text("collect new samples");
-                        if res.clicked() {
-                            self.render_info = Some(self.render_and_save());
-                        };
-
-                        let no_samples = self.samples_per_pixel == 0;
-                        let no_output_image_path = self.output_image_path.is_none();
-                        ui.add_enabled_ui(!(no_samples || no_output_image_path), |ui| {
-                            let res = {
-                                let btn = ui.button("save image");
-
-                                if no_output_image_path {
-                                    btn.on_disabled_hover_text(
-                                        "no path was provided for the output image",
-                                    )
-                                } else if no_samples {
-                                    btn.on_disabled_hover_text(
-                                        "sample the fractal before saving the image",
-                                    )
-                                } else {
-                                    btn
-                                }
-                            };
-
-                            self.should_save_image |= res.clicked();
-                        });
-                    });
-                });
-
-                c2.add_space(SPACE_SIZE);
                 c2.heading("Preview");
                 c2.separator();
 
                 if let Some(preview_bytes) = &self.preview_bytes {
                     if let Some(preview_size) = self.preview_size {
-                        let d = 0.5 * (Gui::PREVIEW_SIZE as f32 - preview_size.y);
+                        let d = 0.5 * (c2.available_height() - preview_size.y - INFO_AREA_HEIGHT);
                         c2.add_space(d);
                         c2.add_sized(
                             preview_size,
+                            // TODO use texture instead (see progressive_fractal_rndr)
                             Image::from_bytes(
                                 "bytes://fractal_preview".to_string()
                                     + &self.preview_id.to_string(),
                                 preview_bytes.to_owned(),
                             )
+                            .show_loading_spinner(false)
                             .maintain_aspect_ratio(true)
                             .corner_radius(2),
                         );
                         c2.add_space(d);
                     }
                 }
-            });
 
-            ui.add_space(SPACE_SIZE);
-
-            ui.with_layout(
-                egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
-                |ui| {
-                    if let Some((_, progress)) = &self.render_info {
-                        ui.add(
-                            ProgressBar::new(progress.get_progress())
-                                .desired_height(4.)
-                                .desired_width(128.)
-                                .corner_radius(0.)
-                                .fill(Color32::WHITE),
-                        );
-                    } else if let Some((text, start)) = self.message.as_mut() {
-                        const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
-                        ui.label(text.as_str());
-                        if start.elapsed() > MESSAGE_DISPLAY_TIME {
-                            self.message = None;
+                c2.with_layout(
+                    egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
+                    |ui| {
+                        if let Some((_, progress)) = &self.render_info {
+                            ui.add(
+                                ProgressBar::new(progress.get_progress())
+                                    .desired_height(4.)
+                                    .desired_width(128.)
+                                    .corner_radius(0.)
+                                    .fill(Color32::WHITE),
+                            );
+                        } else if let Some((text, start)) = self.message.as_mut() {
+                            const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
+                            ui.label(text.as_str());
+                            if start.elapsed() > MESSAGE_DISPLAY_TIME {
+                                self.message = None;
+                            }
                         }
-                    }
-                },
-            );
+                    },
+                );
+            });
         });
 
         self.handle_update(ctx);
@@ -649,12 +729,7 @@ impl Gui {
         if self.should_save_image {
             if let Some(output_image_path) = self.output_image_path.as_ref() {
                 if let Some(raw_image) = &self.raw_image {
-                    let output_image = color_raw_image(
-                        &self.params,
-                        self.params.coloring_mode,
-                        self.params.custom_gradient.as_ref(),
-                        raw_image.to_owned(),
-                    );
+                    let output_image = color_raw_image(&self.params, raw_image.to_owned());
 
                     match output_image.save(&output_image_path) {
                         Ok(_) => self.notify("image saved"),
@@ -726,12 +801,7 @@ impl Gui {
 
         let raw_image = render_raw_image(&preview_params, &sampling_points, None);
 
-        let output_image = color_raw_image(
-            &preview_params,
-            preview_params.coloring_mode,
-            preview_params.custom_gradient.as_ref(),
-            raw_image,
-        );
+        let output_image = color_raw_image(&preview_params, raw_image);
 
         let mut buf = Vec::new();
         output_image
@@ -769,6 +839,65 @@ impl Gui {
             .unwrap_or_default()
             .replace(":", ": ")
             .replace(",", ", ")
+    }
+
+    fn show_gradient_ui(&mut self, ui: &mut egui::Ui) -> bool {
+        let mut changed = false;
+
+        let l = self.params.gradient.len();
+        let t_values = self
+            .params
+            .gradient
+            .iter()
+            .map(|&(t, _)| t)
+            .collect::<Vec<_>>();
+
+        let mut reorder = (0..l).map(|i| Some(i)).collect::<Vec<_>>();
+
+        for (i, (t, c)) in &mut self.params.gradient.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                let is_start = i == 0;
+                let is_end = i + 1 == l;
+                let is_start_or_end = is_start || is_end;
+
+                let range = if !is_start_or_end {
+                    t_values.get(i - 1).copied().unwrap_or(0.)
+                        ..=t_values.get(i + 1).copied().unwrap_or(1.)
+                } else {
+                    0. ..=1.
+                };
+                changed |= ui
+                    .add_enabled(
+                        !is_start_or_end,
+                        DragValue::new(t).range(range).fixed_decimals(2).speed(0.01),
+                    )
+                    .changed();
+                changed |= color_edit_button_srgb(ui, c).changed();
+                if ui.add_enabled(!is_start, Button::new("up")).clicked() {
+                    reorder.swap(i - 1, i);
+                    changed = true;
+                }
+                if ui.add_enabled(!is_end, Button::new("down")).clicked() {
+                    reorder.swap(i, i + 1);
+                    changed = true;
+                }
+                if ui.add_enabled(l > 1, Button::new("remove")).clicked() {
+                    reorder[i] = None;
+                    changed = true;
+                }
+                if ui.button("duplicate").clicked() {
+                    reorder.insert(i, Some(i));
+                }
+            });
+        }
+
+        self.params.gradient = reorder
+            .iter()
+            .filter_map(|&v| v)
+            .map(|i| self.params.gradient[i])
+            .collect::<Vec<_>>();
+
+        changed
     }
 
     fn show_combobox_fractal(&mut self, ui: &mut egui::Ui) -> bool {

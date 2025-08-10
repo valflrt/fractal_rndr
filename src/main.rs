@@ -165,12 +165,7 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
 
     println!();
 
-    let output_image = color_raw_image(
-        &params,
-        params.coloring_mode,
-        params.custom_gradient.as_ref(),
-        raw_image,
-    );
+    let output_image = color_raw_image(&params, raw_image);
 
     output_image
         .save(&output_image_path)
@@ -252,12 +247,7 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
 
         println!();
 
-        let mut output_image = color_raw_image(
-            &params,
-            params.coloring_mode,
-            params.custom_gradient.as_ref(),
-            raw_image,
-        );
+        let mut output_image = color_raw_image(&params, raw_image);
 
         if let Some(DevOptions {
             display_gradient: Some(true),
@@ -273,10 +263,7 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
                     output_image.put_pixel(
                         img_width - GRADIENT_WIDTH - OFFSET + i,
                         img_height - GRADIENT_HEIGHT - OFFSET + j,
-                        color_mapping(
-                            i as F / GRADIENT_WIDTH as F,
-                            params.custom_gradient.as_ref(),
-                        ),
+                        color_mapping(i as F / GRADIENT_WIDTH as F, &params.gradient),
                     );
                 }
             }

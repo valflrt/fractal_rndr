@@ -4,12 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{mat::Mat2D, params::FrameParams, F};
 
-pub fn color_raw_image(
-    params: &FrameParams,
-    coloring_mode: ColoringMode,
-    custom_gradient: Option<&Vec<(F, [u8; 3])>>,
-    mut raw_image: Mat2D<F>,
-) -> RgbImage {
+pub fn color_raw_image(params: &FrameParams, mut raw_image: Mat2D<F>) -> RgbImage {
     let &FrameParams {
         img_width,
         img_height,
@@ -21,7 +16,7 @@ pub fn color_raw_image(
     let max_v = raw_image.vec.iter().copied().fold(0., F::max);
     let min_v = raw_image.vec.iter().copied().fold(max_v, F::min);
 
-    match coloring_mode {
+    match params.coloring_mode {
         ColoringMode::MinMaxNorm { min, max, map } => {
             let min = min.unwrap_custom_or(min_v);
             let max = max.unwrap_custom_or(max_v);
@@ -32,7 +27,7 @@ pub fn color_raw_image(
 
                     let t = map.apply((value - min) / (max - min));
 
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, &params.gradient));
                 }
             }
         }
@@ -45,7 +40,7 @@ pub fn color_raw_image(
 
                     let t = map.apply(get_histogram_value(value, &cumulative_histogram));
 
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, custom_gradient));
+                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, &params.gradient));
                 }
             }
         }
@@ -114,14 +109,14 @@ impl MapValue {
     }
 }
 
-const DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
+pub const DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
     (0.0, [230, 230, 240]),
     (0.3, [230, 180, 180]),
     (0.5, [60, 60, 90]),
     (1.0, [220, 210, 220]),
 ];
 #[allow(dead_code)]
-const OLD_DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
+pub const OLD_DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
     (0., [20, 8, 30]),
     (0.1, [160, 30, 200]),
     (0.25, [20, 160, 230]),
@@ -132,43 +127,31 @@ const OLD_DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
     (1., [20, 2, 10]),
 ];
 
-pub fn color_mapping(t: F, custom_gradient: Option<&Vec<(F, [u8; 3])>>) -> Rgb<u8> {
-    fn map(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
-        let first = gradient[0];
-        let last = gradient.last().unwrap();
+pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
+    let first = gradient[0];
+    let last = gradient.last().unwrap();
 
-        let c = if t < first.0 {
-            Rgb(first.1)
-        } else if t > last.0 {
-            Rgb(last.1)
-        } else {
-            let i = gradient
-                .binary_search_by(|&(value, _)| value.total_cmp(&t))
-                .unwrap_or_else(|index| index)
-                .saturating_sub(1);
-
-            let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
-            let [r1, g1, b1] = gradient[i].1;
-            let [r2, g2, b2] = gradient[i + 1].1;
-            let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
-            let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
-            let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
-
-            Rgb([r, g, b])
-        };
-
-        if c == Rgb([0, 0, 0]) {
-            // println!("{}", t);
-        }
-
-        c
-    }
-
-    if let Some(g) = custom_gradient {
-        map(t, g)
+    let c = if t < first.0 {
+        Rgb(first.1)
+    } else if t > last.0 {
+        Rgb(last.1)
     } else {
-        map(t, DEFAULT_GRADIENT)
-    }
+        let i = gradient
+            .binary_search_by(|&(value, _)| value.total_cmp(&t))
+            .unwrap_or_else(|index| index)
+            .saturating_sub(1);
+
+        let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
+        let [r1, g1, b1] = gradient[i].1;
+        let [r2, g2, b2] = gradient[i + 1].1;
+        let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
+        let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
+        let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
+
+        Rgb([r, g, b])
+    };
+
+    c
 }
 
 pub mod cumulative_histogram {

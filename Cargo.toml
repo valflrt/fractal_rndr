@@ -8,8 +8,8 @@ edition = "2021"
 license = "MIT"
 
 [dependencies]
-eframe = "0.31.1"
-egui_extras = { version = "0.31.1", features = ["image"] }
+eframe = "0.32"
+egui_extras = { version = "0.32", features = ["image"] }
 fastrand = "2.3.0"
 image = { version = "0.25.5", default-features = false, features = [
     "png",

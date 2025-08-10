@@ -15,16 +15,16 @@ Frame((
         max: Custom(2500.0),
         map: Linear,
     ),
-    sampling: (
-        level: Exploration,
-        random_offsets: true,
-    ),
-    custom_gradient: Some([
+    gradient: [
         (0.0, (230, 230, 240)),
         (0.2, (60, 50, 90)),
         (0.3, (230, 180, 180)),
         (0.4, (100, 100, 140)),
         (0.5, (60, 60, 90)),
         (1.0, (220, 210, 220)),
-    ]),
+    ],
+    sampling: (
+        level: Exploration,
+        random_offsets: true,
+    ),
 ))

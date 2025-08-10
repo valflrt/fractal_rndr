@@ -11,6 +11,12 @@ Frame((
         gamma: (0.0, 0.0),
     ),
     max_iter: 1500,
+    gradient: [
+        (0.0, (230, 230, 240)),
+        (0.3, (230, 180, 180)),
+        (0.5, (60, 60, 90)),
+        (1.0, (220, 210, 220)),
+    ],
     coloring_mode: MinMaxNorm(
         min: Custom(0.0),
         max: Custom(1500.0),
