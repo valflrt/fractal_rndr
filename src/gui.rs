@@ -253,17 +253,19 @@ impl App for Gui {
                                     ui.horizontal(|ui| {
                                         ui.label("rotate:");
                                         let mut rotate = self.params.rotate.unwrap_or(0.);
+
+                                        const FRAC_PI_180: F = PI as F / 180.;
                                         let res = ui.add(
                                             DragValue::new(&mut rotate)
                                                 .speed(0.01)
                                                 .range(0. ..=TAU as F)
                                                 .custom_parser(|s| {
                                                     s.parse::<F>().ok().map(|degrees| {
-                                                        degrees.floor() * PI as F / 180.
+                                                        (degrees.floor() * FRAC_PI_180) as f64
                                                     })
                                                 })
                                                 .custom_formatter(|rad, _| {
-                                                    let degrees = rad * 180. / (PI as F);
+                                                    let degrees = rad as F * FRAC_PI_180;
                                                     degrees.floor().to_string()
                                                 }),
                                         );
@@ -1068,7 +1070,7 @@ impl Gui {
     }
 
     fn show_fractal_parameters(&mut self, ui: &mut egui::Ui) -> bool {
-        const SPEED: f64 = 0.0001;
+        const SPEED: F = 0.0001;
         const N_DECIMALS: usize = 8;
 
         let mut changed = false;

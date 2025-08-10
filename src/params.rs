@@ -8,7 +8,7 @@ use crate::{
     F,
 };
 
-fn default_gradient() -> Vec<(f64, [u8; 3])> {
+fn default_gradient() -> Vec<(F, [u8; 3])> {
     DEFAULT_GRADIENT.to_vec()
 }
 
