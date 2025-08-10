@@ -1089,7 +1089,7 @@ impl Gui {
         if let Fractal::SdrgeCustomIntExp { exp } = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("exp:");
-                let res = ui.add(DragValue::new(exp).speed(SPEED).range(1..=10));
+                let res = ui.add(DragValue::new(exp).range(1..=10));
                 changed |= res.changed();
             });
         }
