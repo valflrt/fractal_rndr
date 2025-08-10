@@ -36,7 +36,7 @@ fractal_rndr path/to/param_file.ron path/to/output_image.png
 
 This is what the app looks like:
 
-![gui preview](/img/gui.png)
+![gui preview](img/gui.png)
 
 Enjoy !
 
