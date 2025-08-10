@@ -1127,7 +1127,7 @@ dependencies = [
 
 [[package]]
 name = "fractal_rndr"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "eframe",
  "egui_extras",
