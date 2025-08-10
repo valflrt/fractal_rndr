@@ -31,6 +31,7 @@ impl Sampling {
 
     pub fn sample_count(&self) -> usize {
         match self.level {
+            SamplingLevel::Raw => 1,
             SamplingLevel::Exploration => 8,
             SamplingLevel::Low => 21,
             SamplingLevel::Medium => 34,
@@ -46,6 +47,7 @@ impl Sampling {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SamplingLevel {
+    Raw,
     Exploration,
     Low,
     Medium,

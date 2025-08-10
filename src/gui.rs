@@ -8,12 +8,11 @@ use std::{
 
 use eframe::{
     egui::{
-        self, color_picker::color_edit_button_srgb, Button, Color32, ComboBox, DragValue, Grid,
-        Image, ProgressBar, ScrollArea, Slider, Vec2, Vec2b,
+        self, color_picker::color_edit_button_srgb, Button, Color32, ColorImage, ComboBox,
+        DragValue, Grid, Image, ProgressBar, ScrollArea, Slider, TextureHandle, Vec2, Vec2b,
     },
     App, CreationContext, Frame as EFrame,
 };
-use image::codecs::png::PngEncoder;
 use rfd::FileDialog;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
@@ -76,9 +75,7 @@ pub struct Gui {
     output_image_path: Option<PathBuf>,
     path_selection_handle: Option<JoinHandle<(u8, Option<PathBuf>)>>,
 
-    preview_bytes: Option<Vec<u8>>,
-    preview_size: Option<Vec2>,
-    preview_id: u128,
+    preview_texture: TextureHandle,
 
     raw_image: Option<Mat2D<F>>,
     samples_per_pixel: usize,
@@ -110,9 +107,11 @@ impl Gui {
             output_image_path,
             path_selection_handle: None,
 
-            preview_bytes: None,
-            preview_size: None,
-            preview_id: 0,
+            preview_texture: cc.egui_ctx.load_texture(
+                "preview_image",
+                ColorImage::filled([0, 0], Color32::TRANSPARENT),
+                Default::default(),
+            ),
 
             raw_image: None,
             samples_per_pixel: 0,
@@ -636,25 +635,17 @@ impl App for Gui {
                 c2.heading("Preview");
                 c2.separator();
 
-                if let Some(preview_bytes) = &self.preview_bytes {
-                    if let Some(preview_size) = self.preview_size {
-                        let d = 0.5 * (c2.available_height() - preview_size.y - INFO_AREA_HEIGHT);
-                        c2.add_space(d);
-                        c2.add_sized(
-                            preview_size,
-                            // TODO use texture instead (see progressive_fractal_rndr)
-                            Image::from_bytes(
-                                "bytes://fractal_preview".to_string()
-                                    + &self.preview_id.to_string(),
-                                preview_bytes.to_owned(),
-                            )
-                            .show_loading_spinner(false)
-                            .maintain_aspect_ratio(true)
-                            .corner_radius(2),
-                        );
-                        c2.add_space(d);
-                    }
-                }
+                let texture_size = self.preview_texture.size_vec2();
+                let d = 0.5 * (c2.available_height() - texture_size.y - INFO_AREA_HEIGHT);
+                c2.add_space(d);
+                c2.add_sized(
+                    texture_size,
+                    Image::from_texture((self.preview_texture.id(), texture_size))
+                        .show_loading_spinner(false)
+                        .maintain_aspect_ratio(true)
+                        .corner_radius(2),
+                );
+                c2.add_space(d);
 
                 c2.with_layout(
                     egui::Layout::centered_and_justified(egui::Direction::LeftToRight),
@@ -785,8 +776,6 @@ impl Gui {
             )
         };
 
-        self.preview_size = Some(Vec2::new(preview_width as f32, preview_height as f32));
-
         let preview_params = FrameParams {
             img_width: preview_width,
             img_height: preview_height,
@@ -802,14 +791,11 @@ impl Gui {
         let raw_image = render_raw_image(&preview_params, &sampling_points, None);
 
         let output_image = color_raw_image(&preview_params, raw_image);
-
-        let mut buf = Vec::new();
-        output_image
-            .write_with_encoder(PngEncoder::new(&mut buf))
-            .unwrap();
-
-        self.preview_id += 1;
-        self.preview_bytes = Some(buf);
+        let egui_image = egui::ColorImage::from_rgb(
+            [output_image.width() as _, output_image.height() as _],
+            output_image.as_raw(),
+        );
+        self.preview_texture.set(egui_image, Default::default());
     }
 
     fn save_parameter_file(&mut self) -> Result<()> {
@@ -1173,42 +1159,21 @@ impl Gui {
     }
 
     fn show_combobox_sampling_level(&mut self, ui: &mut egui::Ui) {
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Exploration,
-            "Exploration",
-        );
-        ui.selectable_value(&mut self.params.sampling.level, SamplingLevel::Low, "Low");
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Medium,
-            "Medium",
-        );
-        ui.selectable_value(&mut self.params.sampling.level, SamplingLevel::High, "High");
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Ultra,
-            "Ultra",
-        );
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Extreme,
-            "Extreme",
-        );
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Extreme1,
-            "Extreme1",
-        );
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Extreme2,
-            "Extreme2",
-        );
-        ui.selectable_value(
-            &mut self.params.sampling.level,
-            SamplingLevel::Extreme3,
-            "Extreme3",
-        );
+        const LEVELS: &[(SamplingLevel, &str)] = &[
+            (SamplingLevel::Raw, "Raw"),
+            (SamplingLevel::Exploration, "Exploration"),
+            (SamplingLevel::Low, "Low"),
+            (SamplingLevel::Medium, "Medium"),
+            (SamplingLevel::High, "High"),
+            (SamplingLevel::Ultra, "Ultra"),
+            (SamplingLevel::Extreme, "Extreme"),
+            (SamplingLevel::Extreme1, "Extreme1"),
+            (SamplingLevel::Extreme2, "Extreme2"),
+            (SamplingLevel::Extreme3, "Extreme3"),
+        ];
+
+        for &(level, name) in LEVELS {
+            ui.selectable_value(&mut self.params.sampling.level, level, name);
+        }
     }
 }
