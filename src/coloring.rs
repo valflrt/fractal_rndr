@@ -131,7 +131,7 @@ pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
     let first = gradient[0];
     let last = gradient.last().unwrap();
 
-    let c = if t < first.0 {
+    if t < first.0 {
         Rgb(first.1)
     } else if t > last.0 {
         Rgb(last.1)
@@ -149,9 +149,7 @@ pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
         let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
 
         Rgb([r, g, b])
-    };
-
-    c
+    }
 }
 
 pub mod cumulative_histogram {

@@ -22,7 +22,7 @@ impl Sampling {
         (0..n)
             .map(|i| {
                 (
-                    i as F / PHI % 1.,
+                    (i as F / PHI) % 1.,
                     (i as F + EPS) / ((n - 1) as F + 2. * EPS),
                 )
             })
@@ -38,9 +38,7 @@ impl Sampling {
             SamplingLevel::High => 55,
             SamplingLevel::Ultra => 89,
             SamplingLevel::Extreme => 144,
-            SamplingLevel::Extreme1 => 233,
-            SamplingLevel::Extreme2 => 377,
-            SamplingLevel::Extreme3 => 610,
+            SamplingLevel::Custom(n) => n,
         }
     }
 }
@@ -54,25 +52,19 @@ pub enum SamplingLevel {
     High,
     Ultra,
     Extreme,
-    Extreme1,
-    Extreme2,
-    Extreme3,
+    Custom(usize),
 }
 
 pub fn map_points_with_offsets(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {
     #[inline]
-    fn tent(x: F) -> F {
-        let x = 2. * x - 1.;
-        if x != 0. {
-            x / x.abs().powf(0.7) - x.signum()
-        } else {
-            0.
-        }
+    fn tent(t: F) -> F {
+        let t = 2. * t - 1.;
+        if t != 0. { t - t.signum() } else { 1. }.abs()
     }
 
     let (x, y) = ((x + offset_x) % 1., (y + offset_y) % 1.);
 
-    const R: F = 1.8;
+    const R: F = 1.5;
     let (x, y) = (R * tent(x), R * tent(y));
 
     (x, y)

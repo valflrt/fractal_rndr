@@ -260,6 +260,7 @@ impl App for Gui {
                                                 .speed(0.01)
                                                 .range(0. ..=TAU as F)
                                                 .custom_parser(|s| {
+                                                    #[allow(clippy::unnecessary_cast)]
                                                     s.parse::<F>().ok().map(|degrees| {
                                                         (degrees.floor() * FRAC_PI_180) as f64
                                                     })
@@ -477,16 +478,14 @@ impl App for Gui {
                             .show(ui, |ui| {
                                 ui.add_enabled_ui(self.render_info.is_none(), |ui| {
                                     ui.horizontal(|ui| {
-                                        if ui.button("open parameter file").clicked() {
-                                            if self.path_selection_handle.is_none() {
+                                        if self.path_selection_handle.is_none() {
+                                            if ui.button("open parameter file").clicked() {
                                                 self.path_selection_handle =
                                                     Some(thread::spawn(|| {
                                                         (0, FileDialog::new().pick_file())
                                                     }));
                                             }
-                                        }
-                                        if ui.button("set output image").clicked() {
-                                            if self.path_selection_handle.is_none() {
+                                            if ui.button("set output image").clicked() {
                                                 self.path_selection_handle =
                                                     Some(thread::spawn(|| {
                                                         (1, FileDialog::new().save_file())
@@ -803,7 +802,7 @@ impl Gui {
     fn save_parameter_file(&mut self) -> Result<()> {
         if let Some(path) = self.param_file_path.as_ref() {
             fs::write(
-                &path,
+                path,
                 ron::ser::to_string_pretty(
                     &ParamsKind::Frame(self.params.clone()),
                     PrettyConfig::default(),
@@ -840,13 +839,20 @@ impl Gui {
             .map(|&(t, _)| t)
             .collect::<Vec<_>>();
 
-        let mut reorder = (0..l).map(|i| Some(i)).collect::<Vec<_>>();
+        let mut reorder = (0..l).map(Some).collect::<Vec<_>>();
 
         for (i, (t, c)) in &mut self.params.gradient.iter_mut().enumerate() {
             ui.horizontal(|ui| {
                 let is_start = i == 0;
                 let is_end = i + 1 == l;
                 let is_start_or_end = is_start || is_end;
+
+                if is_start {
+                    *t = 0.;
+                }
+                if is_end {
+                    *t = 1.;
+                }
 
                 let range = if !is_start_or_end {
                     t_values.get(i - 1).copied().unwrap_or(0.)
@@ -869,7 +875,7 @@ impl Gui {
                     reorder.swap(i, i + 1);
                     changed = true;
                 }
-                if ui.add_enabled(l > 1, Button::new("remove")).clicked() {
+                if ui.add_enabled(l > 2, Button::new("remove")).clicked() {
                     reorder[i] = None;
                     changed = true;
                 }
@@ -1169,9 +1175,6 @@ impl Gui {
             (SamplingLevel::High, "High"),
             (SamplingLevel::Ultra, "Ultra"),
             (SamplingLevel::Extreme, "Extreme"),
-            (SamplingLevel::Extreme1, "Extreme1"),
-            (SamplingLevel::Extreme2, "Extreme2"),
-            (SamplingLevel::Extreme3, "Extreme3"),
         ];
 
         for &(level, name) in LEVELS {
