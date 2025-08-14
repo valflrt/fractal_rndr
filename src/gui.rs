@@ -478,20 +478,23 @@ impl App for Gui {
                             .show(ui, |ui| {
                                 ui.add_enabled_ui(self.render_info.is_none(), |ui| {
                                     ui.horizontal(|ui| {
-                                        if self.path_selection_handle.is_none() {
-                                            if ui.button("open parameter file").clicked() {
-                                                self.path_selection_handle =
-                                                    Some(thread::spawn(|| {
-                                                        (0, FileDialog::new().pick_file())
-                                                    }));
-                                            }
-                                            if ui.button("set output image").clicked() {
-                                                self.path_selection_handle =
-                                                    Some(thread::spawn(|| {
-                                                        (1, FileDialog::new().save_file())
-                                                    }));
-                                            }
-                                        }
+                                        ui.add_enabled_ui(
+                                            self.path_selection_handle.is_some(),
+                                            |ui| {
+                                                if ui.button("open parameter file").clicked() {
+                                                    self.path_selection_handle =
+                                                        Some(thread::spawn(|| {
+                                                            (0, FileDialog::new().pick_file())
+                                                        }));
+                                                }
+                                                if ui.button("set output image").clicked() {
+                                                    self.path_selection_handle =
+                                                        Some(thread::spawn(|| {
+                                                            (1, FileDialog::new().save_file())
+                                                        }));
+                                                }
+                                            },
+                                        );
                                     });
 
                                     ui.horizontal(|ui| {
