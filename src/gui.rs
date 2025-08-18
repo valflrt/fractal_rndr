@@ -324,7 +324,7 @@ impl App for Gui {
                                                     })
                                                 })
                                                 .custom_formatter(|rad, _| {
-                                                    let degrees = rad as F * FRAC_PI_180;
+                                                    let degrees = rad as F / FRAC_PI_180;
                                                     degrees.floor().to_string()
                                                 }),
                                         );
