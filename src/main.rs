@@ -14,7 +14,7 @@ mod sampling;
 use std::{
     fs,
     io::Write,
-    path::PathBuf,
+    path::{Path, PathBuf},
     thread,
     time::{Duration, Instant},
 };
@@ -26,7 +26,10 @@ use crate::{
     coloring::{color_mapping, color_raw_image},
     error::{ErrorKind, Result},
     gui::Gui,
-    params::{AnimationParams, DevOptions, FrameParams, ParamsKind},
+    params::{
+        animation::{AnimationCfg, AnimationSteps},
+        DevOptions, Params, ParamsKind,
+    },
     progress::Progress,
     rendering::render_raw_image,
     sampling::preview_sampling_points,
@@ -62,13 +65,7 @@ fn main() -> Result<()> {
 
     let params = param_file_path
         .as_ref()
-        .map(|param_file_path| {
-            let param_file_str =
-                fs::read_to_string(param_file_path).map_err(ErrorKind::ReadParameterFile)?;
-            let params = ron::from_str::<ParamsKind>(&param_file_str)
-                .map_err(ErrorKind::DecodeParameterFile)?;
-            Ok(params)
-        })
+        .map(read_parameter_file)
         .transpose()?
         .unwrap_or_default();
 
@@ -80,7 +77,11 @@ fn main() -> Result<()> {
             match params {
                 ParamsKind::Frame(params) => render_frame(params, output_image_path),
                 ParamsKind::Animation(animation_params) => {
-                    render_animation(animation_params, output_image_path)
+                    if animation_params.animation_cfg.is_some() {
+                        render_animation(animation_params, output_image_path)
+                    } else {
+                        return Err(ErrorKind::MissingAnimationCfg);
+                    }
                 }
             }
         } else {
@@ -120,8 +121,18 @@ fn start_gui(
     }
 }
 
-fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
-    let FrameParams {
+pub fn read_parameter_file<P>(path: P) -> Result<ParamsKind>
+where
+    P: AsRef<Path>,
+{
+    let param_file_str = fs::read_to_string(path).map_err(ErrorKind::ReadParameterFile)?;
+    let params =
+        ron::from_str::<ParamsKind>(&param_file_str).map_err(ErrorKind::DecodeParameterFile)?;
+    Ok(params)
+}
+
+fn render_frame(params: Params<F>, output_image_path: PathBuf) -> Result<()> {
+    let Params {
         img_width,
         img_height,
 
@@ -193,14 +204,13 @@ fn render_frame(params: FrameParams, output_image_path: PathBuf) -> Result<()> {
     Ok(())
 }
 
-fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Result<()> {
-    let AnimationParams {
+fn render_animation(params: Params<AnimationSteps>, output_image_path: PathBuf) -> Result<()> {
+    let Params {
         sampling,
-
-        duration,
-        fps,
+        animation_cfg,
         ..
     } = params;
+    let AnimationCfg { duration, fps } = animation_cfg.unwrap();
 
     let frame_count = (duration * fps) as usize;
 
@@ -215,7 +225,7 @@ fn render_animation(params: AnimationParams, output_image_path: PathBuf) -> Resu
         let t = frame_i as F / fps;
 
         let params = params.get_frame_params(t);
-        let FrameParams {
+        let Params {
             img_width,
             img_height,
             ..

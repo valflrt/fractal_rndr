@@ -6,10 +6,10 @@ Frame((
     center_y: 0.6619147191,
     rotate: None,
     fractal: Iigdzh(
+        max_iter: 600,
         a_re: 0.0,
         a_im: 0.0,
     ),
-    max_iter: 600,
     coloring_mode: MinMaxNorm(
         min: Custom(40.0),
         max: Custom(400.0),

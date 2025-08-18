@@ -5,8 +5,9 @@ Frame((
     center_x: 0.005571532643,
     center_y: 0.016922959349,
     rotate: Some(5.57),
-    fractal: Sdrage,
-    max_iter: 8000,
+    fractal: Sdrage(
+        max_iter: 8000,
+    ),
     coloring_mode: MinMaxNorm(
         min: Custom(0.0),
         max: Custom(8000.0),

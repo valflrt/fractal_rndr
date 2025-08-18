@@ -2,10 +2,10 @@ use cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_
 use image::{Rgb, RgbImage};
 use serde::{Deserialize, Serialize};
 
-use crate::{mat::Mat2D, params::FrameParams, F};
+use crate::{mat::Mat2D, params::Params, F};
 
-pub fn color_raw_image(params: &FrameParams, mut raw_image: Mat2D<F>) -> RgbImage {
-    let &FrameParams {
+pub fn color_raw_image(params: &Params<F>, mut raw_image: Mat2D<F>) -> RgbImage {
+    let &Params {
         img_width,
         img_height,
         ..

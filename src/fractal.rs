@@ -4,54 +4,86 @@ use wide::CmpLe;
 use crate::{complexx::Complexx, F, FX};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum Fractal {
-    Mandelbrot,
+pub enum Fractal<T>
+where
+    T: Clone + Serialize,
+{
+    Mandelbrot {
+        max_iter: u32,
+    },
     MandelbrotCustomExp {
-        exp: F,
+        max_iter: u32,
+        exp: T,
     },
     /// Second Degree Recursive sequence with Growing Exponent
-    Sdrge,
+    Sdrge {
+        max_iter: u32,
+    },
     /// Second Degree Recursive sequence with Growing custom Integer Exponent
     SdrgeCustomIntExp {
+        max_iter: u32,
         exp: usize,
     },
     /// Second Degree Recursive sequence with Growing custom Exponent
     SdrgeCustomExp {
-        exp: F,
+        max_iter: u32,
+        exp: T,
     },
     SdrgeParam {
-        a_re: F,
-        a_im: F,
+        max_iter: u32,
+        a_re: T,
+        a_im: T,
     },
     /// Second degree recursive alternating sequence with growing exponent
-    Sdrage,
+    Sdrage {
+        max_iter: u32,
+    },
     /// Third Degree Recursive sequence with Growing Exponent
-    Tdrge,
+    Tdrge {
+        max_iter: u32,
+    },
     /// Nth Degree Recursive sequence with Growing Exponent
-    NthDrge(usize),
-    ThirdDegreeRecPairs,
-    SecondDegreeThirtySevenBlend,
+    NthDrge {
+        max_iter: u32,
+        n: usize,
+    },
+    ThirdDegreeRecPairs {
+        max_iter: u32,
+    },
+    SecondDegreeThirtySevenBlend {
+        max_iter: u32,
+    },
     ComplexLogisticMapLike {
-        a_re: F,
-        a_im: F,
+        max_iter: u32,
+        a_re: T,
+        a_im: T,
     },
 
     // This is where I started lacking inspiration for names...
-    Vshqwj,
+    Vshqwj {
+        max_iter: u32,
+    },
     Wmriho {
-        a_re: F,
-        a_im: F,
+        max_iter: u32,
+        a_re: T,
+        a_im: T,
     },
     Iigdzh {
-        a_re: F,
-        a_im: F,
+        max_iter: u32,
+        a_re: T,
+        a_im: T,
     },
-    Fxdicq,
-    Mjygzr,
+    Fxdicq {
+        max_iter: u32,
+    },
+    Mjygzr {
+        max_iter: u32,
+    },
     Sfwypc {
-        alpha: (F, F),
-        beta: (F, F),
-        gamma: (F, F),
+        max_iter: u32,
+        alpha: (T, T),
+        beta: (T, T),
+        gamma: (T, T),
     },
 
     MoireTest,
@@ -62,13 +94,13 @@ type Out = [F; 8];
 #[cfg(not(feature = "force_f32"))]
 type Out = [F; 4];
 
-impl Fractal {
-    pub fn sample(&self, c: Complexx, max_iter: u32) -> Out {
+impl Fractal<F> {
+    pub fn sample(self, c: Complexx) -> Out {
         let one = FX::splat(1.0);
         let zero = FX::splat(0.0);
 
         let (iter, _last_z) = match self {
-            Fractal::Mandelbrot => {
+            Fractal::Mandelbrot { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -88,7 +120,7 @@ impl Fractal {
 
                 (iter, z)
             }
-            &Fractal::MandelbrotCustomExp { exp } => {
+            Fractal::MandelbrotCustomExp { max_iter, exp } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -108,7 +140,7 @@ impl Fractal {
 
                 (iter, z)
             }
-            Fractal::Sdrge => {
+            Fractal::Sdrge { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -131,7 +163,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SdrgeCustomExp { exp } => {
+            Fractal::SdrgeCustomExp { max_iter, exp } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -154,7 +186,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SdrgeCustomIntExp { exp } => {
+            Fractal::SdrgeCustomIntExp { max_iter, exp } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -177,7 +209,11 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::SdrgeParam { a_re, a_im } => {
+            Fractal::SdrgeParam {
+                max_iter,
+                a_re,
+                a_im,
+            } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -202,7 +238,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::Sdrage => {
+            Fractal::Sdrage { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -225,7 +261,7 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::Tdrge => {
+            Fractal::Tdrge { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -249,11 +285,10 @@ impl Fractal {
 
                 (iter, z2)
             }
-            Fractal::NthDrge(n) => {
+            Fractal::NthDrge { max_iter, n } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
-                let n = *n;
                 let mut z = vec![Complexx::zeros(); n];
 
                 let mut iter = FX::splat(0.);
@@ -277,7 +312,7 @@ impl Fractal {
 
                 (iter, z[n - 1])
             }
-            Fractal::ThirdDegreeRecPairs => {
+            Fractal::ThirdDegreeRecPairs { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -302,7 +337,7 @@ impl Fractal {
 
                 (iter, z2)
             }
-            Fractal::SecondDegreeThirtySevenBlend => {
+            Fractal::SecondDegreeThirtySevenBlend { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -331,7 +366,11 @@ impl Fractal {
 
                 (iter, z1)
             }
-            &Fractal::ComplexLogisticMapLike { a_re: re, a_im: im } => {
+            Fractal::ComplexLogisticMapLike {
+                max_iter,
+                a_re,
+                a_im,
+            } => {
                 const BAILOUT: F = 50.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -345,7 +384,7 @@ impl Fractal {
                         break;
                     }
 
-                    let new_z1 = z1 * (Complexx::splat(re, im) - z0) + c;
+                    let new_z1 = z1 * (Complexx::splat(a_re, a_im) - z0) + c;
                     z0 = z1;
                     z1 = new_z1;
 
@@ -355,7 +394,7 @@ impl Fractal {
                 (iter, z1)
             }
 
-            Fractal::Vshqwj => {
+            Fractal::Vshqwj { max_iter } => {
                 const BAILOUT: F = 4.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -379,7 +418,11 @@ impl Fractal {
 
                 (iter, z2)
             }
-            &Fractal::Wmriho { a_re, a_im } => {
+            Fractal::Wmriho {
+                max_iter,
+                a_re,
+                a_im,
+            } => {
                 const BAILOUT: F = 10.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -409,7 +452,11 @@ impl Fractal {
 
                 (iter, z2)
             }
-            &Fractal::Iigdzh { a_re, a_im } => {
+            Fractal::Iigdzh {
+                max_iter,
+                a_re,
+                a_im,
+            } => {
                 const BAILOUT: F = 10.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -438,7 +485,7 @@ impl Fractal {
 
                 (iter, z2)
             }
-            Fractal::Fxdicq => {
+            Fractal::Fxdicq { max_iter } => {
                 const BAILOUT: F = 10.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -467,7 +514,7 @@ impl Fractal {
 
                 (iter, z2)
             }
-            Fractal::Mjygzr => {
+            Fractal::Mjygzr { max_iter } => {
                 const BAILOUT: F = 5.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -490,7 +537,12 @@ impl Fractal {
 
                 (iter, z1)
             }
-            Fractal::Sfwypc { alpha, beta, gamma } => {
+            Fractal::Sfwypc {
+                max_iter,
+                alpha,
+                beta,
+                gamma,
+            } => {
                 const BAILOUT: F = 100.;
                 let bailout_mask = FX::splat(BAILOUT);
 
@@ -531,5 +583,86 @@ impl Fractal {
         // (iter + one - s).to_array()
 
         iter.to_array()
+    }
+}
+
+impl<T> Fractal<T>
+where
+    T: Clone + Serialize,
+{
+    pub fn max_iter(&self) -> Option<u32> {
+        macro_rules! extract_field {
+            // Syntax: extract_field!(enum_value, field_name, field_type, [VariantA, VariantB, ...])
+            ($e:ident, $v:expr, $field:ident, [$($variant:ident),+]) => {{
+                match $v {
+                    $($e::$variant { $field, .. } => Some(*$field)),+,
+                    _ => None,
+                }
+            }};
+        }
+
+        extract_field!(
+            Fractal,
+            self,
+            max_iter,
+            [
+                Mandelbrot,
+                MandelbrotCustomExp,
+                Sdrge,
+                SdrgeCustomIntExp,
+                SdrgeCustomExp,
+                SdrgeParam,
+                Sdrage,
+                Tdrge,
+                NthDrge,
+                ThirdDegreeRecPairs,
+                SecondDegreeThirtySevenBlend,
+                ComplexLogisticMapLike,
+                Vshqwj,
+                Wmriho,
+                Iigdzh,
+                Fxdicq,
+                Mjygzr,
+                Sfwypc
+            ]
+        )
+    }
+
+    pub fn max_iter_mut(&mut self) -> Option<&mut u32> {
+        macro_rules! extract_field {
+            // Syntax: extract_field!(enum_value, field_name, field_type, [VariantA, VariantB, ...])
+            ($e:ident, $v:expr, $field:ident, [$($variant:ident),+]) => {{
+                match $v {
+                    $($e::$variant { $field, .. } => Some($field)),+,
+                    _ => None,
+                }
+            }};
+        }
+
+        extract_field!(
+            Fractal,
+            self,
+            max_iter,
+            [
+                Mandelbrot,
+                MandelbrotCustomExp,
+                Sdrge,
+                SdrgeCustomIntExp,
+                SdrgeCustomExp,
+                SdrgeParam,
+                Sdrage,
+                Tdrge,
+                NthDrge,
+                ThirdDegreeRecPairs,
+                SecondDegreeThirtySevenBlend,
+                ComplexLogisticMapLike,
+                Vshqwj,
+                Wmriho,
+                Iigdzh,
+                Fxdicq,
+                Mjygzr,
+                Sfwypc
+            ]
+        )
     }
 }

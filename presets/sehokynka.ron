@@ -5,8 +5,9 @@ Frame((
     center_x: -1.74989999997,
     center_y: 0.00000000037,
     rotate: Some(0.3),
-    fractal: Mandelbrot,
-    max_iter: 3200,
+    fractal: Mandelbrot(
+        max_iter: 3200,
+    ),
     coloring_mode: MinMaxNorm(
         min: Custom(10.0),
         max: Custom(2740.0),

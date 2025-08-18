@@ -5,8 +5,9 @@ Frame((
     center_x: -0.1159076,
     center_y: -0.000022,
     rotate: None,
-    fractal: Tdrge,
-    max_iter: 2000,
+    fractal: Tdrge(
+        max_iter: 2000,
+    ),
     coloring_mode: MinMaxNorm(
         min: Custom(200.0),
         max: Custom(750.0),

@@ -12,6 +12,9 @@ pub enum ErrorKind {
     EncodeParameterFile(ron::Error),
     SaveImage(image::ImageError),
     StartGui,
+    MissingAnimationCfg,
+
+    Unknown,
 }
 
 impl Debug for ErrorKind {
@@ -40,6 +43,13 @@ impl Debug for ErrorKind {
             }
             ErrorKind::StartGui => {
                 writeln!(f, "Failed to start gui")
+            }
+            ErrorKind::MissingAnimationCfg => {
+                writeln!(f, "The parameter file is marked as animation but is missing animation configuration")
+            }
+
+            ErrorKind::Unknown => {
+                writeln!(f, "Unknown error")
             }
         }
     }

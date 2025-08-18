@@ -6,10 +6,10 @@ Frame((
     center_y: 1.0311084,
     rotate: None,
     fractal: ComplexLogisticMapLike(
+        max_iter: 2500,
         a_re: 0.0,
         a_im: -0.9773,
     ),
-    max_iter: 2500,
     coloring_mode: MinMaxNorm(
         min: Custom(500.0),
         max: Custom(2500.0),

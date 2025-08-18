@@ -3,16 +3,16 @@ use std::{array, sync::mpsc};
 use rayon::prelude::*;
 
 use crate::{
-    complexx::Complexx, fractal::Fractal, mat::Mat2D, params::FrameParams, progress::Progress,
+    complexx::Complexx, fractal::Fractal, mat::Mat2D, params::Params, progress::Progress,
     sampling::map_points_with_offsets, F, FX,
 };
 
 pub fn render_raw_image(
-    params: &FrameParams,
+    params: &Params<F>,
     sampling_points: &[(F, F)],
     progress: Option<Progress>,
 ) -> Mat2D<F> {
-    let &FrameParams {
+    let &Params {
         img_width,
         img_height,
 
@@ -22,8 +22,6 @@ pub fn render_raw_image(
         rotate,
 
         fractal,
-
-        max_iter,
 
         sampling,
         ..
@@ -92,7 +90,6 @@ pub fn render_raw_image(
                         let c = Complexx::splat(cx, cy);
                         fractal.sample(
                             (Complexx { re, im } - c) * Complexx::from_polar_splat(1., rotate) + c,
-                            max_iter,
                         )
                     };
 

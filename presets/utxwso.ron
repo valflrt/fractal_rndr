@@ -6,22 +6,22 @@ Frame((
     center_y: 0.017300000000000003,
     rotate: None,
     fractal: Sfwypc(
+        max_iter: 1500,
         alpha: (0.0, 0.0),
         beta: (-1.0, 0.0),
         gamma: (0.0, 0.0),
     ),
-    max_iter: 1500,
+    coloring_mode: MinMaxNorm(
+        min: Custom(0.0),
+        max: Custom(1500.0),
+        map: Linear,
+    ),
     gradient: [
         (0.0, (230, 230, 240)),
         (0.3, (230, 180, 180)),
         (0.5, (60, 60, 90)),
         (1.0, (220, 210, 220)),
     ],
-    coloring_mode: MinMaxNorm(
-        min: Custom(0.0),
-        max: Custom(1500.0),
-        map: Linear,
-    ),
     sampling: (
         level: Extreme,
         random_offsets: true,
