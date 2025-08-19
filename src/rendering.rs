@@ -3,7 +3,7 @@ use std::{array, sync::mpsc};
 use rayon::prelude::*;
 
 use crate::{
-    complexx::Complexx, fractal::Fractal, mat::Mat2D, params::Params, progress::Progress,
+    array2::Array2, complexx::Complexx, fractal::Fractal, params::Params, progress::Progress,
     sampling::map_points_with_offsets, F, FX,
 };
 
@@ -11,7 +11,7 @@ pub fn render_raw_image(
     params: &Params<F>,
     sampling_points: &[(F, F)],
     progress: Option<Progress>,
-) -> Mat2D<F> {
+) -> Array2<F> {
     let &Params {
         img_width,
         img_height,
@@ -39,7 +39,7 @@ pub fn render_raw_image(
         (center_x, -center_y)
     };
 
-    let mut raw_image = Mat2D::filled_with(0., img_width as usize, img_height as usize);
+    let mut raw_image = Array2::filled_with(0., img_width as usize, img_height as usize);
 
     let rng = fastrand::Rng::new();
     let (tx, rx) = mpsc::channel();

@@ -19,10 +19,10 @@ use ron::ser::PrettyConfig;
 use serde::Serialize;
 
 use crate::{
+    array2::Array2,
     coloring::{color_raw_image, ColoringMode, Extremum, MapValue},
     error::{ErrorKind, Result},
     fractal::Fractal,
-    mat::Mat2D,
     params::{Params, ParamsKind},
     presets::PRESETS,
     progress::Progress,
@@ -35,7 +35,7 @@ use crate::{
 pub const WINDOW_SIZE: Vec2 = Vec2 { x: 1000., y: 540. };
 const DEFAULT_ZOOM: F = 5.;
 
-type RenderInfo = Option<(JoinHandle<(Mat2D<F>, Duration)>, Progress)>;
+type RenderInfo = Option<(JoinHandle<(Array2<F>, Duration)>, Progress)>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ParamsChanges {
@@ -79,7 +79,7 @@ pub struct Gui {
 
     preview_texture: TextureHandle,
 
-    raw_image: Option<Mat2D<F>>,
+    raw_image: Option<Array2<F>>,
     samples_per_pixel: usize,
     should_save_image: bool,
 
@@ -745,7 +745,7 @@ impl Gui {
         }
     }
 
-    fn render_and_save(&mut self) -> (JoinHandle<(Mat2D<F>, Duration)>, Progress) {
+    fn render_and_save(&mut self) -> (JoinHandle<(Array2<F>, Duration)>, Progress) {
         let progress = Progress::new((self.params.img_width * self.params.img_height) as usize);
 
         let params_clone = self.params.clone();

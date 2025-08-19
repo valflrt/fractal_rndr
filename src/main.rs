@@ -1,9 +1,9 @@
+mod array2;
 mod coloring;
 mod complexx;
 mod error;
 mod fractal;
 mod gui;
-mod mat;
 mod params;
 #[allow(dead_code)]
 mod presets;
