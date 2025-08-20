@@ -9,19 +9,16 @@ edition = "2021"
 license = "MIT"
 
 [dependencies]
-eframe = "0.32"
-egui_extras = { version = "0.32", features = ["image"] }
+eframe = { version = "0.32.1", default-features = false, features = ["glow", "wayland", "x11", "default_fonts"] }
+egui_extras = { version = "0.32.1", default-features = false, features = ["image"] }
 fastrand = "2.3.0"
-image = { version = "0.25.5", default-features = false, features = [
-    "png",
-    "jpeg",
-] }
-rayon = "1.10.0"
-rfd = "0.15.3"
+image = { version = "0.25.5", default-features = false, features = ["png", "jpeg"] }
+rayon = "1.11.0"
+rfd = "0.15.4"
 ron = "0.10.1"
 serde = { version = "1.0.219", features = ["derive"] }
-valargs = "0.1.3"
-wide = "0.7.32"
+valargs = "0.1.7"
+wide = "0.7.33"
 
 [features]
 default = []

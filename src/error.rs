@@ -13,7 +13,9 @@ pub enum ErrorKind {
     SaveImage(image::ImageError),
     StartGui,
     MissingAnimationCfg,
+    MakePathAbsolute(io::Error),
 
+    #[allow(dead_code)]
     Unknown,
 }
 
@@ -46,6 +48,9 @@ impl Debug for ErrorKind {
             }
             ErrorKind::MissingAnimationCfg => {
                 writeln!(f, "The parameter file is marked as animation but is missing animation configuration")
+            }
+            ErrorKind::MakePathAbsolute(e) => {
+                writeln!(f, "Failed to make path absolute: {}", e)
             }
 
             ErrorKind::Unknown => {

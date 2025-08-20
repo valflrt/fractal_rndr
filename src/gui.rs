@@ -1,16 +1,19 @@
+mod bottom_bar;
+mod preview;
+mod sections;
+mod top_bar;
+
 use std::{
-    f64::consts::{PI, TAU},
     fs,
-    path::PathBuf,
+    path::{self, PathBuf},
     thread::{self, JoinHandle},
     time::{Duration, Instant},
 };
 
 use eframe::{
     egui::{
-        self, color_picker::color_edit_button_srgb, Button, CentralPanel, CollapsingHeader,
-        Color32, ColorImage, ComboBox, Context, Direction, DragValue, Grid, Image, Layout, MenuBar,
-        ProgressBar, ScrollArea, Slider, TextureHandle, TopBottomPanel, Ui, Vec2, Vec2b,
+        CentralPanel, CollapsingHeader, Color32, ColorImage, Context, MenuBar, ScrollArea,
+        TextureHandle, TopBottomPanel, Vec2, Vec2b,
     },
     App, CreationContext, Frame as EFrame,
 };
@@ -20,15 +23,12 @@ use serde::Serialize;
 
 use crate::{
     array2::Array2,
-    coloring::{color_raw_image, ColoringMode, Extremum, MapValue},
-    error::{ErrorKind, Result},
-    fractal::Fractal,
-    params::{Params, ParamsKind},
-    presets::PRESETS,
+    coloring::color_raw_image,
+    error::ErrorKind,
+    params::{read_parameter_file, Params, ParamsKind},
     progress::Progress,
-    read_parameter_file,
     rendering::render_raw_image,
-    sampling::{Sampling, SamplingLevel},
+    sampling::Sampling,
     F,
 };
 
@@ -48,7 +48,7 @@ enum ParamsChanges {
 
 impl ParamsChanges {
     fn set_non_breaking(&mut self) {
-        if self != &ParamsChanges::BreakingChanges {
+        if *self != ParamsChanges::BreakingChanges {
             *self = ParamsChanges::NonBreakingChanges;
         }
     }
@@ -58,13 +58,21 @@ impl ParamsChanges {
     fn set_none(&mut self) {
         *self = ParamsChanges::None;
     }
+}
 
-    fn changed(&self) -> bool {
-        self != &ParamsChanges::None
-    }
-    fn breaking(&self) -> bool {
-        self == &ParamsChanges::BreakingChanges
-    }
+#[derive(Debug, Clone, Copy)]
+enum FileDialogKind {
+    SaveFile,
+    PickFile,
+}
+
+#[derive(Debug, Clone)]
+enum FileDialogAction {
+    OpenParameterFile(PathBuf),
+    SaveParameterFileAs(PathBuf),
+    SaveOutputImage(PathBuf),
+    LoadGradientFromParameterFile(PathBuf),
+    None,
 }
 
 pub struct Gui {
@@ -73,9 +81,11 @@ pub struct Gui {
 
     params_changes: ParamsChanges,
 
+    fractal_param_precision: F,
+
     param_file_path: Option<PathBuf>,
     output_image_path: Option<PathBuf>,
-    path_selection_handle: Option<JoinHandle<(u8, Option<PathBuf>)>>,
+    file_dialog_handle: Option<JoinHandle<FileDialogAction>>,
 
     preview_texture: TextureHandle,
 
@@ -90,6 +100,7 @@ pub struct Gui {
 
 impl Gui {
     pub const PREVIEW_SIZE: u32 = 256;
+    const SLIDER_END_POS: f32 = 350.;
 
     pub fn new(
         cc: &CreationContext,
@@ -105,9 +116,11 @@ impl Gui {
 
             params_changes: ParamsChanges::NonBreakingChanges,
 
+            fractal_param_precision: 1e-4,
+
             param_file_path,
             output_image_path,
-            path_selection_handle: None,
+            file_dialog_handle: None,
 
             preview_texture: cc.egui_ctx.load_texture(
                 "preview_image",
@@ -128,93 +141,14 @@ impl Gui {
 
 impl App for Gui {
     fn update(&mut self, ctx: &Context, _frame: &mut EFrame) {
-        TopBottomPanel::top("menu").show(ctx, |ui| {
-            MenuBar::new().ui(ui, |ui| {
-                ui.menu_button("file", |ui| {
-                    if ui
-                        .add_enabled(
-                            self.path_selection_handle.is_none(),
-                            Button::new("load parameter file"),
-                        )
-                        .clicked()
-                    {
-                        self.path_selection_handle =
-                            Some(thread::spawn(|| (0, FileDialog::new().pick_file())));
-                    }
-                    ui.menu_button("load preset", |ui| {
-                        ScrollArea::vertical()
-                            .max_width(200.)
-                            .max_height(100.)
-                            .show(ui, |ui| {
-                                for &(name, cfg_file) in PRESETS {
-                                    if let ParamsKind::Frame(params) =
-                                        ron::from_str(cfg_file).unwrap()
-                                    {
-                                        if ui.button(name).clicked() {
-                                            self.params = params;
-                                            self.params_changes.set_breaking();
-                                            self.notify(format!("loaded {}", name));
-                                            ui.close();
-                                        };
-                                    }
-                                }
-                            })
-                    });
+        TopBottomPanel::top("top_bar")
+            .show(ctx, |ui| MenuBar::new().ui(ui, |ui| self.show_top_bar(ui)));
 
-                    ui.separator();
-
-                    // TODO make this a dialog with rfd
-                    ui.add_enabled_ui(self.param_file_path.is_some(), |ui| {
-                        let res = ui.button("save parameter file");
-                        let res = if self.param_file_path.is_none() {
-                            res.on_disabled_hover_text(
-                                "no path was provided for the parameter file",
-                            )
-                        } else {
-                            res
-                        };
-
-                        if res.clicked() {
-                            match self.save_parameter_file() {
-                                Ok(_) => self.notify("saved"),
-                                Err(_) => self.notify("failed to save parameter file"),
-                            }
-                        }
-                    });
-
-                    // TODO add "save parameter file as ..." button
-
-                    ui.separator();
-
-                    if ui.button("revert unsaved changes").clicked() {
-                        self.params = self.last_saved_params.clone();
-                        self.params_changes.set_breaking();
-                    }
-
-                    ui.separator();
-
-                    if ui.button("exit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                    }
-                });
-
-                ui.menu_button("output", |ui| {
-                    if ui
-                        .add_enabled(
-                            self.path_selection_handle.is_none(),
-                            Button::new("set output image"),
-                        )
-                        .clicked()
-                    {
-                        self.path_selection_handle =
-                            Some(thread::spawn(|| (1, FileDialog::new().save_file())));
-                    }
-                });
-            });
+        TopBottomPanel::bottom("bottom_bar").show(ctx, |ui| {
+            MenuBar::new().ui(ui, |ui| self.show_bottom_bar(ui));
         });
 
         CentralPanel::default().show(ctx, |ui| {
-            const SLIDER_END_POS: f32 = 350.;
             ui.spacing_mut().slider_width = 150.;
 
             ui.columns_const(|[c1, c2]| {
@@ -225,436 +159,26 @@ impl App for Gui {
                     .show(c1, |ui| {
                         CollapsingHeader::new("Fractal")
                             .default_open(true)
-                            .show(ui, |ui| {
-                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.label("fractal:");
-
-                                        let inner_res = ComboBox::from_id_salt("fractal")
-                                            .selected_text(Self::format_label_ron(
-                                                self.params.fractal,
-                                            ))
-                                            .show_ui(ui, |ui| self.show_combobox_fractal(ui));
-
-                                        inner_res
-                                            .response
-                                            .on_hover_text("select the fractal to render");
-
-                                        if inner_res.inner.unwrap_or(false) {
-                                            // Reset view
-                                            self.params.center_x = 0.;
-                                            self.params.center_y = 0.;
-                                            self.params.zoom = DEFAULT_ZOOM;
-
-                                            self.params_changes.set_breaking();
-                                        }
-                                    });
-
-                                    if self.show_fractal_parameters(ui, SLIDER_END_POS) {
-                                        self.params_changes.set_breaking();
-                                    }
-                                });
-                            });
+                            .show(ui, |ui| self.show_section_fractal(ui));
 
                         CollapsingHeader::new("Controls")
                             .default_open(true)
-                            .show(ui, |ui| {
-                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                                    const N_DECIMALS: usize = 8;
-
-                                    ui.scope(|ui| {
-                                        ui.horizontal(|ui| {
-                                            let label_width = ui.label("zoom:").rect.width();
-                                            ui.spacing_mut().slider_width =
-                                                SLIDER_END_POS - label_width;
-                                            let res = ui.add(
-                                                Slider::new(
-                                                    &mut self.params.zoom,
-                                                    0.000000000001..=50.,
-                                                )
-                                                .logarithmic(true)
-                                                .min_decimals(N_DECIMALS),
-                                            );
-                                            if res.changed() {
-                                                self.params_changes.set_breaking();
-                                            }
-                                        });
-                                    });
-
-                                    let speed = 0.001 * self.params.zoom;
-
-                                    let mut changed = false;
-
-                                    const FIXED_LABEL_WIDTH: f32 = 20.;
-
-                                    ui.horizontal(|ui| {
-                                        let label_width = ui.label("re:").rect.width();
-                                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
-                                        let res = ui.add(
-                                            DragValue::new(&mut self.params.center_x)
-                                                .speed(speed)
-                                                .min_decimals(N_DECIMALS),
-                                        );
-                                        changed |= res.changed();
-                                    });
-                                    ui.horizontal(|ui| {
-                                        let label_width = ui.label("im:").rect.width();
-                                        ui.add_space(FIXED_LABEL_WIDTH - label_width);
-                                        let res = ui.add(
-                                            DragValue::new(&mut self.params.center_y)
-                                                .speed(speed)
-                                                .min_decimals(N_DECIMALS),
-                                        );
-                                        changed |= res.changed();
-                                    });
-
-                                    ui.horizontal(|ui| {
-                                        ui.label("rotate:");
-                                        let mut rotate = self.params.rotate.unwrap_or(0.);
-
-                                        const FRAC_PI_180: F = PI as F / 180.;
-                                        let res = ui.add(
-                                            DragValue::new(&mut rotate)
-                                                .speed(0.01)
-                                                .range(0. ..=TAU as F)
-                                                .custom_parser(|s| {
-                                                    #[allow(clippy::unnecessary_cast)]
-                                                    s.parse::<F>().ok().map(|degrees| {
-                                                        (degrees.floor() * FRAC_PI_180) as f64
-                                                    })
-                                                })
-                                                .custom_formatter(|rad, _| {
-                                                    let degrees = rad as F / FRAC_PI_180;
-                                                    degrees.floor().to_string()
-                                                }),
-                                        );
-                                        ui.label("deg");
-                                        if res.changed() {
-                                            self.params.rotate =
-                                                if rotate > 0. { Some(rotate) } else { None };
-                                        }
-                                        changed |= res.changed();
-                                    });
-
-                                    if changed {
-                                        self.params_changes.set_breaking();
-                                    }
-                                });
-                            });
+                            .show(ui, |ui| self.show_section_controls(ui));
 
                         CollapsingHeader::new("Coloring")
                             .default_open(true)
-                            .show(ui, |ui| {
-                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.label("coloring mode:");
-
-                                        ComboBox::from_id_salt("coloring_mode")
-                                            .selected_text(match self.params.coloring_mode {
-                                                ColoringMode::MinMaxNorm { .. } => "MinMaxNorm",
-                                                ColoringMode::CumulativeHistogram { .. } => {
-                                                    "CumulativeHistogram"
-                                                }
-                                            })
-                                            .show_ui(ui, |ui| {
-                                                let selected = matches!(
-                                                    self.params.coloring_mode,
-                                                    ColoringMode::MinMaxNorm { .. }
-                                                );
-                                                if ui
-                                                    .selectable_label(selected, "MinMaxNorm")
-                                                    .clicked()
-                                                    && !selected
-                                                {
-                                                    self.params.coloring_mode =
-                                                        ColoringMode::MinMaxNorm {
-                                                            min: Extremum::Auto,
-                                                            max: Extremum::Auto,
-                                                            map: MapValue::Linear,
-                                                        };
-                                                    self.params_changes.set_non_breaking();
-                                                }
-
-                                                let selected = matches!(
-                                                    self.params.coloring_mode,
-                                                    ColoringMode::CumulativeHistogram { .. }
-                                                );
-                                                if ui
-                                                    .selectable_label(
-                                                        selected,
-                                                        "CumulativeHistogram",
-                                                    )
-                                                    .clicked()
-                                                    && !selected
-                                                {
-                                                    self.params.coloring_mode =
-                                                        ColoringMode::CumulativeHistogram {
-                                                            map: MapValue::Linear,
-                                                        };
-                                                    self.params_changes.set_non_breaking();
-                                                }
-                                            });
-                                    });
-
-                                    ui.horizontal(|ui| {
-                                        ui.label("map value:");
-
-                                        let (ColoringMode::CumulativeHistogram { map }
-                                        | ColoringMode::MinMaxNorm { map, .. }) =
-                                            &mut self.params.coloring_mode;
-
-                                        ComboBox::from_id_salt("map_value")
-                                            .selected_text(match map {
-                                                MapValue::Linear => "Linear",
-                                                MapValue::Squared => "Squared",
-                                                MapValue::Powf(_) => "Powf",
-                                            })
-                                            .show_ui(ui, |ui| {
-                                                let selected = matches!(map, MapValue::Linear);
-                                                if ui.selectable_label(selected, "Linear").clicked()
-                                                    && !selected
-                                                {
-                                                    *map = MapValue::Linear;
-                                                    self.params_changes.set_non_breaking();
-                                                };
-
-                                                let selected = matches!(map, MapValue::Squared);
-                                                if ui
-                                                    .selectable_label(selected, "Squared")
-                                                    .clicked()
-                                                    && !selected
-                                                {
-                                                    *map = MapValue::Squared;
-                                                    self.params_changes.set_non_breaking();
-                                                };
-
-                                                let selected = matches!(map, MapValue::Powf(_));
-                                                if ui.selectable_label(selected, "Powf").clicked()
-                                                    && !selected
-                                                {
-                                                    *map = MapValue::Powf(1.);
-                                                    self.params_changes.set_non_breaking();
-                                                };
-                                            });
-
-                                        if let MapValue::Powf(exp) = map {
-                                            let res = ui.add(
-                                                Slider::new(exp, 0.01..=20.).logarithmic(true),
-                                            );
-                                            if res.changed() {
-                                                self.params_changes.set_non_breaking();
-                                            }
-                                        }
-                                    });
-
-                                    if let ColoringMode::MinMaxNorm { min, max, .. } =
-                                        &mut self.params.coloring_mode
-                                    {
-                                        const FIXED_LABEL_WIDTH: f32 = 30.;
-
-                                        let upper_bound = self
-                                            .params
-                                            .fractal
-                                            .max_iter()
-                                            .map(|x| x as F)
-                                            .unwrap_or(F::INFINITY);
-
-                                        ui.horizontal(|ui| {
-                                            let label_width = ui.label("min:").rect.width();
-                                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
-
-                                            let mut auto = min.is_auto();
-                                            let res = ui.checkbox(&mut auto, "auto");
-                                            if res.changed() {
-                                                *min = if auto {
-                                                    Extremum::Auto
-                                                } else {
-                                                    Extremum::Custom(0.)
-                                                };
-                                                self.params_changes.set_non_breaking();
-                                            }
-
-                                            ui.spacing_mut().slider_width = SLIDER_END_POS
-                                                - FIXED_LABEL_WIDTH
-                                                - res.rect.width();
-
-                                            if let Extremum::Custom(min) = min {
-                                                let res = ui.add(
-                                                    Slider::new(min, 0. ..=upper_bound)
-                                                        .fixed_decimals(0),
-                                                );
-                                                if res.changed() {
-                                                    self.params_changes.set_non_breaking();
-                                                }
-                                            }
-                                        });
-
-                                        ui.horizontal(|ui| {
-                                            let label_width = ui.label("max:").rect.width();
-                                            ui.add_space(FIXED_LABEL_WIDTH - label_width);
-
-                                            let mut auto = max.is_auto();
-                                            let res = ui.checkbox(&mut auto, "auto");
-                                            if res.changed() {
-                                                *max = if auto {
-                                                    Extremum::Auto
-                                                } else {
-                                                    self.params
-                                                        .fractal
-                                                        .max_iter()
-                                                        .map(|max_iter| {
-                                                            Extremum::Custom(max_iter as F)
-                                                        })
-                                                        .unwrap_or(Extremum::Auto)
-                                                };
-                                                self.params_changes.set_non_breaking();
-                                            }
-
-                                            ui.spacing_mut().slider_width = SLIDER_END_POS
-                                                - FIXED_LABEL_WIDTH
-                                                - res.rect.width();
-
-                                            if let Extremum::Custom(max) = max {
-                                                let res = ui.add(
-                                                    Slider::new(max, 0. ..=upper_bound)
-                                                        .fixed_decimals(0),
-                                                );
-                                                if res.changed() {
-                                                    self.params_changes.set_non_breaking();
-                                                }
-                                            }
-                                        });
-                                    }
-                                });
-                            });
-
-                        CollapsingHeader::new("Gradient")
-                            .default_open(false)
-                            .show(ui, |ui| {
-                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                                    if self.show_gradient_ui(ui) {
-                                        self.params_changes.set_non_breaking();
-                                    }
-                                });
-                            });
+                            .show(ui, |ui| self.show_section_coloring(ui));
 
                         CollapsingHeader::new("Render")
                             .default_open(true)
-                            .show(ui, |ui| {
-                                ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                                    ui.horizontal(|ui| {
-                                        ui.label("image width:");
-                                        let res1 = ui.add(
-                                            DragValue::new(&mut self.params.img_width)
-                                                .range(32..=20000)
-                                                .speed(4.),
-                                        );
-                                        ui.label("image height:");
-                                        let res2 = ui.add(
-                                            DragValue::new(&mut self.params.img_height)
-                                                .range(32..=20000)
-                                                .speed(4.),
-                                        );
-
-                                        if res1.changed() || res2.changed() {
-                                            self.params_changes.set_breaking();
-                                        }
-                                    });
-
-                                    ui.horizontal(|ui| {
-                                        ui.label("current spp:").on_hover_text(
-                                            "number of samples per pixel of the internal image",
-                                        );
-                                        ui.code(format!(" {} ", self.samples_per_pixel));
-                                    });
-
-                                    ui.horizontal(|ui| {
-                                        let inner_res = ComboBox::from_id_salt("sampling_level")
-                                            .selected_text(Self::format_label_ron(
-                                                self.params.sampling.level,
-                                            ))
-                                            .show_ui(ui, |ui| {
-                                                self.show_combobox_sampling_level(ui);
-                                            });
-                                        inner_res.response.on_hover_text("sampling level");
-
-                                        let res = ui
-                                            .button(format!(
-                                                "sample fractal (+{} spp)",
-                                                self.params.sampling.sample_count()
-                                            ))
-                                            .on_hover_text("collect new samples");
-                                        if res.clicked() {
-                                            self.render_info = Some(self.render_and_save());
-                                        };
-
-                                        let no_samples = self.samples_per_pixel == 0;
-                                        let no_output_image_path = self.output_image_path.is_none();
-                                        ui.add_enabled_ui(
-                                            !(no_samples || no_output_image_path),
-                                            |ui| {
-                                                let res = {
-                                                    let btn = ui.button("save image");
-
-                                                    if no_output_image_path {
-                                                        btn.on_disabled_hover_text(
-                                                        "no path was provided for the output image",
-                                                    )
-                                                    } else if no_samples {
-                                                        btn.on_disabled_hover_text(
-                                                "sample the fractal before saving the image",
-                                            )
-                                                    } else {
-                                                        btn
-                                                    }
-                                                };
-
-                                                self.should_save_image |= res.clicked();
-                                            },
-                                        );
-                                    });
-                                });
-                            });
+                            .show(ui, |ui| self.show_section_render(ui));
 
                         ui.add_space(16.);
                     });
 
                 // Second column
 
-                const INFO_AREA_HEIGHT: f32 = 48.;
-
-                let texture_size = self.preview_texture.size_vec2();
-                let d = 0.5 * (c2.available_height() - texture_size.y - INFO_AREA_HEIGHT);
-                c2.add_space(d);
-                c2.add_sized(
-                    texture_size,
-                    Image::from_texture((self.preview_texture.id(), texture_size))
-                        .show_loading_spinner(false)
-                        .maintain_aspect_ratio(true)
-                        .corner_radius(2),
-                );
-                c2.add_space(d);
-
-                c2.with_layout(
-                    Layout::centered_and_justified(Direction::LeftToRight),
-                    |ui| {
-                        if let Some((_, progress)) = &self.render_info {
-                            ui.add(
-                                ProgressBar::new(progress.get_progress())
-                                    .desired_height(4.)
-                                    .desired_width(128.)
-                                    .corner_radius(0.)
-                                    .fill(Color32::WHITE),
-                            );
-                        } else if let Some((text, start)) = self.message.as_mut() {
-                            const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
-                            ui.label(text.as_str());
-                            if start.elapsed() > MESSAGE_DISPLAY_TIME {
-                                self.message = None;
-                            }
-                        }
-                    },
-                );
+                self.show_preview(c2);
             });
         });
 
@@ -665,17 +189,18 @@ impl App for Gui {
 impl Gui {
     fn handle_update(&mut self, ctx: &Context) {
         if self.render_info.is_some() {
+            // Request repaint for the progress bar to update correctly
             ctx.request_repaint();
         }
 
-        if self.params_changes.breaking() {
+        if self.params_changes == ParamsChanges::BreakingChanges {
             // Params relative to fractal and position have
             // changed: stored raw_image is no longer valid.
             self.raw_image = None;
             self.samples_per_pixel = 0;
         }
 
-        if self.params_changes.changed() {
+        if self.params_changes != ParamsChanges::None {
             self.update_preview();
             self.params_changes.set_none();
         }
@@ -706,52 +231,58 @@ impl Gui {
         }
 
         if self.should_save_image {
-            if let Some(output_image_path) = self.output_image_path.as_ref() {
-                if let Some(raw_image) = &self.raw_image {
-                    let output_image = color_raw_image(&self.params, raw_image.to_owned());
-
-                    match output_image.save(&output_image_path) {
-                        Ok(_) => self.notify("image saved"),
-                        Err(_) => self.notify("failed to save image"),
-                    }
-                }
-            }
+            self.save_raw_image();
 
             self.should_save_image = false;
         }
 
         if self
-            .path_selection_handle
+            .file_dialog_handle
             .as_ref()
             .is_some_and(|h| h.is_finished())
         {
-            let (which, path) = self.path_selection_handle.take().unwrap().join().unwrap();
-            if let Some(path) = path {
-                if which == 0 {
+            match self.file_dialog_handle.take().unwrap().join().unwrap() {
+                FileDialogAction::OpenParameterFile(path) => match read_parameter_file(&path) {
+                    Ok(ParamsKind::Frame(params)) => {
+                        self.param_file_path = Some(path);
+
+                        self.last_saved_params = params.clone();
+                        self.params = params;
+
+                        self.params_changes.set_breaking();
+                        self.notify("loaded new parameter file");
+                    }
+                    _ => self.notify("failed to load parameter file"),
+                },
+                FileDialogAction::SaveParameterFileAs(path) => {
+                    self.param_file_path = Some(path);
+                    self.save_parameter_file();
+                }
+                FileDialogAction::SaveOutputImage(path) => {
+                    self.output_image_path = Some(path);
+                    self.save_raw_image();
+                }
+                FileDialogAction::LoadGradientFromParameterFile(path) => {
                     match read_parameter_file(&path) {
                         Ok(ParamsKind::Frame(params)) => {
-                            self.param_file_path = Some(path);
-                            self.params = params.clone();
-                            self.last_saved_params = params;
-                            self.params_changes.set_breaking();
-                            self.notify("loaded new parameter file");
+                            self.params.gradient = params.gradient;
+                            self.notify("new gradient loaded");
                         }
-                        _ => self.notify("invalid parameter file"),
+                        _ => self.notify("failed to load gradient"),
                     }
-                } else if which == 1 {
-                    self.output_image_path = Some(path);
                 }
+                _ => (),
             }
         }
     }
 
-    fn render_and_save(&mut self) -> (JoinHandle<(Array2<F>, Duration)>, Progress) {
+    fn render_and_save(&mut self) {
         let progress = Progress::new((self.params.img_width * self.params.img_height) as usize);
 
         let params_clone = self.params.clone();
         let sampling_points_clone = self.params.sampling.generate_sampling_points();
         let progress_clone = progress.clone();
-        (
+        self.render_info = Some((
             thread::spawn(move || {
                 let start = Instant::now();
                 let raw_image =
@@ -759,7 +290,7 @@ impl Gui {
                 (raw_image, start.elapsed())
             }),
             progress,
-        )
+        ));
     }
 
     fn update_preview(&mut self) {
@@ -797,395 +328,68 @@ impl Gui {
         self.preview_texture.set(egui_image, Default::default());
     }
 
-    fn save_parameter_file(&mut self) -> Result<()> {
-        self.last_saved_params = self.params.clone();
+    fn save_parameter_file(&mut self) {
         if let Some(path) = self.param_file_path.as_ref() {
-            fs::write(
-                path,
-                ron::ser::to_string_pretty(
-                    &ParamsKind::Frame(self.params.clone()),
-                    PrettyConfig::default(),
-                )
-                .map_err(ErrorKind::EncodeParameterFile)?,
+            match ron::ser::to_string_pretty(
+                &ParamsKind::Frame(self.params.clone()),
+                PrettyConfig::default(),
             )
-            .map_err(ErrorKind::WriteParameterFile)
-        } else {
-            Err(ErrorKind::Unknown)
+            .map_err(ErrorKind::EncodeParameterFile)
+            .and_then(|s| fs::write(path, s).map_err(ErrorKind::WriteParameterFile))
+            {
+                Ok(_) => {
+                    self.last_saved_params = self.params.clone();
+                    self.notify("parameter file saved");
+                }
+                Err(_) => {
+                    self.notify("failed to save parameter file");
+                }
+            }
         }
+    }
+
+    fn save_raw_image(&mut self) {
+        if let Some(output_image_path) = self.output_image_path.as_ref() {
+            if let Some(raw_image) = &self.raw_image {
+                let output_image = color_raw_image(&self.params, raw_image.to_owned());
+
+                match output_image.save(&output_image_path) {
+                    Ok(_) => self.notify("image saved"),
+                    Err(_) => self.notify("failed to save image"),
+                }
+            }
+        }
+    }
+
+    fn open_file_dialog<F>(&mut self, parent: Option<PathBuf>, kind: FileDialogKind, action: F)
+    where
+        F: FnOnce(PathBuf) -> FileDialogAction + Send + 'static,
+    {
+        let mut dialog = FileDialog::new();
+        if let Some(parent) = parent {
+            dialog = dialog.set_directory(parent);
+        }
+        self.file_dialog_handle = Some(thread::spawn(move || {
+            let res = match kind {
+                FileDialogKind::SaveFile => dialog.save_file(),
+                FileDialogKind::PickFile => dialog.pick_file(),
+            };
+            if let Some(path) = res.and_then(|p| path::absolute(p).ok()) {
+                action(path)
+            } else {
+                FileDialogAction::None
+            }
+        }));
     }
 
     fn notify<S: ToString>(&mut self, msg: S) {
         self.message = Some((msg.to_string(), Instant::now()));
     }
 
-    // Gui display related stuff
-
     fn format_label_ron(value: impl Serialize) -> String {
         ron::to_string(&value)
             .unwrap_or_default()
             .replace(":", ": ")
             .replace(",", ", ")
-    }
-
-    fn show_gradient_ui(&mut self, ui: &mut Ui) -> bool {
-        let mut changed = false;
-
-        let l = self.params.gradient.len();
-        let t_values = self
-            .params
-            .gradient
-            .iter()
-            .map(|&(t, _)| t)
-            .collect::<Vec<_>>();
-
-        let mut reorder = (0..l).map(Some).collect::<Vec<_>>();
-
-        for (i, (t, c)) in &mut self.params.gradient.iter_mut().enumerate() {
-            ui.horizontal(|ui| {
-                let is_start = i == 0;
-                let is_end = i + 1 == l;
-                let is_start_or_end = is_start || is_end;
-
-                if is_start {
-                    *t = 0.;
-                }
-                if is_end {
-                    *t = 1.;
-                }
-
-                let range = if !is_start_or_end {
-                    t_values.get(i - 1).copied().unwrap_or(0.)
-                        ..=t_values.get(i + 1).copied().unwrap_or(1.)
-                } else {
-                    0. ..=1.
-                };
-                changed |= ui
-                    .add_enabled(
-                        !is_start_or_end,
-                        DragValue::new(t).range(range).fixed_decimals(2).speed(0.01),
-                    )
-                    .changed();
-                changed |= color_edit_button_srgb(ui, c).changed();
-                if ui.add_enabled(!is_start, Button::new("up")).clicked() {
-                    reorder.swap(i - 1, i);
-                    changed = true;
-                }
-                if ui.add_enabled(!is_end, Button::new("down")).clicked() {
-                    reorder.swap(i, i + 1);
-                    changed = true;
-                }
-                if ui.add_enabled(l > 2, Button::new("remove")).clicked() {
-                    reorder[i] = None;
-                    changed = true;
-                }
-                if ui.button("duplicate").clicked() {
-                    reorder.insert(i, Some(i));
-                }
-            });
-        }
-
-        self.params.gradient = reorder
-            .iter()
-            .filter_map(|&v| v)
-            .map(|i| self.params.gradient[i])
-            .collect::<Vec<_>>();
-
-        // TODO
-        // if ui.button("use gradient from other parameter file") {}
-
-        changed
-    }
-
-    fn show_combobox_fractal(&mut self, ui: &mut Ui) -> bool {
-        [
-            (
-                matches!(self.params.fractal, Fractal::Mandelbrot { .. }),
-                "Mandelbrot",
-                None,
-                Fractal::Mandelbrot { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::MandelbrotCustomExp { .. }),
-                "MandelbrotCustomExp(exp)",
-                None,
-                Fractal::MandelbrotCustomExp {
-                    max_iter: 500,
-                    exp: 2.,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Sdrge { .. }),
-                "Sdrge",
-                Some("second degree recursive sequence with growing exponent"),
-                Fractal::Sdrge { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::SdrgeCustomIntExp { .. }),
-                "SdrgeCustomIntExp(exp)",
-                Some("second degree recursive sequence with growing custom integer exponent"),
-                Fractal::SdrgeCustomIntExp {
-                    max_iter: 500,
-                    exp: 2,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::SdrgeCustomExp { .. }),
-                "SdrgeCustomExp(exp)",
-                Some("second degree recursive sequence with growing custom exponent"),
-                Fractal::SdrgeCustomExp {
-                    max_iter: 500,
-                    exp: 2.,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::SdrgeParam { .. }),
-                "SdrgeParam(a_re, a_im)",
-                Some("parameterized second degree recursive sequence with growing exponent"),
-                Fractal::SdrgeParam {
-                    max_iter: 500,
-                    a_re: 1.,
-                    a_im: 0.,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Sdrage { .. }),
-                "Sdrage",
-                Some("second degree recursive alternating sequence with growing exponent"),
-                Fractal::Sdrage { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Tdrge { .. }),
-                "Tdrge",
-                Some("third degree recursive sequence with growing exponent"),
-                Fractal::Tdrge { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::NthDrge { .. }),
-                "NthDrge(n)",
-                Some("nth degree recursive sequence with growing exponent"),
-                Fractal::NthDrge {
-                    max_iter: 500,
-                    n: 4,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::ThirdDegreeRecPairs { .. }),
-                "ThirdDegreeRecPairs",
-                None,
-                Fractal::ThirdDegreeRecPairs { max_iter: 500 },
-            ),
-            (
-                matches!(
-                    self.params.fractal,
-                    Fractal::SecondDegreeThirtySevenBlend { .. }
-                ),
-                "SecondDegreeThirtySevenBlend",
-                None,
-                Fractal::SecondDegreeThirtySevenBlend { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::ComplexLogisticMapLike { .. }),
-                "ComplexLogisticMapLike(a_re, a_im)",
-                None,
-                Fractal::ComplexLogisticMapLike {
-                    max_iter: 500,
-                    a_re: 1.,
-                    a_im: 0.,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Vshqwj { .. }),
-                "Vshqwj",
-                None,
-                Fractal::Vshqwj { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Wmriho { .. }),
-                "Wmriho(a_re, a_im)",
-                None,
-                Fractal::Wmriho {
-                    max_iter: 500,
-                    a_re: 0.,
-                    a_im: 0.,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Iigdzh { .. }),
-                "Iigdzh(a_re, a_im)",
-                None,
-                Fractal::Iigdzh {
-                    max_iter: 500,
-                    a_re: 0.,
-                    a_im: 0.,
-                },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Fxdicq { .. }),
-                "Fxdicq",
-                None,
-                Fractal::Fxdicq { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Mjygzr { .. }),
-                "Mjygzr",
-                None,
-                Fractal::Mjygzr { max_iter: 500 },
-            ),
-            (
-                matches!(self.params.fractal, Fractal::Sfwypc { .. }),
-                "Sfwypc(alpha, beta, gamma)",
-                None,
-                Fractal::Sfwypc {
-                    max_iter: 500,
-                    alpha: (0., 0.),
-                    beta: (0., 0.),
-                    gamma: (0., 0.),
-                },
-            ),
-        ]
-        .iter()
-        .any(|&(selected, name, description, default)| {
-            let mut res = ui.selectable_label(selected, name);
-            if let Some(description) = description {
-                res = res.on_hover_text(description);
-            }
-            let clicked = res.clicked() && !selected;
-            if clicked {
-                self.params.fractal = default;
-            }
-            clicked
-        })
-    }
-
-    fn show_fractal_parameters(&mut self, ui: &mut Ui, slider_end_pos: f32) -> bool {
-        const SPEED: F = 0.0001;
-        const N_DECIMALS: usize = 8;
-
-        let mut changed = false;
-
-        if let Some(max_iter) = self.params.fractal.max_iter_mut() {
-            ui.horizontal(|ui| {
-                let label_width = ui.label("max iter:").rect.width();
-                ui.spacing_mut().slider_width = slider_end_pos - label_width;
-                let prev_max_iter = *max_iter;
-                let res = ui.add(Slider::new(max_iter, 10..=200000).logarithmic(true));
-                if res.changed() {
-                    // Avoid leaving max slider at a low value when
-                    // max_iter is increased.
-                    if prev_max_iter < *max_iter {
-                        if let ColoringMode::MinMaxNorm {
-                            max: Extremum::Custom(max),
-                            ..
-                        } = &mut self.params.coloring_mode
-                        {
-                            *max = *max_iter as F;
-                        }
-                    }
-                }
-            });
-        }
-
-        if let Fractal::MandelbrotCustomExp { exp, .. } = &mut self.params.fractal {
-            ui.horizontal(|ui| {
-                ui.label("exp:");
-                let res = ui.add(
-                    DragValue::new(exp)
-                        .speed(SPEED)
-                        .range(0.001..=20.)
-                        .fixed_decimals(N_DECIMALS),
-                );
-                changed |= res.changed();
-            });
-        }
-
-        if let Fractal::SdrgeCustomIntExp { exp, .. } = &mut self.params.fractal {
-            ui.horizontal(|ui| {
-                ui.label("exp:");
-                let res = ui.add(DragValue::new(exp).range(1..=10));
-                changed |= res.changed();
-            });
-        }
-        if let Fractal::SdrgeCustomExp { exp, .. } = &mut self.params.fractal {
-            ui.horizontal(|ui| {
-                ui.label("exp:");
-                let res = ui.add(
-                    DragValue::new(exp)
-                        .speed(SPEED)
-                        .range(1..=10)
-                        .fixed_decimals(N_DECIMALS),
-                );
-                changed |= res.changed();
-            });
-        }
-
-        if let Fractal::SdrgeParam { a_re, a_im, .. }
-        | Fractal::ComplexLogisticMapLike { a_re, a_im, .. }
-        | Fractal::Wmriho { a_re, a_im, .. }
-        | Fractal::Iigdzh { a_re, a_im, .. } = &mut self.params.fractal
-        {
-            ui.horizontal(|ui| {
-                ui.label("a_re:");
-                let res1 = ui.add(DragValue::new(a_re).speed(SPEED).fixed_decimals(N_DECIMALS));
-                ui.label("a_im:");
-                let res2 = ui.add(DragValue::new(a_im).speed(SPEED).fixed_decimals(N_DECIMALS));
-
-                changed |= res1.changed() || res2.changed();
-            });
-        }
-
-        if let Fractal::NthDrge { n, .. } = &mut self.params.fractal {
-            ui.horizontal(|ui| {
-                ui.label("n:");
-                let res = ui.add(Slider::new(n, 2..=20));
-                changed |= res.changed();
-            });
-        }
-
-        if let Fractal::Sfwypc {
-            alpha, beta, gamma, ..
-        } = &mut self.params.fractal
-        {
-            Grid::new("param grid").show(ui, |ui| {
-                [(alpha, "alpha"), (beta, "beta"), (gamma, "gamma")]
-                    .iter_mut()
-                    .for_each(|(v, name)| {
-                        ui.label(name.to_string() + "_re:");
-                        changed |= ui
-                            .add(
-                                DragValue::new(&mut v.0)
-                                    .speed(SPEED)
-                                    .fixed_decimals(N_DECIMALS),
-                            )
-                            .changed();
-                        ui.label(name.to_string() + "_im:");
-                        changed |= ui
-                            .add(
-                                DragValue::new(&mut v.1)
-                                    .speed(SPEED)
-                                    .fixed_decimals(N_DECIMALS),
-                            )
-                            .changed();
-                        ui.end_row();
-                    });
-            });
-        }
-
-        changed
-    }
-
-    fn show_combobox_sampling_level(&mut self, ui: &mut Ui) {
-        const LEVELS: &[(SamplingLevel, &str)] = &[
-            (SamplingLevel::Raw, "Raw"),
-            (SamplingLevel::Exploration, "Exploration"),
-            (SamplingLevel::Low, "Low"),
-            (SamplingLevel::Medium, "Medium"),
-            (SamplingLevel::High, "High"),
-            (SamplingLevel::Ultra, "Ultra"),
-            (SamplingLevel::Extreme, "Extreme"),
-        ];
-
-        for &(level, name) in LEVELS {
-            ui.selectable_value(&mut self.params.sampling.level, level, name);
-        }
     }
 }

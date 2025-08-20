@@ -1,7 +1,10 @@
+use std::{fs, path::Path};
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     coloring::{ColoringMode, Extremum, MapValue, DEFAULT_GRADIENT},
+    error::{ErrorKind, Result},
     fractal::Fractal,
     params::animation::{AnimationCfg, AnimationSteps},
     sampling::{Sampling, SamplingLevel},
@@ -10,6 +13,16 @@ use crate::{
 
 fn default_gradient() -> Vec<(F, [u8; 3])> {
     DEFAULT_GRADIENT.to_vec()
+}
+
+pub fn read_parameter_file<P>(path: P) -> Result<ParamsKind>
+where
+    P: AsRef<Path>,
+{
+    let param_file_str = fs::read_to_string(path).map_err(ErrorKind::ReadParameterFile)?;
+    let params =
+        ron::from_str::<ParamsKind>(&param_file_str).map_err(ErrorKind::DecodeParameterFile)?;
+    Ok(params)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

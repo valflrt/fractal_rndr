@@ -14,7 +14,7 @@ mod sampling;
 use std::{
     fs,
     io::Write,
-    path::{Path, PathBuf},
+    path::{self, PathBuf},
     thread,
     time::{Duration, Instant},
 };
@@ -28,7 +28,7 @@ use crate::{
     gui::Gui,
     params::{
         animation::{AnimationCfg, AnimationSteps},
-        DevOptions, Params, ParamsKind,
+        read_parameter_file, DevOptions, Params, ParamsKind,
     },
     progress::Progress,
     rendering::render_raw_image,
@@ -59,8 +59,16 @@ fn main() -> Result<()> {
     let args = valargs::parse();
 
     let (param_file_path, output_image_path) = (
-        args.nth(1).map(PathBuf::from),
-        args.nth(2).map(PathBuf::from),
+        args.nth(1)
+            .map(PathBuf::from)
+            .map(path::absolute)
+            .transpose()
+            .map_err(ErrorKind::MakePathAbsolute)?,
+        args.nth(2)
+            .map(PathBuf::from)
+            .map(path::absolute)
+            .transpose()
+            .map_err(ErrorKind::MakePathAbsolute)?,
     );
 
     let params = param_file_path
@@ -121,16 +129,6 @@ fn start_gui(
     }
 }
 
-pub fn read_parameter_file<P>(path: P) -> Result<ParamsKind>
-where
-    P: AsRef<Path>,
-{
-    let param_file_str = fs::read_to_string(path).map_err(ErrorKind::ReadParameterFile)?;
-    let params =
-        ron::from_str::<ParamsKind>(&param_file_str).map_err(ErrorKind::DecodeParameterFile)?;
-    Ok(params)
-}
-
 fn render_frame(params: Params<F>, output_image_path: PathBuf) -> Result<()> {
     let Params {
         img_width,
@@ -172,7 +170,7 @@ fn render_frame(params: Params<F>, output_image_path: PathBuf) -> Result<()> {
         thread::sleep(Duration::from_millis(50));
     }
 
-    let raw_image = handle.join().unwrap(); // TODO replace unwrap
+    let raw_image = handle.join().unwrap();
 
     println!();
 
