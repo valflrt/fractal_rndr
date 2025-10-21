@@ -7,6 +7,7 @@ Frame((
     rotate: None,
     fractal: ComplexLogisticMapLike(
         max_iter: 2500,
+        bailout: 10.,
         a_re: 0.0,
         a_im: -0.9773,
     ),

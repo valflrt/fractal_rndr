@@ -7,6 +7,7 @@ Frame((
     rotate: None,
     fractal: Iigdzh(
         max_iter: 600,
+        bailout: 10.,
         a_re: 0.0,
         a_im: 0.0,
     ),

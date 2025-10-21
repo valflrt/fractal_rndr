@@ -7,6 +7,7 @@ Frame((
     rotate: None,
     fractal: Tdrge(
         max_iter: 2000,
+        bailout: 10.,
     ),
     coloring_mode: MinMaxNorm(
         min: Custom(200.0),

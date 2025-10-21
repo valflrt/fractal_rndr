@@ -1,10 +1,9 @@
-use cumulative_histogram::{compute_histogram, cumulate_histogram, get_histogram_value};
 use image::{Rgb, RgbImage};
 use serde::{Deserialize, Serialize};
 
 use crate::{array2::Array2, params::Params, F};
 
-pub fn color_raw_image(params: &Params<F>, mut raw_image: Array2<F>) -> RgbImage {
+pub fn color_raw_image(params: &Params<F>, raw_image: Array2<F>) -> RgbImage {
     let &Params {
         img_width,
         img_height,
@@ -31,19 +30,6 @@ pub fn color_raw_image(params: &Params<F>, mut raw_image: Array2<F>) -> RgbImage
                 }
             }
         }
-        ColoringMode::CumulativeHistogram { map } => {
-            raw_image.vec.iter_mut().for_each(|v| *v /= max_v);
-            let cumulative_histogram = cumulate_histogram(compute_histogram(&raw_image.vec));
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
-                    let value = raw_image[(i, j)];
-
-                    let t = map.apply(get_histogram_value(value, &cumulative_histogram));
-
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, &params.gradient));
-                }
-            }
-        }
     };
 
     output_image
@@ -56,9 +42,6 @@ pub enum ColoringMode {
         min: Extremum,
         #[serde(default)]
         max: Extremum,
-        map: MapValue,
-    },
-    CumulativeHistogram {
         map: MapValue,
     },
 }
@@ -87,7 +70,6 @@ impl Extremum {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum MapValue {
     Linear,
-    Squared,
     Powf(F),
 }
 
@@ -96,7 +78,6 @@ impl MapValue {
     pub fn apply(&self, t: F) -> F {
         match self {
             MapValue::Linear => t,
-            MapValue::Squared => t * t,
             MapValue::Powf(p) => {
                 let t = t.powf(*p);
                 if t.is_normal() {
@@ -132,64 +113,21 @@ pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
     let last = gradient.last().unwrap();
 
     if t < first.0 {
-        Rgb(first.1)
-    } else if t > last.0 {
-        Rgb(last.1)
-    } else {
-        let i = gradient
-            .binary_search_by(|&(value, _)| value.total_cmp(&t))
-            .unwrap_or_else(|index| index)
-            .saturating_sub(1);
-
-        let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
-        let [r1, g1, b1] = gradient[i].1;
-        let [r2, g2, b2] = gradient[i + 1].1;
-        let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
-        let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
-        let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
-
-        Rgb([r, g, b])
-    }
-}
-
-pub mod cumulative_histogram {
-    use crate::F;
-
-    const HISTOGRAM_SIZE: usize = 1000000;
-
-    fn map_f_to_histogram_index(value: F) -> usize {
-        ((value * (HISTOGRAM_SIZE - 1) as F) as usize).min(HISTOGRAM_SIZE - 1)
+        return Rgb(first.1);
     }
 
-    /// Compute an histogram from normalized values in range
-    /// (0, 1).
-    pub fn compute_histogram(pixel_values: &[F]) -> Vec<u32> {
-        let mut histogram = vec![0; HISTOGRAM_SIZE];
-
-        for &value in pixel_values.iter() {
-            histogram[map_f_to_histogram_index(value)] += 1;
-        }
-
-        histogram
+    if t > last.0 {
+        return Rgb(last.1);
     }
 
-    /// Computes the cumulative histogram associated with the
-    /// histogram provided.
-    pub fn cumulate_histogram(histogram: Vec<u32>) -> Vec<F> {
-        let total = histogram.iter().sum::<u32>();
-        let mut cumulative = vec![0.; HISTOGRAM_SIZE];
-        let mut cumulative_sum = 0.;
-        for (i, &count) in histogram.iter().enumerate() {
-            cumulative_sum += count as F / total as F;
-            cumulative[i] = cumulative_sum;
-        }
+    let i = gradient.partition_point(|&(v, _)| v < t).saturating_sub(1);
 
-        cumulative
-    }
+    let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
+    let [r1, g1, b1] = gradient[i].1;
+    let [r2, g2, b2] = gradient[i + 1].1;
+    let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
+    let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
+    let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
 
-    /// Get the cumulative histogram value from a normalized value
-    /// in range (0, 1).
-    pub fn get_histogram_value(value: F, cumulative_histogram: &[F]) -> F {
-        cumulative_histogram[map_f_to_histogram_index(value)]
-    }
+    Rgb([r, g, b])
 }

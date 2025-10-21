@@ -17,7 +17,6 @@ impl Gui {
                 ComboBox::from_id_salt("coloring_mode")
                     .selected_text(match self.params.coloring_mode {
                         ColoringMode::MinMaxNorm { .. } => "MinMaxNorm",
-                        ColoringMode::CumulativeHistogram { .. } => "CumulativeHistogram",
                     })
                     .show_ui(ui, |ui| {
                         let selected =
@@ -30,64 +29,43 @@ impl Gui {
                             };
                             self.params_changes.set_non_breaking();
                         }
-
-                        let selected = matches!(
-                            self.params.coloring_mode,
-                            ColoringMode::CumulativeHistogram { .. }
-                        );
-                        if ui
-                            .selectable_label(selected, "CumulativeHistogram")
-                            .clicked()
-                            && !selected
-                        {
-                            self.params.coloring_mode = ColoringMode::CumulativeHistogram {
-                                map: MapValue::Linear,
-                            };
-                            self.params_changes.set_non_breaking();
-                        }
                     });
             });
 
             ui.horizontal(|ui| {
                 ui.label("map value:");
 
-                let (ColoringMode::CumulativeHistogram { map }
-                | ColoringMode::MinMaxNorm { map, .. }) = &mut self.params.coloring_mode;
+                #[allow(irrefutable_let_patterns)]
+                if let ColoringMode::MinMaxNorm { map, .. } = &mut self.params.coloring_mode {
+                    ComboBox::from_id_salt("map_value")
+                        .selected_text(match map {
+                            MapValue::Linear => "Linear",
+                            MapValue::Powf(_) => "Powf",
+                        })
+                        .show_ui(ui, |ui| {
+                            let selected = matches!(map, MapValue::Linear);
+                            if ui.selectable_label(selected, "Linear").clicked() && !selected {
+                                *map = MapValue::Linear;
+                                self.params_changes.set_non_breaking();
+                            };
 
-                ComboBox::from_id_salt("map_value")
-                    .selected_text(match map {
-                        MapValue::Linear => "Linear",
-                        MapValue::Squared => "Squared",
-                        MapValue::Powf(_) => "Powf",
-                    })
-                    .show_ui(ui, |ui| {
-                        let selected = matches!(map, MapValue::Linear);
-                        if ui.selectable_label(selected, "Linear").clicked() && !selected {
-                            *map = MapValue::Linear;
+                            let selected = matches!(map, MapValue::Powf(_));
+                            if ui.selectable_label(selected, "Powf").clicked() && !selected {
+                                *map = MapValue::Powf(1.);
+                                self.params_changes.set_non_breaking();
+                            };
+                        });
+
+                    if let MapValue::Powf(exp) = map {
+                        let res = ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
+                        if res.changed() {
                             self.params_changes.set_non_breaking();
-                        };
-
-                        let selected = matches!(map, MapValue::Squared);
-                        if ui.selectable_label(selected, "Squared").clicked() && !selected {
-                            *map = MapValue::Squared;
-                            self.params_changes.set_non_breaking();
-                        };
-
-                        let selected = matches!(map, MapValue::Powf(_));
-                        if ui.selectable_label(selected, "Powf").clicked() && !selected {
-                            *map = MapValue::Powf(1.);
-                            self.params_changes.set_non_breaking();
-                        };
-                    });
-
-                if let MapValue::Powf(exp) = map {
-                    let res = ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
-                    if res.changed() {
-                        self.params_changes.set_non_breaking();
+                        }
                     }
                 }
             });
 
+            #[allow(irrefutable_let_patterns)]
             if let ColoringMode::MinMaxNorm { min, max, .. } = &mut self.params.coloring_mode {
                 const FIXED_LABEL_WIDTH: f32 = 30.;
 
@@ -117,7 +95,7 @@ impl Gui {
                         Self::SLIDER_END_POS - FIXED_LABEL_WIDTH - res.rect.width();
 
                     if let Extremum::Custom(min) = min {
-                        let res = ui.add(Slider::new(min, 0. ..=upper_bound).fixed_decimals(0));
+                        let res = ui.add(Slider::new(min, 0. ..=upper_bound));
                         if res.changed() {
                             self.params_changes.set_non_breaking();
                         }
@@ -147,7 +125,7 @@ impl Gui {
                         Self::SLIDER_END_POS - FIXED_LABEL_WIDTH - res.rect.width();
 
                     if let Extremum::Custom(max) = max {
-                        let res = ui.add(Slider::new(max, 0. ..=upper_bound).fixed_decimals(0));
+                        let res = ui.add(Slider::new(max, 0. ..=upper_bound));
                         if res.changed() {
                             self.params_changes.set_non_breaking();
                         }

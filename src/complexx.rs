@@ -10,6 +10,7 @@ pub struct Complexx {
     pub im: FX,
 }
 
+#[allow(dead_code)]
 impl Complexx {
     #[inline]
     pub fn splat(re: F, im: F) -> Complexx {
@@ -24,6 +25,22 @@ impl Complexx {
         Complexx {
             re: FX::splat(0.),
             im: FX::splat(0.),
+        }
+    }
+
+    #[inline]
+    pub fn one() -> Complexx {
+        Complexx {
+            re: FX::splat(1.),
+            im: FX::splat(0.),
+        }
+    }
+
+    #[inline]
+    pub fn i() -> Complexx {
+        Complexx {
+            re: FX::splat(0.),
+            im: FX::splat(1.),
         }
     }
 
@@ -101,11 +118,48 @@ impl Complexx {
         Complexx::from_polar(r.powf(exp), theta * exp)
     }
 
-    // #[inline]
-    // pub fn powf4(&self, exp: FX) -> Complexx {
-    //     let (r, theta) = self.to_polar();
-    //     Complexx::from_polar(r.pow_f64x4(exp), theta * exp)
-    // }
+    #[inline]
+    pub fn powf4(&self, exp: FX) -> Complexx {
+        let (r, theta) = self.to_polar();
+        Complexx::from_polar(r.pow_f64x4(exp), theta * exp)
+    }
+
+    #[inline]
+    pub fn exp(&self) -> Complexx {
+        let re_exp = self.re.exp();
+        Complexx {
+            re: re_exp * self.im.cos(),
+            im: re_exp * self.im.sin(),
+        }
+    }
+
+    #[inline]
+    pub fn sin(&self) -> Complexx {
+        let iz = Complexx {
+            re: -self.im,
+            im: self.re,
+        };
+        let e_iz = iz.exp();
+        let neg_e_iz = (-iz).exp();
+        Complexx {
+            re: (e_iz.re - neg_e_iz.re),
+            im: (e_iz.im - neg_e_iz.im),
+        } / 2.
+    }
+
+    #[inline]
+    pub fn cos(&self) -> Complexx {
+        let iz = Complexx {
+            re: -self.im,
+            im: self.re,
+        };
+        let e_iz = iz.exp();
+        let neg_e_iz = (-iz).exp();
+        Complexx {
+            re: (e_iz.re + neg_e_iz.re),
+            im: (e_iz.im + neg_e_iz.im),
+        } / 2.
+    }
 }
 
 impl Add for Complexx {

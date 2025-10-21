@@ -7,6 +7,7 @@ Frame((
     rotate: None,
     fractal: Sfwypc(
         max_iter: 1500,
+        bailout: 10.,
         alpha: (0.0, 0.0),
         beta: (-1.0, 0.0),
         gamma: (0.0, 0.0),

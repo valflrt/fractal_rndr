@@ -66,6 +66,15 @@ impl Gui {
             });
         }
 
+        if let Some(bailout) = self.params.fractal.bailout_mut() {
+            ui.horizontal(|ui| {
+                let label_width = ui.label("bailout:").rect.width();
+                ui.spacing_mut().slider_width = Self::SLIDER_END_POS - label_width;
+                let res = ui.add(Slider::new(bailout, 0.01..=100.).logarithmic(true));
+                changed |= res.changed();
+            });
+        }
+
         if let Fractal::MandelbrotCustomExp { exp, .. } = &mut self.params.fractal {
             ui.horizontal(|ui| {
                 ui.label("exp:");
@@ -173,7 +182,10 @@ impl Gui {
                 matches!(self.params.fractal, Fractal::Mandelbrot { .. }),
                 "Mandelbrot",
                 None,
-                Fractal::Mandelbrot { max_iter: 500 },
+                Fractal::Mandelbrot {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::MandelbrotCustomExp { .. }),
@@ -181,6 +193,7 @@ impl Gui {
                 None,
                 Fractal::MandelbrotCustomExp {
                     max_iter: 500,
+                    bailout: 10.,
                     exp: 2.,
                 },
             ),
@@ -188,7 +201,10 @@ impl Gui {
                 matches!(self.params.fractal, Fractal::Sdrge { .. }),
                 "Sdrge",
                 Some("second degree recursive sequence with growing exponent"),
-                Fractal::Sdrge { max_iter: 500 },
+                Fractal::Sdrge {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::SdrgeCustomIntExp { .. }),
@@ -196,6 +212,7 @@ impl Gui {
                 Some("second degree recursive sequence with growing custom integer exponent"),
                 Fractal::SdrgeCustomIntExp {
                     max_iter: 500,
+                    bailout: 10.,
                     exp: 2,
                 },
             ),
@@ -205,6 +222,7 @@ impl Gui {
                 Some("second degree recursive sequence with growing custom exponent"),
                 Fractal::SdrgeCustomExp {
                     max_iter: 500,
+                    bailout: 10.,
                     exp: 2.,
                 },
             ),
@@ -214,6 +232,7 @@ impl Gui {
                 Some("parameterized second degree recursive sequence with growing exponent"),
                 Fractal::SdrgeParam {
                     max_iter: 500,
+                    bailout: 10.,
                     a_re: 1.,
                     a_im: 0.,
                 },
@@ -222,13 +241,19 @@ impl Gui {
                 matches!(self.params.fractal, Fractal::Sdrage { .. }),
                 "Sdrage",
                 Some("second degree recursive alternating sequence with growing exponent"),
-                Fractal::Sdrage { max_iter: 500 },
+                Fractal::Sdrage {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::Tdrge { .. }),
                 "Tdrge",
                 Some("third degree recursive sequence with growing exponent"),
-                Fractal::Tdrge { max_iter: 500 },
+                Fractal::Tdrge {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::NthDrge { .. }),
@@ -236,6 +261,7 @@ impl Gui {
                 Some("nth degree recursive sequence with growing exponent"),
                 Fractal::NthDrge {
                     max_iter: 500,
+                    bailout: 10.,
                     n: 4,
                 },
             ),
@@ -243,7 +269,10 @@ impl Gui {
                 matches!(self.params.fractal, Fractal::ThirdDegreeRecPairs { .. }),
                 "ThirdDegreeRecPairs",
                 None,
-                Fractal::ThirdDegreeRecPairs { max_iter: 500 },
+                Fractal::ThirdDegreeRecPairs {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(
@@ -252,7 +281,10 @@ impl Gui {
                 ),
                 "SecondDegreeThirtySevenBlend",
                 None,
-                Fractal::SecondDegreeThirtySevenBlend { max_iter: 500 },
+                Fractal::SecondDegreeThirtySevenBlend {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::ComplexLogisticMapLike { .. }),
@@ -260,6 +292,7 @@ impl Gui {
                 None,
                 Fractal::ComplexLogisticMapLike {
                     max_iter: 500,
+                    bailout: 10.,
                     a_re: 1.,
                     a_im: 0.,
                 },
@@ -268,7 +301,10 @@ impl Gui {
                 matches!(self.params.fractal, Fractal::Vshqwj { .. }),
                 "Vshqwj",
                 None,
-                Fractal::Vshqwj { max_iter: 500 },
+                Fractal::Vshqwj {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::Wmriho { .. }),
@@ -276,6 +312,7 @@ impl Gui {
                 None,
                 Fractal::Wmriho {
                     max_iter: 500,
+                    bailout: 10.,
                     a_re: 0.,
                     a_im: 0.,
                 },
@@ -286,6 +323,7 @@ impl Gui {
                 None,
                 Fractal::Iigdzh {
                     max_iter: 500,
+                    bailout: 10.,
                     a_re: 0.,
                     a_im: 0.,
                 },
@@ -294,13 +332,19 @@ impl Gui {
                 matches!(self.params.fractal, Fractal::Fxdicq { .. }),
                 "Fxdicq",
                 None,
-                Fractal::Fxdicq { max_iter: 500 },
+                Fractal::Fxdicq {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::Mjygzr { .. }),
                 "Mjygzr",
                 None,
-                Fractal::Mjygzr { max_iter: 500 },
+                Fractal::Mjygzr {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
             ),
             (
                 matches!(self.params.fractal, Fractal::Sfwypc { .. }),
@@ -308,9 +352,19 @@ impl Gui {
                 None,
                 Fractal::Sfwypc {
                     max_iter: 500,
+                    bailout: 10.,
                     alpha: (0., 0.),
                     beta: (0., 0.),
                     gamma: (0., 0.),
+                },
+            ),
+            (
+                matches!(self.params.fractal, Fractal::Test { .. }),
+                "Test",
+                None,
+                Fractal::Test {
+                    max_iter: 500,
+                    bailout: 10.,
                 },
             ),
         ]

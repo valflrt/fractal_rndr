@@ -41,7 +41,10 @@ impl Default for ParamsKind {
             center_x: -0.5,
             center_y: 0.,
             rotate: None,
-            fractal: Fractal::Mandelbrot { max_iter: 500 },
+            fractal: Fractal::Mandelbrot {
+                max_iter: 500,
+                bailout: 10.,
+            },
 
             coloring_mode: ColoringMode::MinMaxNorm {
                 min: Extremum::Custom(0.),
@@ -140,6 +143,10 @@ pub mod animation {
         Linear(F, F, F, F),
         /// (start_time, end_time, start_value, end_value)
         Smooth(F, F, F, F),
+        /// (start_time, end_time, start_value, end_value)
+        Exp(F, F, F, F),
+        /// (start_time, end_time, start_value, end_value)
+        SmoothExp(F, F, F, F),
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -152,22 +159,33 @@ pub mod animation {
                 .find_map(|&transition| match transition {
                     Transition::Const(start_time, end_time, _)
                     | Transition::Linear(start_time, end_time, _, _)
-                    | Transition::Smooth(start_time, end_time, _, _) => {
+                    | Transition::Smooth(start_time, end_time, _, _)
+                    | Transition::Exp(start_time, end_time, _, _)
+                    | Transition::SmoothExp(start_time, end_time, _, _) => {
                         (start_time <= t && t <= end_time).then_some(transition)
                     }
                 })
                 .map(|transition| {
-                    // see https://www.desmos.com/calculator/a1ddmg7pxk
                     match transition {
                         Transition::Const(_, _, value) => value,
                         Transition::Linear(start_time, end_time, start_value, end_value) => {
                             let w = (t - start_time) / (end_time - start_time);
-                            start_value * (1. - w) + end_value * w
+                            start_value + (end_value - start_value) * w
                         }
+                        // see https://www.desmos.com/calculator/a1ddmg7pxk
                         Transition::Smooth(start_time, end_time, start_value, end_value) => {
                             let w = (t - start_time) / (end_time - start_time);
-                            let smooth_w = w * w * (3. - 2. * w);
-                            start_value * (1. - smooth_w) + end_value * smooth_w
+                            let w = w * w * (3. - 2. * w);
+                            start_value + (end_value - start_value) * w
+                        }
+                        Transition::Exp(start_time, end_time, start_value, end_value) => {
+                            let w = (t - start_time) / (end_time - start_time);
+                            start_value * (end_value / start_value).powf(w)
+                        }
+                        Transition::SmoothExp(start_time, end_time, start_value, end_value) => {
+                            let w = (t - start_time) / (end_time - start_time);
+                            let w = w * w * (3. - 2. * w);
+                            start_value * (end_value / start_value).powf(w)
                         }
                     }
                 })
@@ -178,81 +196,115 @@ pub mod animation {
     impl Fractal<AnimationSteps> {
         pub fn get(&self, t: F) -> Fractal<F> {
             match self {
-                &Self::Mandelbrot { max_iter } => Fractal::<F>::Mandelbrot { max_iter },
-                &Self::MandelbrotCustomExp { max_iter, ref exp } => {
-                    Fractal::<F>::MandelbrotCustomExp {
-                        max_iter,
-                        exp: exp.get(t),
-                    }
+                &Self::Mandelbrot { max_iter, bailout } => {
+                    Fractal::<F>::Mandelbrot { max_iter, bailout }
                 }
-                &Self::Sdrge { max_iter } => Fractal::<F>::Sdrge { max_iter },
+                &Self::MandelbrotCustomExp {
+                    max_iter,
+                    bailout,
+                    ref exp,
+                } => Fractal::<F>::MandelbrotCustomExp {
+                    max_iter,
+                    bailout,
+                    exp: exp.get(t),
+                },
+                &Self::Sdrge { max_iter, bailout } => Fractal::<F>::Sdrge { max_iter, bailout },
                 &Self::SdrgeParam {
                     max_iter,
+                    bailout,
                     ref a_re,
                     ref a_im,
                 } => Fractal::<F>::SdrgeParam {
                     max_iter,
+                    bailout,
                     a_re: a_re.get(t),
                     a_im: a_im.get(t),
                 },
-                &Self::SdrgeCustomExp { max_iter, ref exp } => Fractal::<F>::SdrgeCustomExp {
+                &Self::SdrgeCustomExp {
                     max_iter,
+                    bailout,
+                    ref exp,
+                } => Fractal::<F>::SdrgeCustomExp {
+                    max_iter,
+                    bailout,
                     exp: exp.get(t),
                 },
-                &Self::SdrgeCustomIntExp { max_iter, exp } => {
-                    Fractal::<F>::SdrgeCustomIntExp { max_iter, exp }
+                &Self::SdrgeCustomIntExp {
+                    max_iter,
+                    bailout,
+                    exp,
+                } => Fractal::<F>::SdrgeCustomIntExp {
+                    max_iter,
+                    bailout,
+                    exp,
+                },
+                &Self::Sdrage { max_iter, bailout } => Fractal::<F>::Sdrage { max_iter, bailout },
+                &Self::Tdrge { max_iter, bailout } => Fractal::<F>::Tdrge { max_iter, bailout },
+                &Self::NthDrge {
+                    max_iter,
+                    bailout,
+                    n,
+                } => Fractal::<F>::NthDrge {
+                    max_iter,
+                    bailout,
+                    n,
+                },
+                &Self::ThirdDegreeRecPairs { max_iter, bailout } => {
+                    Fractal::<F>::ThirdDegreeRecPairs { max_iter, bailout }
                 }
-                &Self::Sdrage { max_iter } => Fractal::<F>::Sdrage { max_iter },
-                &Self::Tdrge { max_iter } => Fractal::<F>::Tdrge { max_iter },
-                &Self::NthDrge { max_iter, n } => Fractal::<F>::NthDrge { max_iter, n },
-                &Self::ThirdDegreeRecPairs { max_iter } => {
-                    Fractal::<F>::ThirdDegreeRecPairs { max_iter }
+                &Self::SecondDegreeThirtySevenBlend { max_iter, bailout } => {
+                    Fractal::<F>::SecondDegreeThirtySevenBlend { max_iter, bailout }
                 }
-                &Self::SecondDegreeThirtySevenBlend { max_iter } => {
-                    Fractal::<F>::SecondDegreeThirtySevenBlend { max_iter }
-                }
-                &Self::Vshqwj { max_iter } => Fractal::<F>::Vshqwj { max_iter },
+                &Self::Vshqwj { max_iter, bailout } => Fractal::<F>::Vshqwj { max_iter, bailout },
                 &Self::Wmriho {
                     max_iter,
+                    bailout,
                     ref a_re,
                     ref a_im,
                 } => Fractal::<F>::Wmriho {
                     max_iter,
+                    bailout,
                     a_re: a_re.get(t),
                     a_im: a_im.get(t),
                 },
                 &Self::Iigdzh {
                     max_iter,
+                    bailout,
                     ref a_re,
                     ref a_im,
                 } => Fractal::<F>::Iigdzh {
                     max_iter,
+                    bailout,
                     a_re: a_re.get(t),
                     a_im: a_im.get(t),
                 },
-                &Self::Mjygzr { max_iter } => Fractal::<F>::Mjygzr { max_iter },
-                &Self::Fxdicq { max_iter } => Fractal::<F>::Fxdicq { max_iter },
+                &Self::Mjygzr { max_iter, bailout } => Fractal::<F>::Mjygzr { max_iter, bailout },
+                &Self::Fxdicq { max_iter, bailout } => Fractal::<F>::Fxdicq { max_iter, bailout },
                 &Self::Sfwypc {
                     max_iter,
+                    bailout,
                     alpha: (ref alpha_re, ref alpha_im),
                     beta: (ref beta_re, ref beta_im),
                     gamma: (ref gamma_re, ref gamma_im),
                 } => Fractal::<F>::Sfwypc {
                     max_iter,
+                    bailout,
                     alpha: (alpha_re.get(t), alpha_im.get(t)),
                     beta: (beta_re.get(t), beta_im.get(t)),
                     gamma: (gamma_re.get(t), gamma_im.get(t)),
                 },
-
                 &Self::ComplexLogisticMapLike {
                     max_iter,
+                    bailout,
                     ref a_re,
                     ref a_im,
                 } => Fractal::<F>::ComplexLogisticMapLike {
                     max_iter,
+                    bailout,
                     a_re: a_re.get(t),
                     a_im: a_im.get(t),
                 },
+                &Self::Test { max_iter, bailout } => Fractal::<F>::Test { max_iter, bailout },
 
                 Fractal::MoireTest => Fractal::MoireTest,
             }
