@@ -150,7 +150,7 @@ impl Fractal<F> {
                 let mut iter = FX::splat(0.);
                 for i in 0..$max_iter {
                     let norm_sqr = z.norm_sqr();
-                    let not_diverged = norm_sqr.cmp_le(bailout_sqr);
+                    let not_diverged = norm_sqr.simd_le(bailout_sqr);
                     if !not_diverged.any() {
                         break;
                     }

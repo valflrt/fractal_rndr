@@ -88,7 +88,7 @@ fn main() -> Result<()> {
                     if animation_params.animation_cfg.is_some() {
                         render_animation(animation_params, output_image_path)
                     } else {
-                        return Err(ErrorKind::MissingAnimationCfg);
+                        Err(ErrorKind::MissingAnimationCfg)
                     }
                 }
             }
