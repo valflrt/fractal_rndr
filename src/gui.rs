@@ -266,6 +266,7 @@ impl Gui {
                     match read_parameter_file(&path) {
                         Ok(ParamsKind::Frame(params)) => {
                             self.params.gradient = params.gradient;
+                            self.params_changes.set_breaking();
                             self.notify("new gradient loaded");
                         }
                         _ => self.notify("failed to load gradient"),
