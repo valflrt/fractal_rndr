@@ -125,12 +125,11 @@ where
         beta: (T, T),
         gamma: (T, T),
     },
-    Test {
-        max_iter: u32,
-        #[serde(default = "default_bailout")]
-        bailout: F,
-    },
-
+    // Test {
+    //     max_iter: u32,
+    //     #[serde(default = "default_bailout")]
+    //     bailout: F,
+    // },
     MoireTest,
 }
 
@@ -446,20 +445,7 @@ impl Fractal<F> {
                     z2
                 })
             }
-            Fractal::Test { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-                let mut z2 = Complexx::zeros();
-
-                iterate!(max_iter, bailout, |_| {
-                    let new_z2 = z2 * z2 * z2 + z1 * z1 + z0 + c;
-                    z0 = z1 * z2 + c;
-                    z1 = z2;
-                    z2 = new_z2;
-                    z2
-                })
-            }
-
+            // Fractal::Test { max_iter, bailout } => {}
             Fractal::MoireTest => {
                 let Complexx { re: x, im: y } = c * 100.;
                 ((x * x + y * y).sin().abs(), Complexx::splat(1., 0.))
@@ -516,8 +502,7 @@ impl_extract_field!(
         Iigdzh,
         Fxdicq,
         Mjygzr,
-        Sfwypc,
-        Test
+        Sfwypc // , Test
     ]
 );
 
@@ -543,7 +528,6 @@ impl_extract_field!(
         Iigdzh,
         Fxdicq,
         Mjygzr,
-        Sfwypc,
-        Test
+        Sfwypc // , Test
     ]
 );

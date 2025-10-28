@@ -69,6 +69,7 @@ pub fn render_raw_image(
             const CHUNK_SIZE: usize = 8;
             #[cfg(not(feature = "force_f32"))]
             const CHUNK_SIZE: usize = 4;
+
             let value = sampling_points
                 .chunks(CHUNK_SIZE)
                 .flat_map(|d| {

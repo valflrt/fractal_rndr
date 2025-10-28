@@ -304,8 +304,7 @@ pub mod animation {
                     a_re: a_re.get(t),
                     a_im: a_im.get(t),
                 },
-                &Self::Test { max_iter, bailout } => Fractal::<F>::Test { max_iter, bailout },
-
+                // &Self::Test { max_iter, bailout } => Fractal::<F>::Test { max_iter, bailout },
                 Fractal::MoireTest => Fractal::MoireTest,
             }
         }
