@@ -1,6 +1,7 @@
 mod array2;
 mod coloring;
 mod complexx;
+mod dithering;
 mod error;
 mod fractal;
 mod gui;
@@ -24,6 +25,7 @@ use gui::WINDOW_SIZE;
 
 use crate::{
     coloring::{color_mapping, color_raw_image},
+    dithering::blue_noise,
     error::{ErrorKind, Result},
     gui::Gui,
     params::{
@@ -32,7 +34,6 @@ use crate::{
     },
     progress::Progress,
     rendering::render_raw_image,
-    sampling::preview_sampling_points,
 };
 
 #[cfg(feature = "force_f32")]
@@ -45,9 +46,9 @@ type FX = f32x8;
 #[cfg(not(feature = "force_f32"))]
 type F = f64;
 #[cfg(not(feature = "force_f32"))]
-use wide::f64x4;
+use wide::f64x8;
 #[cfg(not(feature = "force_f32"))]
-type FX = f64x4;
+type FX = f64x8;
 
 const USAGE: &str = "This is a fractal renderer.
 Usage: fractal_rndr <param file path> <output image path>
@@ -133,31 +134,16 @@ fn render_frame(params: Params<F>, output_image_path: PathBuf) -> Result<()> {
     let Params {
         img_width,
         img_height,
-
-        sampling,
         ..
     } = params;
 
-    let sampling_points = sampling.generate_sampling_points();
-
-    if let Some(DevOptions {
-        save_sampling_pattern: Some(true),
-        ..
-    }) = params.dev_options
-    {
-        preview_sampling_points(&sampling_points)?;
-    }
-
-    let progress = Progress::new((img_width * img_height) as usize);
+    let progress = Progress::new(img_width * img_height);
 
     let start = Instant::now();
 
     let params_clone = params.clone();
     let progress_clone = progress.clone();
-    let sampling_points_clone = sampling_points.clone();
-    let handle = thread::spawn(move || {
-        render_raw_image(&params_clone, &sampling_points_clone, Some(progress_clone))
-    });
+    let handle = thread::spawn(move || render_raw_image(&params_clone, Some(progress_clone)));
 
     while !handle.is_finished() {
         print!(
@@ -203,19 +189,13 @@ fn render_frame(params: Params<F>, output_image_path: PathBuf) -> Result<()> {
 }
 
 fn render_animation(params: Params<AnimationSteps>, output_image_path: PathBuf) -> Result<()> {
-    let Params {
-        sampling,
-        animation_cfg,
-        ..
-    } = params;
+    let Params { animation_cfg, .. } = params;
     let AnimationCfg { duration, fps } = animation_cfg.unwrap();
 
     let frame_count = (duration * fps) as usize;
 
     println!("frame count: {}", frame_count);
     println!();
-
-    let sampling_points = sampling.generate_sampling_points();
 
     let global_start = Instant::now();
 
@@ -229,16 +209,13 @@ fn render_animation(params: Params<AnimationSteps>, output_image_path: PathBuf) 
             ..
         } = params;
 
-        let progress = Progress::new((img_width * img_height) as usize);
+        let progress = Progress::new(img_width * img_height);
 
         let start = Instant::now();
 
         let params_clone = params.clone();
         let progress_clone = progress.clone();
-        let sampling_points_clone = sampling_points.clone();
-        let handle = thread::spawn(move || {
-            render_raw_image(&params_clone, &sampling_points_clone, Some(progress_clone))
-        });
+        let handle = thread::spawn(move || render_raw_image(&params_clone, Some(progress_clone)));
 
         while !handle.is_finished() {
             print!(
@@ -262,16 +239,20 @@ fn render_animation(params: Params<AnimationSteps>, output_image_path: PathBuf) 
             ..
         }) = params.dev_options
         {
-            const GRADIENT_HEIGHT: u32 = 8;
-            const GRADIENT_WIDTH: u32 = 64;
-            const OFFSET: u32 = 8;
+            const GRADIENT_HEIGHT: usize = 8;
+            const GRADIENT_WIDTH: usize = 64;
+            const OFFSET: usize = 8;
 
             for j in 0..GRADIENT_HEIGHT {
                 for i in 0..GRADIENT_WIDTH {
                     output_image.put_pixel(
-                        img_width - GRADIENT_WIDTH - OFFSET + i,
-                        img_height - GRADIENT_HEIGHT - OFFSET + j,
-                        color_mapping(i as F / GRADIENT_WIDTH as F, &params.gradient),
+                        (img_width - GRADIENT_WIDTH - OFFSET + i) as u32,
+                        (img_height - GRADIENT_HEIGHT - OFFSET + j) as u32,
+                        color_mapping(
+                            i as F / GRADIENT_WIDTH as F,
+                            &params.gradient,
+                            blue_noise(i, j),
+                        ),
                     );
                 }
             }

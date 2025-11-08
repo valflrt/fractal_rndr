@@ -44,10 +44,10 @@ impl Complexx {
         }
     }
 
-    // #[inline]
-    // pub fn is_zero(&self) -> FX {
-    //     self.re.cmp_eq(0.) * self.im.cmp_eq(0.)
-    // }
+    #[inline]
+    pub fn is_finite(&self) -> FX {
+        self.re.is_finite() & self.im.is_finite()
+    }
 
     #[inline]
     pub fn to_polar(self) -> (FX, FX) {
@@ -121,7 +121,7 @@ impl Complexx {
     #[inline]
     pub fn powf4(&self, exp: FX) -> Complexx {
         let (r, theta) = self.to_polar();
-        Complexx::from_polar(r.pow_f64x4(exp), theta * exp)
+        Complexx::from_polar(r.pow_f64x8(exp), theta * exp)
     }
 
     #[inline]

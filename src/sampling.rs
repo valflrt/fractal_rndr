@@ -1,10 +1,6 @@
-use image::{Pixel, Rgba, RgbaImage};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    error::{ErrorKind, Result},
-    F,
-};
+use crate::F;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Sampling {
@@ -13,20 +9,18 @@ pub struct Sampling {
 }
 
 impl Sampling {
-    pub fn generate_sampling_points(&self) -> Vec<(F, F)> {
+    pub fn sampling_points(&self) -> impl Iterator<Item = (F, F)> {
         const PHI: F = 1.618033988749895;
         const EPS: F = 0.5;
 
         let n = self.sample_count();
 
-        (0..n)
-            .map(|i| {
-                (
-                    (i as F / PHI) % 1.,
-                    (i as F + EPS) / ((n - 1) as F + 2. * EPS),
-                )
-            })
-            .collect::<Vec<_>>()
+        (0..n).map(move |i| {
+            (
+                (i as F / PHI) % 1.,
+                (i as F + EPS) / ((n - 1) as F + 2. * EPS),
+            )
+        })
     }
 
     pub fn sample_count(&self) -> usize {
@@ -55,7 +49,7 @@ pub enum SamplingLevel {
     Custom(usize),
 }
 
-pub fn map_points_with_offsets(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {
+pub fn map_point_with_offset(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {
     #[inline]
     fn tent(t: F) -> F {
         let t = 2. * t - 1.;
@@ -68,60 +62,4 @@ pub fn map_points_with_offsets(x: F, y: F, offset_x: F, offset_y: F) -> (F, F) {
     let (x, y) = (R * tent(x), R * tent(y));
 
     (x, y)
-}
-
-pub fn preview_sampling_points(sampling_points: &Vec<(F, F)>) -> Result<()> {
-    let size = 350;
-    let center = size / 2;
-    let px = 50;
-    let mut preview = RgbaImage::from_pixel(size, size, Rgba([0, 0, 0, 255]));
-
-    for i in -1..=1 {
-        for j in -1..=1 {
-            let color = if i == 0 && j == 0 {
-                Rgba([255, 255, 255, 255])
-            } else {
-                Rgba([120, 120, 120, 255])
-            };
-
-            if i == 0 && j == 0 {
-                #[cfg(feature = "force_f32")]
-                let (offset_x, offset_y) = (fastrand::f32(), fastrand::f32());
-                #[cfg(not(feature = "force_f32"))]
-                let (offset_x, offset_y) = (fastrand::f64(), fastrand::f64());
-                for &(x, y) in sampling_points {
-                    let (x, y) = map_points_with_offsets(x, y, offset_x, offset_y);
-                    preview.put_pixel(
-                        (center as F + 2. * px as F * (x + i as F)) as u32,
-                        (center as F + 2. * px as F * (y + j as F)) as u32,
-                        color,
-                    );
-                }
-            }
-        }
-    }
-
-    let color = Rgba([255, 0, 0, 220]);
-    preview
-        .get_pixel_mut(center - px, center - px)
-        .blend(&color);
-    preview.get_pixel_mut(center - px, center).blend(&color);
-    preview
-        .get_pixel_mut(center - px, center + px)
-        .blend(&color);
-    preview.get_pixel_mut(center, center - px).blend(&color);
-    preview.get_pixel_mut(center, center + px).blend(&color);
-    preview
-        .get_pixel_mut(center + px, center - px)
-        .blend(&color);
-    preview.get_pixel_mut(center + px, center).blend(&color);
-    preview
-        .get_pixel_mut(center + px, center + px)
-        .blend(&color);
-
-    preview
-        .save("_sampling_pattern.png")
-        .map_err(ErrorKind::SaveImage)?;
-
-    Ok(())
 }

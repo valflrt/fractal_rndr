@@ -10,6 +10,8 @@ use crate::{
 
 impl Gui {
     pub fn show_section_coloring(&mut self, ui: &mut Ui) {
+        let mut changed = false;
+
         ui.add_enabled_ui(self.render_info.is_none(), |ui| {
             ui.horizontal(|ui| {
                 ui.label("coloring mode:");
@@ -17,51 +19,28 @@ impl Gui {
                 ComboBox::from_id_salt("coloring_mode")
                     .selected_text(match self.params.coloring_mode {
                         ColoringMode::MinMaxNorm { .. } => "MinMaxNorm",
+                        ColoringMode::Repeating { .. } => "Repeating",
                     })
-                    .show_ui(ui, |ui| {
-                        let selected =
-                            matches!(self.params.coloring_mode, ColoringMode::MinMaxNorm { .. });
-                        if ui.selectable_label(selected, "MinMaxNorm").clicked() && !selected {
-                            self.params.coloring_mode = ColoringMode::MinMaxNorm {
-                                min: Extremum::Auto,
-                                max: Extremum::Auto,
-                                map: MapValue::Linear,
-                            };
-                            self.params_changes.set_non_breaking();
-                        }
-                    });
+                    .show_ui(ui, |ui| changed |= self.show_combobox_coloring_mode(ui));
             });
 
             ui.horizontal(|ui| {
+                let (ColoringMode::MinMaxNorm { map, .. } | ColoringMode::Repeating { map, .. }) =
+                    &mut self.params.coloring_mode;
+
                 ui.label("map value:");
 
-                #[allow(irrefutable_let_patterns)]
-                if let ColoringMode::MinMaxNorm { map, .. } = &mut self.params.coloring_mode {
-                    ComboBox::from_id_salt("map_value")
-                        .selected_text(match map {
-                            MapValue::Linear => "Linear",
-                            MapValue::Powf(_) => "Powf",
-                        })
-                        .show_ui(ui, |ui| {
-                            let selected = matches!(map, MapValue::Linear);
-                            if ui.selectable_label(selected, "Linear").clicked() && !selected {
-                                *map = MapValue::Linear;
-                                self.params_changes.set_non_breaking();
-                            };
+                ComboBox::from_id_salt("map_value")
+                    .selected_text(match map {
+                        MapValue::Linear => "Linear",
+                        MapValue::Powf(_) => "Powf",
+                    })
+                    .show_ui(ui, |ui| changed |= Self::show_combobox_map_value(ui, map));
 
-                            let selected = matches!(map, MapValue::Powf(_));
-                            if ui.selectable_label(selected, "Powf").clicked() && !selected {
-                                *map = MapValue::Powf(1.);
-                                self.params_changes.set_non_breaking();
-                            };
-                        });
-
-                    if let MapValue::Powf(exp) = map {
-                        let res = ui.add(Slider::new(exp, 0.01..=20.).logarithmic(true));
-                        if res.changed() {
-                            self.params_changes.set_non_breaking();
-                        }
-                    }
+                if let MapValue::Powf(p) = map {
+                    changed |= ui
+                        .add(Slider::new(p, 0.001..=20.).logarithmic(true))
+                        .changed();
                 }
             });
 
@@ -88,17 +67,14 @@ impl Gui {
                         } else {
                             Extremum::Custom(0.)
                         };
-                        self.params_changes.set_non_breaking();
+                        changed = true;
                     }
 
                     ui.spacing_mut().slider_width =
                         Self::SLIDER_END_POS - FIXED_LABEL_WIDTH - res.rect.width();
 
                     if let Extremum::Custom(min) = min {
-                        let res = ui.add(Slider::new(min, 0. ..=upper_bound));
-                        if res.changed() {
-                            self.params_changes.set_non_breaking();
-                        }
+                        changed |= ui.add(Slider::new(min, 0. ..=upper_bound)).changed();
                     }
                 });
 
@@ -118,18 +94,30 @@ impl Gui {
                                 .map(|max_iter| Extremum::Custom(max_iter as F))
                                 .unwrap_or(Extremum::Auto)
                         };
-                        self.params_changes.set_non_breaking();
+                        changed = true;
                     }
 
                     ui.spacing_mut().slider_width =
                         Self::SLIDER_END_POS - FIXED_LABEL_WIDTH - res.rect.width();
 
                     if let Extremum::Custom(max) = max {
-                        let res = ui.add(Slider::new(max, 0. ..=upper_bound));
-                        if res.changed() {
-                            self.params_changes.set_non_breaking();
-                        }
+                        changed |= ui.add(Slider::new(max, 0. ..=upper_bound)).changed();
                     }
+                });
+            }
+
+            if let ColoringMode::Repeating { frac, rotate, .. } = &mut self.params.coloring_mode {
+                ui.horizontal(|ui| {
+                    ui.label("period:");
+                    changed |= ui
+                        .add(Slider::new(frac, 0. ..=10000.).logarithmic(true))
+                        .changed();
+                });
+                ui.horizontal(|ui| {
+                    ui.label("rotate:");
+                    changed |= ui
+                        .add(DragValue::new(rotate).speed(0.01).range(0. ..=1.))
+                        .changed();
                 });
             }
         });
@@ -138,11 +126,61 @@ impl Gui {
             .default_open(false)
             .show(ui, |ui| {
                 ui.add_enabled_ui(self.render_info.is_none(), |ui| {
-                    if self.show_gradient_ui(ui) {
-                        self.params_changes.set_non_breaking();
-                    }
+                    changed |= self.show_gradient_ui(ui)
                 });
             });
+
+        if changed {
+            self.params_changes.set_non_breaking();
+        }
+    }
+
+    fn show_combobox_coloring_mode(&mut self, ui: &mut Ui) -> bool {
+        [
+            (
+                "MinMaxNorm",
+                matches!(self.params.coloring_mode, ColoringMode::MinMaxNorm { .. }),
+                ColoringMode::MinMaxNorm {
+                    min: Extremum::Auto,
+                    max: Extremum::Auto,
+                    map: MapValue::Linear,
+                },
+            ),
+            (
+                "Repeating",
+                matches!(self.params.coloring_mode, ColoringMode::Repeating { .. }),
+                ColoringMode::Repeating {
+                    frac: 1000.,
+                    rotate: 0.,
+                    map: MapValue::Linear,
+                },
+            ),
+        ]
+        .iter()
+        .any(|&(name, selected, default)| {
+            let res = ui.selectable_label(selected, name);
+            let clicked = res.clicked() && !selected;
+            if clicked {
+                self.params.coloring_mode = default;
+            }
+            clicked
+        })
+    }
+
+    fn show_combobox_map_value(ui: &mut Ui, map: &mut MapValue) -> bool {
+        [
+            ("Linear", matches!(map, MapValue::Linear), MapValue::Linear),
+            ("Powf", matches!(map, MapValue::Powf(_)), MapValue::Powf(1.)),
+        ]
+        .iter()
+        .any(|&(name, selected, default)| {
+            let res = ui.selectable_label(selected, name);
+            let clicked = res.clicked() && !selected;
+            if clicked {
+                *map = default;
+            }
+            clicked
+        })
     }
 
     fn show_gradient_ui(&mut self, ui: &mut Ui) -> bool {

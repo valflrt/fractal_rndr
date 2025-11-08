@@ -1,4 +1,6 @@
-use eframe::egui::{Label, Ui};
+use std::time::Duration;
+
+use eframe::egui::{Align, Color32, Label, Layout, ProgressBar, Ui};
 
 use crate::gui::Gui;
 
@@ -39,5 +41,23 @@ impl Gui {
         }
 
         ui.separator();
+
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            if let Some((_, progress)) = &self.render_info {
+                ui.add(
+                    ProgressBar::new(progress.get_progress())
+                        .desired_height(4.)
+                        .desired_width(128.)
+                        .corner_radius(0.)
+                        .fill(Color32::WHITE),
+                );
+            } else if let Some((text, start)) = self.message.as_mut() {
+                const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
+                ui.label(text.as_str());
+                if start.elapsed() > MESSAGE_DISPLAY_TIME {
+                    self.message = None;
+                }
+            }
+        });
     }
 }

@@ -4,14 +4,10 @@ use rayon::prelude::*;
 
 use crate::{
     array2::Array2, complexx::Complexx, fractal::Fractal, params::Params, progress::Progress,
-    sampling::map_points_with_offsets, F, FX,
+    sampling::map_point_with_offset, F, FX,
 };
 
-pub fn render_raw_image(
-    params: &Params<F>,
-    sampling_points: &[(F, F)],
-    progress: Option<Progress>,
-) -> Array2<F> {
+pub fn render_raw_image(params: &Params<F>, progress: Option<Progress>) -> Array2<F> {
     let &Params {
         img_width,
         img_height,
@@ -20,7 +16,6 @@ pub fn render_raw_image(
         center_x,
         center_y,
         rotate,
-
         fractal,
 
         sampling,
@@ -39,7 +34,7 @@ pub fn render_raw_image(
         (center_x, -center_y)
     };
 
-    let mut raw_image = Array2::filled_with(0., img_width as usize, img_height as usize);
+    let mut raw_image = Array2::filled_with(0., img_width, img_height);
 
     let rng = fastrand::Rng::new();
     let (tx, rx) = mpsc::channel();
@@ -60,16 +55,12 @@ pub fn render_raw_image(
             } else {
                 (0., 0.)
             };
-            let sampling_points = sampling_points
-                .iter()
-                .map(|&(dx, dy)| map_points_with_offsets(dx, dy, offset_x, offset_y))
+            let sampling_points = sampling
+                .sampling_points()
+                .map(|(dx, dy)| map_point_with_offset(dx, dy, offset_x, offset_y))
                 .collect::<Vec<_>>();
 
-            #[cfg(feature = "force_f32")]
             const CHUNK_SIZE: usize = 8;
-            #[cfg(not(feature = "force_f32"))]
-            const CHUNK_SIZE: usize = 4;
-
             let value = sampling_points
                 .chunks(CHUNK_SIZE)
                 .flat_map(|d| {
@@ -107,7 +98,7 @@ pub fn render_raw_image(
         });
 
     for ((i, j), sample) in rx {
-        raw_image[(i as usize, j as usize)] = sample;
+        raw_image[(i, j)] = sample;
     }
 
     raw_image

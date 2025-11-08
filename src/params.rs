@@ -70,8 +70,8 @@ pub struct Params<T>
 where
     T: Clone + Serialize,
 {
-    pub img_width: u32,
-    pub img_height: u32,
+    pub img_width: usize,
+    pub img_height: usize,
 
     pub zoom: T,
     pub center_x: T,

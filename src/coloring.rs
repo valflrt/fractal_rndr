@@ -1,7 +1,9 @@
+use std::array;
+
 use image::{Rgb, RgbImage};
 use serde::{Deserialize, Serialize};
 
-use crate::{array2::Array2, params::Params, F};
+use crate::{array2::Array2, dithering::blue_noise, params::Params, F};
 
 pub fn color_raw_image(params: &Params<F>, raw_image: Array2<F>) -> RgbImage {
     let &Params {
@@ -10,8 +12,9 @@ pub fn color_raw_image(params: &Params<F>, raw_image: Array2<F>) -> RgbImage {
         ..
     } = params;
 
-    let mut output_image = RgbImage::new(img_width, img_height);
+    let mut output_image = RgbImage::new(img_width as u32, img_height as u32);
 
+    let max_iter = params.fractal.max_iter().map(|m| m as F).unwrap_or(1.);
     let max_v = raw_image.vec.iter().copied().fold(0., F::max);
     let min_v = raw_image.vec.iter().copied().fold(max_v, F::min);
 
@@ -20,13 +23,36 @@ pub fn color_raw_image(params: &Params<F>, raw_image: Array2<F>) -> RgbImage {
             let min = min.unwrap_custom_or(min_v);
             let max = max.unwrap_custom_or(max_v);
 
-            for j in 0..img_height as usize {
-                for i in 0..img_width as usize {
+            for j in 0..img_height {
+                for i in 0..img_width {
                     let value = raw_image[(i, j)];
 
                     let t = map.apply((value - min) / (max - min));
 
-                    output_image.put_pixel(i as u32, j as u32, color_mapping(t, &params.gradient));
+                    output_image.put_pixel(
+                        i as u32,
+                        j as u32,
+                        color_mapping(t, &params.gradient, blue_noise(i, j)),
+                    );
+                }
+            }
+        }
+        ColoringMode::Repeating {
+            frac: period,
+            rotate,
+            map,
+        } => {
+            for j in 0..img_height {
+                for i in 0..img_width {
+                    let value = raw_image[(i, j)];
+
+                    let t = (rotate + map.apply(value / max_iter) * period) % 1.; // in range (0, 1)
+
+                    output_image.put_pixel(
+                        i as u32,
+                        j as u32,
+                        color_mapping(t, &params.gradient, blue_noise(i, j)),
+                    );
                 }
             }
         }
@@ -42,6 +68,13 @@ pub enum ColoringMode {
         min: Extremum,
         #[serde(default)]
         max: Extremum,
+        #[serde(default)]
+        map: MapValue,
+    },
+    Repeating {
+        frac: F,
+        rotate: F,
+        #[serde(default)]
         map: MapValue,
     },
 }
@@ -67,8 +100,9 @@ impl Extremum {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub enum MapValue {
+    #[default]
     Linear,
     Powf(F),
 }
@@ -78,8 +112,8 @@ impl MapValue {
     pub fn apply(&self, t: F) -> F {
         match self {
             MapValue::Linear => t,
-            MapValue::Powf(p) => {
-                let t = t.powf(*p);
+            &MapValue::Powf(p) => {
+                let t = t.powf(p);
                 if t.is_normal() {
                     t
                 } else {
@@ -108,7 +142,7 @@ pub const OLD_DEFAULT_GRADIENT: &[(F, [u8; 3])] = &[
     (1., [20, 2, 10]),
 ];
 
-pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
+pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])], noise: F) -> Rgb<u8> {
     let first = gradient[0];
     let last = gradient.last().unwrap();
 
@@ -122,12 +156,20 @@ pub fn color_mapping(t: F, gradient: &[(F, [u8; 3])]) -> Rgb<u8> {
 
     let i = gradient.partition_point(|&(v, _)| v < t).saturating_sub(1);
 
-    let ratio = (t - gradient[i].0) / (gradient[i + 1].0 - gradient[i].0);
-    let [r1, g1, b1] = gradient[i].1;
-    let [r2, g2, b2] = gradient[i + 1].1;
-    let r = (r1 as F * (1. - ratio) + r2 as F * ratio).clamp(0., 255.) as u8;
-    let g = (g1 as F * (1. - ratio) + g2 as F * ratio).clamp(0., 255.) as u8;
-    let b = (b1 as F * (1. - ratio) + b2 as F * ratio).clamp(0., 255.) as u8;
+    let (t1, c1) = gradient[i];
+    let (t2, c2) = gradient[i + 1];
 
-    Rgb([r, g, b])
+    let ratio = (t - t1) / (t2 - t1);
+
+    let c = array::from_fn(|k| {
+        let p1 = c1[k] as F;
+        let p2 = c2[k] as F;
+
+        let p = p1 * (1. - ratio) + p2 * ratio;
+
+        // Add dithering (doesn't make a huge difference tho)
+        (p + 2. * noise - 1.).clamp(0., 255.) as u8
+    });
+
+    Rgb(c)
 }

@@ -99,7 +99,7 @@ pub struct Gui {
 }
 
 impl Gui {
-    pub const PREVIEW_SIZE: u32 = 256;
+    pub const PREVIEW_SIZE: usize = 256;
     const SLIDER_END_POS: f32 = 350.;
 
     pub fn new(
@@ -278,16 +278,14 @@ impl Gui {
     }
 
     fn render_and_save(&mut self) {
-        let progress = Progress::new((self.params.img_width * self.params.img_height) as usize);
+        let progress = Progress::new(self.params.img_width * self.params.img_height);
 
         let params_clone = self.params.clone();
-        let sampling_points_clone = self.params.sampling.generate_sampling_points();
         let progress_clone = progress.clone();
         self.render_info = Some((
             thread::spawn(move || {
                 let start = Instant::now();
-                let raw_image =
-                    render_raw_image(&params_clone, &sampling_points_clone, Some(progress_clone));
+                let raw_image = render_raw_image(&params_clone, Some(progress_clone));
                 (raw_image, start.elapsed())
             }),
             progress,
@@ -317,9 +315,7 @@ impl Gui {
             ..self.params.clone()
         };
 
-        let sampling_points = preview_params.sampling.generate_sampling_points();
-
-        let raw_image = render_raw_image(&preview_params, &sampling_points, None);
+        let raw_image = render_raw_image(&preview_params, None);
 
         let output_image = color_raw_image(&preview_params, raw_image);
         let egui_image = ColorImage::from_rgb(

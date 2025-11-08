@@ -133,37 +133,45 @@ where
     MoireTest,
 }
 
-#[cfg(feature = "force_f32")]
-type Out = [F; 8];
-#[cfg(not(feature = "force_f32"))]
-type Out = [F; 4];
-
 impl Fractal<F> {
-    pub fn sample(self, c: Complexx) -> Out {
+    pub fn sample(self, c: Complexx) -> [F; 8] {
+        // #[inline]
+        // fn zeroed_inf_nan(x: FX) -> FX {
+        //     let finite_mask = x.is_finite();
+        //     finite_mask.blend(x, FX::ZERO)
+        // }
+
         macro_rules! iterate {
             ($max_iter:expr, $bailout:expr, $update:expr) => {{
                 let bailout_sqr = $bailout * $bailout;
 
                 let mut z = Complexx::zeros();
 
-                let mut iter = FX::splat(0.);
+                let mut iter = FX::ZERO;
                 for i in 0..$max_iter {
                     let norm_sqr = z.norm_sqr();
-                    let not_diverged = norm_sqr.simd_le(bailout_sqr);
-                    if !not_diverged.any() {
+
+                    let not_diverged_mask = norm_sqr.simd_le(bailout_sqr);
+
+                    if not_diverged_mask.none() {
                         break;
                     }
 
-                    z = $update(i);
+                    let finite_mask = z.is_finite();
+                    let u = finite_mask.blend(FX::ONE, FX::ZERO);
+                    let nu = finite_mask.blend(FX::ZERO, FX::ONE);
 
-                    iter += not_diverged.blend(FX::ONE, FX::ZERO);
+                    z = $update(i) * u + z * nu;
+
+                    iter += not_diverged_mask.blend(FX::ONE, FX::ZERO);
                 }
 
-                (iter, z)
+                // (iter, zeroed_inf_nan(1. - (z.norm_sqr().ln() / 2.).ln()))
+                (iter, FX::ZERO)
             }};
         }
 
-        let (iter, _last_z) = match self {
+        let (iter, _frac_iter) = match self {
             Fractal::Mandelbrot { max_iter, bailout } => {
                 let mut z = Complexx::zeros();
 
@@ -448,7 +456,7 @@ impl Fractal<F> {
             // Fractal::Test { max_iter, bailout } => {}
             Fractal::MoireTest => {
                 let Complexx { re: x, im: y } = c * 100.;
-                ((x * x + y * y).sin().abs(), Complexx::splat(1., 0.))
+                ((x * x + y * y).sin().abs(), FX::ONE)
             }
         };
 
