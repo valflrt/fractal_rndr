@@ -1,6 +1,6 @@
 [package]
 name = "fractal_rndr"
-version = "0.2.4"
+version = "0.2.5"
 description = "A fractal renderer that features several coloring modes, anti-aliasing and a gui."
 keywords = ["fractal", "renderer", "anti-aliasing"]
 homepage = "https://gitlab.com/valflrt/fractal_rndr"
