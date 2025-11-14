@@ -17,7 +17,7 @@ impl Gui {
 
         let scroll_delta = ui.input(|i| i.smooth_scroll_delta.y);
 
-        if scroll_delta != 0. {
+        if res.hovered() && scroll_delta != 0. {
             let zoom_factor = 1. - scroll_delta as F * 0.005;
             self.params.zoom *= zoom_factor;
 
