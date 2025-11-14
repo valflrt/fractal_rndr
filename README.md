@@ -15,13 +15,13 @@ It features anti-aliasing and the GUI allows for progressive sampling by manuall
 
 # How to install
 
-If you have cargo installed:
+If you have [cargo](https://doc.rust-lang.org/cargo/) installed:
 
 ```
 cargo install fractal_rndr
 ```
 
-Otherwise, you can download the latest executable from the [releases tab](https://github.com/valflrt/fractal_rndr/releases/latest).
+> You can also download executables for older versions [from github](https://github.com/valflrt/fractal_rndr/releases/latest).
 
 # How to use
 
