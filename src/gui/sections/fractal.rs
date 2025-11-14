@@ -358,15 +358,15 @@ impl Gui {
                     gamma: (0., 0.),
                 },
             ),
-            // (
-            //     matches!(self.params.fractal, Fractal::Test { .. }),
-            //     "Test",
-            //     None,
-            //     Fractal::Test {
-            //         max_iter: 500,
-            //         bailout: 10.,
-            //     },
-            // ),
+            (
+                matches!(self.params.fractal, Fractal::Twtmwk { .. }),
+                "Twtmwk",
+                None,
+                Fractal::Twtmwk {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
+            ),
         ]
         .iter()
         .any(|&(selected, name, description, default)| {

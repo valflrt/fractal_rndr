@@ -125,11 +125,11 @@ where
         beta: (T, T),
         gamma: (T, T),
     },
-    // Test {
-    //     max_iter: u32,
-    //     #[serde(default = "default_bailout")]
-    //     bailout: F,
-    // },
+    Twtmwk {
+        max_iter: u32,
+        #[serde(default = "default_bailout")]
+        bailout: F,
+    },
     MoireTest,
 }
 
@@ -145,7 +145,7 @@ impl Fractal<F> {
             ($max_iter:expr, $bailout:expr, $update:expr) => {{
                 let bailout_sqr = $bailout * $bailout;
 
-                let mut z = Complexx::zeros();
+                let mut z = Complexx::ZERO;
 
                 let mut iter = FX::ZERO;
                 for i in 0..$max_iter {
@@ -173,7 +173,7 @@ impl Fractal<F> {
 
         let (iter, _frac_iter) = match self {
             Fractal::Mandelbrot { max_iter, bailout } => {
-                let mut z = Complexx::zeros();
+                let mut z = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     z = z * z + c;
@@ -185,7 +185,7 @@ impl Fractal<F> {
                 bailout,
                 exp,
             } => {
-                let mut z = Complexx::zeros();
+                let mut z = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     z = z.powf(exp) + c;
@@ -193,8 +193,8 @@ impl Fractal<F> {
                 })
             }
             Fractal::Sdrge { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z1 = z1 * z1 + z0 + c;
@@ -208,8 +208,8 @@ impl Fractal<F> {
                 bailout,
                 exp,
             } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z1 = z1.powf(exp) + z0 + c;
@@ -223,8 +223,8 @@ impl Fractal<F> {
                 bailout,
                 exp,
             } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z1 = z1.powu(exp) + z0 + c;
@@ -241,8 +241,8 @@ impl Fractal<F> {
             } => {
                 let a = Complexx::splat(a_re, a_im);
 
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z1 = z1 * z1 + a * z0 + c;
@@ -252,8 +252,8 @@ impl Fractal<F> {
                 })
             }
             Fractal::Sdrage { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z1 = z1 * z1 - z0 + c;
@@ -263,9 +263,9 @@ impl Fractal<F> {
                 })
             }
             Fractal::Tdrge { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-                let mut z2 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z2 = z2 * z2 * z2 + z1 * z1 + z0 + c;
@@ -280,7 +280,7 @@ impl Fractal<F> {
                 bailout,
                 n,
             } => {
-                let mut z = vec![Complexx::zeros(); n];
+                let mut z = vec![Complexx::ZERO; n];
 
                 iterate!(max_iter, bailout, |_| {
                     let mut new_z = c;
@@ -295,9 +295,9 @@ impl Fractal<F> {
                 })
             }
             Fractal::ThirdDegreeRecPairs { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-                let mut z2 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z2 = z0 * z1 + z0 * z2 + z1 * z2 + c;
@@ -308,8 +308,8 @@ impl Fractal<F> {
                 })
             }
             Fractal::SecondDegreeThirtySevenBlend { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |i| {
                     if i % 37 == 0 {
@@ -330,8 +330,8 @@ impl Fractal<F> {
                 a_re,
                 a_im,
             } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z1 = z1 * (Complexx::splat(a_re, a_im) - z0) + c;
@@ -342,9 +342,9 @@ impl Fractal<F> {
             }
 
             Fractal::Vshqwj { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-                let mut z2 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z2 = (z2 + z1) * (z1 + z0) * (z2 - z0) + c;
@@ -360,8 +360,8 @@ impl Fractal<F> {
                 a_re,
                 a_im,
             } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
                 let mut z2 = Complexx::splat(a_re, a_im);
 
                 iterate!(max_iter, bailout, |_| {
@@ -384,8 +384,8 @@ impl Fractal<F> {
                 a_re,
                 a_im,
             } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
                 let mut z2 = Complexx::splat(a_re, a_im);
 
                 iterate!(max_iter, bailout, |_| {
@@ -402,9 +402,9 @@ impl Fractal<F> {
                 })
             }
             Fractal::Fxdicq { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-                let mut z2 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z2 = z2 * z2
@@ -420,8 +420,8 @@ impl Fractal<F> {
                 })
             }
             Fractal::Mjygzr { max_iter, bailout } => {
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z = z1 * z1 * c + z0 + c;
@@ -441,9 +441,9 @@ impl Fractal<F> {
                 let beta = Complexx::splat(beta.0, beta.1);
                 let gamma = Complexx::splat(gamma.0, gamma.1);
 
-                let mut z0 = Complexx::zeros();
-                let mut z1 = Complexx::zeros();
-                let mut z2 = Complexx::zeros();
+                let mut z0 = Complexx::ZERO;
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
 
                 iterate!(max_iter, bailout, |_| {
                     let new_z = (z0 - alpha) * (z1 - beta) * (z2 - gamma) + c;
@@ -453,7 +453,16 @@ impl Fractal<F> {
                     z2
                 })
             }
-            // Fractal::Test { max_iter, bailout } => {}
+            Fractal::Twtmwk { max_iter, bailout } => {
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
+
+                iterate!(max_iter, bailout, |_| {
+                    z1 = z1 * z1 + z2 + c;
+                    z2 = z2 * z2 + z1 + c;
+                    z1 + z2
+                })
+            }
             Fractal::MoireTest => {
                 let Complexx { re: x, im: y } = c * 100.;
                 ((x * x + y * y).sin().abs(), FX::ONE)
@@ -510,7 +519,8 @@ impl_extract_field!(
         Iigdzh,
         Fxdicq,
         Mjygzr,
-        Sfwypc // , Test
+        Sfwypc,
+        Twtmwk
     ]
 );
 
@@ -536,6 +546,7 @@ impl_extract_field!(
         Iigdzh,
         Fxdicq,
         Mjygzr,
-        Sfwypc // , Test
+        Sfwypc,
+        Twtmwk
     ]
 );

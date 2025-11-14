@@ -12,35 +12,24 @@ pub struct Complexx {
 
 #[allow(dead_code)]
 impl Complexx {
+    pub const ZERO: Complexx = Complexx {
+        re: FX::ZERO,
+        im: FX::ZERO,
+    };
+    pub const ONE: Complexx = Complexx {
+        re: FX::ONE,
+        im: FX::ZERO,
+    };
+    pub const I: Complexx = Complexx {
+        re: FX::ZERO,
+        im: FX::ONE,
+    };
+
     #[inline]
     pub fn splat(re: F, im: F) -> Complexx {
         Complexx {
             re: FX::splat(re),
             im: FX::splat(im),
-        }
-    }
-
-    #[inline]
-    pub fn zeros() -> Complexx {
-        Complexx {
-            re: FX::splat(0.),
-            im: FX::splat(0.),
-        }
-    }
-
-    #[inline]
-    pub fn one() -> Complexx {
-        Complexx {
-            re: FX::splat(1.),
-            im: FX::splat(0.),
-        }
-    }
-
-    #[inline]
-    pub fn i() -> Complexx {
-        Complexx {
-            re: FX::splat(0.),
-            im: FX::splat(1.),
         }
     }
 
