@@ -21,13 +21,12 @@ use std::{
 };
 
 use eframe::egui::ViewportBuilder;
-use gui::WINDOW_SIZE;
 
 use crate::{
     coloring::{color_mapping, color_raw_image},
     dithering::blue_noise,
     error::{ErrorKind, Result},
-    gui::Gui,
+    gui::{Gui, WINDOW_SIZE},
     params::{
         animation::{AnimationCfg, AnimationSteps},
         read_parameter_file, DevOptions, Params, ParamsKind,

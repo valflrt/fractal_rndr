@@ -55,7 +55,9 @@ impl Gui {
                         let btn = ui.button("save image");
 
                         if no_output_image_path {
-                            btn.on_disabled_hover_text("no path was provided for the output image")
+                            btn.on_disabled_hover_text(
+                                "set an output image from the bottom bar before trying to save it",
+                            )
                         } else if no_samples {
                             btn.on_disabled_hover_text("sample the fractal before saving the image")
                         } else {

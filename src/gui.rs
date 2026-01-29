@@ -1,7 +1,6 @@
 mod bottom_bar;
 mod preview;
 mod sections;
-mod top_bar;
 
 use std::{
     fs,
@@ -141,9 +140,6 @@ impl Gui {
 
 impl App for Gui {
     fn update(&mut self, ctx: &Context, _frame: &mut EFrame) {
-        TopBottomPanel::top("top_bar")
-            .show(ctx, |ui| MenuBar::new().ui(ui, |ui| self.show_top_bar(ui)));
-
         TopBottomPanel::bottom("bottom_bar").show(ctx, |ui| {
             MenuBar::new().ui(ui, |ui| self.show_bottom_bar(ui));
         });

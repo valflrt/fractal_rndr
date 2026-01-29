@@ -61,7 +61,7 @@ pub fn color_raw_image(params: &Params<F>, raw_image: Array2<F>) -> RgbImage {
     output_image
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ColoringMode {
     MinMaxNorm {
         #[serde(default)]
@@ -79,7 +79,7 @@ pub enum ColoringMode {
     },
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub enum Extremum {
     #[default]
     Auto,
@@ -100,7 +100,7 @@ impl Extremum {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub enum MapValue {
     #[default]
     Linear,

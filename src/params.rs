@@ -65,7 +65,7 @@ impl Default for ParamsKind {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Params<T>
 where
     T: Clone + Serialize,
@@ -116,7 +116,7 @@ impl Params<AnimationSteps> {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct DevOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub save_sampling_pattern: Option<bool>,
@@ -129,7 +129,7 @@ pub mod animation {
 
     use crate::{fractal::Fractal, F};
 
-    #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+    #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
     pub struct AnimationCfg {
         pub duration: F,
         pub fps: F,
