@@ -15,12 +15,12 @@ impl Gui {
                 .maintain_aspect_ratio(true),
         );
 
-        let scroll_delta = ui.input(|i| i.smooth_scroll_delta.y);
+        let scroll_delta = ui.input(|i| i.smooth_scroll_delta.y) as F;
 
         if res.hovered() && scroll_delta != 0. {
-            let zoom_factor = 1. - scroll_delta as F * 0.005;
+            // dark magic here
+            let zoom_factor = 1. - 0.25 * (scroll_delta / 50.).tanh();
             self.params.zoom *= zoom_factor;
-
             self.params_changes.set_breaking();
         }
 
