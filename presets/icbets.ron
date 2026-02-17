@@ -1,20 +1,20 @@
 Frame((
     img_width: 1920,
     img_height: 1080,
-    zoom: 0.0025,
-    center_x: 0.0275658,
-    center_y: 1.0311084,
-    rotate: None,
-    fractal: ComplexLogisticMapLike(
-        max_iter: 2500,
-        bailout: 10.,
-        a_re: 0.0,
-        a_im: -0.9773,
+    zoom: 0.00000005,
+    center_x: 0.0001310155,
+    center_y: 0.000005,
+    rotate: Some(2.6),
+    fractal: SdrgeParam(
+        max_iter: 5000,
+        bailout: 4.0,
+        a_re: 1.0,
+        a_im: -0.0000001,
     ),
     coloring_mode: MinMaxNorm(
-        min: Custom(500.0),
-        max: Custom(2500.0),
-        map: Linear,
+        min: Custom(548.0),
+        max: Custom(5000.0),
+        map: Powf(0.4),
     ),
     gradient: [
         (0.0, (230, 230, 240)),
@@ -25,7 +25,7 @@ Frame((
         (1.0, (220, 210, 220)),
     ],
     sampling: (
-        level: Exploration,
+        level: Extreme,
         random_offsets: true,
     ),
 ))
