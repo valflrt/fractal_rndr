@@ -37,7 +37,7 @@ impl<T> Array2<T> {
         }
     }
 
-    pub fn enumerate(&self) -> impl Iterator<Item = (usize, usize)> {
+    pub fn enumerate(&self) -> impl Iterator<Item = (usize, usize)> + use<T> {
         let (w, h) = (self.width, self.height);
         (0..h).flat_map(move |y| (0..w).map(move |x| (x, y)))
     }

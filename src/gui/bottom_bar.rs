@@ -26,20 +26,38 @@ impl Gui {
         ui.separator();
 
         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            let has_msg = self.message.is_some();
+            let has_progress = self.render_info.is_some();
+
+            // the order is reversed here because of the
+            // RtL layout used here...
+
             if let Some((_, progress)) = &self.render_info {
+                let progress = progress.get_progress();
                 ui.add(
-                    ProgressBar::new(progress.get_progress())
+                    ProgressBar::new(progress)
                         .desired_height(4.)
                         .desired_width(128.)
                         .corner_radius(0.)
                         .fill(Color32::WHITE),
                 );
-            } else if let Some((text, start)) = self.message.as_mut() {
+                ui.label(format!("{:.1}%", progress * 100.));
+            }
+
+            if has_msg && has_progress {
+                ui.separator();
+            }
+
+            if let Some((text, start)) = self.message.as_mut() {
                 const MESSAGE_DISPLAY_TIME: Duration = Duration::from_secs(5);
                 ui.label(text.as_str());
                 if start.elapsed() > MESSAGE_DISPLAY_TIME {
                     self.message = None;
                 }
+            }
+
+            if has_msg || has_progress {
+                ui.separator();
             }
         });
     }

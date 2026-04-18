@@ -10,25 +10,25 @@ use std::{
 };
 
 use eframe::{
-    egui::{
-        CentralPanel, CollapsingHeader, Color32, ColorImage, Context, MenuBar, ScrollArea,
-        TextureHandle, TopBottomPanel, Vec2, Vec2b,
-    },
     App, CreationContext, Frame as EFrame,
+    egui::{
+        CentralPanel, CollapsingHeader, Color32, ColorImage, MenuBar, Panel, ScrollArea,
+        TextureHandle, Ui, Vec2, Vec2b,
+    },
 };
 use rfd::FileDialog;
 use ron::ser::PrettyConfig;
 use serde::Serialize;
 
 use crate::{
+    F,
     array2::Array2,
     coloring::color_raw_image,
     error::ErrorKind,
-    params::{read_parameter_file, Params, ParamsKind},
+    params::{Params, ParamsKind, read_parameter_file},
     progress::Progress,
     rendering::render_raw_image,
     sampling::Sampling,
-    F,
 };
 
 pub const WINDOW_SIZE: Vec2 = Vec2 { x: 1000., y: 540. };
@@ -139,12 +139,12 @@ impl Gui {
 }
 
 impl App for Gui {
-    fn update(&mut self, ctx: &Context, _frame: &mut EFrame) {
-        TopBottomPanel::bottom("bottom_bar").show(ctx, |ui| {
+    fn ui(&mut self, ui: &mut Ui, _frame: &mut EFrame) {
+        Panel::bottom("bottom_bar").show_inside(ui, |ui| {
             MenuBar::new().ui(ui, |ui| self.show_bottom_bar(ui));
         });
 
-        CentralPanel::default().show(ctx, |ui| {
+        CentralPanel::default().show_inside(ui, |ui| {
             ui.spacing_mut().slider_width = 150.;
 
             ui.columns_const(|[c1, c2]| {
@@ -177,13 +177,9 @@ impl App for Gui {
                 self.show_preview(c2);
             });
         });
-
-        self.handle_update(ctx);
     }
-}
 
-impl Gui {
-    fn handle_update(&mut self, ctx: &Context) {
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut EFrame) {
         if self.render_info.is_some() {
             // Request repaint for the progress bar to update correctly
             ctx.request_repaint();
@@ -272,7 +268,9 @@ impl Gui {
             }
         }
     }
+}
 
+impl Gui {
     fn render_and_save(&mut self) {
         let progress = Progress::new(self.params.img_width * self.params.img_height);
 

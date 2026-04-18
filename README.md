@@ -21,7 +21,7 @@ If you have [cargo](https://doc.rust-lang.org/cargo/) installed:
 cargo install fractal_rndr
 ```
 
-> You can also download executables for older versions [from github](https://github.com/valflrt/fractal_rndr/releases/latest).
+> You can also download executables [from github](https://github.com/valflrt/fractal_rndr/releases/latest).
 
 # How to use
 
@@ -44,18 +44,57 @@ Enjoy !
 
 See [this repository](https://gitlab.com/valflrt/fractals).
 
-# Ideas
+# Alpha feature: animations
 
-- use wgpu to perform calculations ? see [this](https://wgpu.rs/doc/src/wgpu_examples/repeated_compute/mod.rs.html#1-246)
-- use opencl to perform calculations ? see [this](https://docs.rs/opencl3/latest/opencl3/)
-- Make a new program using this one that is a purely gui program with progressive rendering
-  - Progressive rendering ? Save a global `raw_image` and sample continuously from another thread to improve image quality
-    - How to sample ? Use `Low` or `Medium` for first pass then do other passes with `High` (as the number of passes increases, the value of each pixel gets more and more accurate)
-    - Careful: The average between new passes and the current values must be weighted: `(sampling_point_count_from_start * stored_value + sampling_point_count_for_current_pass * new_value) / (sampling_point_count_from_start + sampling_point_count_for_current_pass)`
+This software's parameter files can be used to render animation frames. But the gui does not support animation parameter files so animation rendering must be started using the cli :
 
-# Notes
+```
+fractal_rndr parameter_file.ron output_image.png --no-gui
+```
 
-- To create a video from the frames:
-  ```bash
-  ffmpeg -framerate <fps> -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p video.mp4
-  ```
+> Output frames will be saved to `output_image_000000.png`, `output_image_000001.png`, ...
+
+Here is an example of an animation parameter file :
+
+```ron
+Animation((
+    img_width: 1920,
+    img_height: 1080,
+    zoom: AnimationSteps([SmoothExp(0, 8, 0.02, 0.00000003)]),
+    center_x: AnimationSteps([Const(0, 8, -1.0095269995)]),
+    center_y: AnimationSteps([Const(0, 8, -0.10252498565)]),
+    rotate: Some(AnimationSteps([Const(0, 8, 2.3)])),
+    fractal: ComplexLogisticMapLike(
+        max_iter: 4000,
+        a_re: AnimationSteps([Const(0, 8, -0.99900006)]),
+        a_im: AnimationSteps([Const(0, 8, 0.10283586)]),
+    ),
+    coloring_mode: MinMaxNorm(
+        min: Custom(300.0),
+        max: Custom(4000.0),
+        map: Linear,
+    ),
+    gradient: [
+        (0.0, (255, 255, 255)),
+        (0.3, (250, 182, 210)),
+        (0.35, (213, 135, 193)),
+        (0.5, (60, 60, 90)),
+        (0.75, (105, 120, 198)),
+        (1.0, (220, 210, 220)),
+    ],
+    sampling: (
+        level: High,
+        random_offsets: true,
+    ),
+    animation_cfg: Some((
+    	duration: 8,
+    	fps: 30,
+    ))
+))
+```
+
+To create a video from frames, you can use:
+
+```bash
+ffmpeg -framerate <fps> -pattern_type glob -i 'frames/*.png' -c:v libx264 -pix_fmt yuv420p video.mp4
+```

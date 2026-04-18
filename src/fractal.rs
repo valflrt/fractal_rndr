@@ -130,6 +130,18 @@ where
         #[serde(default = "default_bailout")]
         bailout: F,
     },
+    TwtmwkParam {
+        max_iter: u32,
+        #[serde(default = "default_bailout")]
+        bailout: F,
+        a_re: T,
+        a_im: T,
+    },
+    Holpdu {
+        max_iter: u32,
+        #[serde(default = "default_bailout")]
+        bailout: F,
+    },
     MoireTest,
 }
 
@@ -463,6 +475,33 @@ impl Fractal<F> {
                     z1 + z2
                 })
             }
+            Fractal::TwtmwkParam {
+                max_iter,
+                bailout,
+                a_re,
+                a_im,
+            } => {
+                let a = Complexx::splat(a_re, a_im);
+
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
+
+                iterate!(max_iter, bailout, |_| {
+                    z1 = z1 * z1 + a * z2 + c;
+                    z2 = z2 * z2 + a * z1 + c;
+                    z1 + z2
+                })
+            }
+            Fractal::Holpdu { max_iter, bailout } => {
+                let mut z1 = Complexx::ZERO;
+                let mut z2 = Complexx::ZERO;
+
+                iterate!(max_iter, bailout, |_| {
+                    z1 = z1 * z1 - z2 + c;
+                    z2 = z2 * z2 - z1 + c;
+                    z1 + z2
+                })
+            }
             Fractal::MoireTest => {
                 let Complexx { re: x, im: y } = c * 100.;
                 ((x * x + y * y).sin().abs(), FX::ONE)
@@ -520,7 +559,9 @@ impl_extract_field!(
         Fxdicq,
         Mjygzr,
         Sfwypc,
-        Twtmwk
+        Twtmwk,
+        TwtmwkParam,
+        Holpdu
     ]
 );
 
@@ -547,6 +588,8 @@ impl_extract_field!(
         Fxdicq,
         Mjygzr,
         Sfwypc,
-        Twtmwk
+        Twtmwk,
+        TwtmwkParam,
+        Holpdu
     ]
 );

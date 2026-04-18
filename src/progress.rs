@@ -27,7 +27,8 @@ impl Progress {
     pub fn get(&self) -> usize {
         self.progress.load(Ordering::Relaxed)
     }
-    // Outputs progress in range (0,1)
+
+    /// Outputs progress in range (0,1)
     pub fn get_progress(&self) -> f32 {
         self.get() as f32 / self.total as f32
     }

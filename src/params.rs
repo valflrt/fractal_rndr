@@ -305,6 +305,18 @@ pub mod animation {
                     a_im: a_im.get(t),
                 },
                 &Self::Twtmwk { max_iter, bailout } => Fractal::<F>::Twtmwk { max_iter, bailout },
+                &Self::TwtmwkParam {
+                    max_iter,
+                    bailout,
+                    ref a_re,
+                    ref a_im,
+                } => Fractal::<F>::TwtmwkParam {
+                    max_iter,
+                    bailout,
+                    a_re: a_re.get(t),
+                    a_im: a_im.get(t),
+                },
+                &Self::Holpdu { max_iter, bailout } => Fractal::<F>::Holpdu { max_iter, bailout },
                 Fractal::MoireTest => Fractal::MoireTest,
             }
         }

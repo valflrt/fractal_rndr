@@ -111,7 +111,8 @@ impl Gui {
         if let Fractal::SdrgeParam { a_re, a_im, .. }
         | Fractal::ComplexLogisticMapLike { a_re, a_im, .. }
         | Fractal::Wmriho { a_re, a_im, .. }
-        | Fractal::Iigdzh { a_re, a_im, .. } = &mut self.params.fractal
+        | Fractal::Iigdzh { a_re, a_im, .. }
+        | Fractal::TwtmwkParam { a_re, a_im, .. } = &mut self.params.fractal
         {
             ui.horizontal(|ui| {
                 ui.label("a_re:");
@@ -363,6 +364,24 @@ impl Gui {
                 "Twtmwk",
                 None,
                 Fractal::Twtmwk {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
+            ),
+            (
+                matches!(self.params.fractal, Fractal::TwtmwkParam { .. }),
+                "TwtmwkParam",
+                None,
+                Fractal::Twtmwk {
+                    max_iter: 500,
+                    bailout: 10.,
+                },
+            ),
+            (
+                matches!(self.params.fractal, Fractal::Holpdu { .. }),
+                "Holpdu",
+                None,
+                Fractal::Holpdu {
                     max_iter: 500,
                     bailout: 10.,
                 },
